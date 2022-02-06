@@ -13,7 +13,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.8.8
 	github.com/onosproject/helmit v0.6.19
-	github.com/onosproject/onos-api/go v0.8.51
+	github.com/onosproject/onos-api/go v0.8.52
 	github.com/onosproject/onos-lib-go v0.8.1
 	github.com/onosproject/onos-ric-sdk-go v0.8.2
 	github.com/onosproject/onos-test v0.6.6
@@ -33,5 +33,3 @@ require (
 )
 
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3
-
-replace github.com/onosproject/onos-api/go => github.com/kuujo/onos-api/go v0.0.0-20220206010751-34d2ef907639
