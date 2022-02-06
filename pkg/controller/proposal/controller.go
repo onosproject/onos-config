@@ -616,22 +616,11 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		log.Debugf("Sending SetRequest %+v", setRequest)
 		setResponse, err := conn.Set(ctx, setRequest)
 		if err != nil {
-			switch status.Code(err) {
-			case codes.InvalidArgument:
-				proposal.Status.Phases.Apply.Failure = &configapi.Failure{
-					Type:        configapi.Failure_INVALID,
-					Description: err.Error(),
-				}
-			case codes.Unauthenticated:
-				proposal.Status.Phases.Apply.Failure = &configapi.Failure{
-					Type:        configapi.Failure_UNAUTHORIZED,
-					Description: err.Error(),
-				}
-			case codes.Unimplemented:
-				proposal.Status.Phases.Apply.Failure = &configapi.Failure{
-					Type:        configapi.Failure_NOT_SUPPORTED,
-					Description: err.Error(),
-				}
+			code := status.Code(err)
+			switch code {
+			case codes.Unavailable, codes.Canceled, codes.DeadlineExceeded:
+				log.Errorf("Failed sending SetRequest %+v", setRequest, err)
+				return controller.Result{}, err
 			case codes.PermissionDenied:
 				// The gNMI Set request can be denied if this master has been superseded by a master in a later term.
 				// Rather than reverting to the STALE state now, wait for this node to see the mastership state change
@@ -639,29 +628,57 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 				log.Warnf("Configuration '%s' mastership superseded for term %d", config.ID, mastershipTerm)
 				return controller.Result{}, nil
 			default:
-				log.Errorf("Failed sending SetRequest %+v", setRequest, err)
-				return controller.Result{}, err
-			}
+				var failureType configapi.Failure_Type
+				switch code {
+				case codes.Unknown:
+					failureType = configapi.Failure_UNKNOWN
+				case codes.Canceled:
+					failureType = configapi.Failure_CANCELED
+				case codes.NotFound:
+					failureType = configapi.Failure_NOT_FOUND
+				case codes.AlreadyExists:
+					failureType = configapi.Failure_ALREADY_EXISTS
+				case codes.Unauthenticated:
+					failureType = configapi.Failure_UNAUTHORIZED
+				case codes.PermissionDenied:
+					failureType = configapi.Failure_FORBIDDEN
+				case codes.FailedPrecondition:
+					failureType = configapi.Failure_CONFLICT
+				case codes.InvalidArgument:
+					failureType = configapi.Failure_INVALID
+				case codes.Unavailable:
+					failureType = configapi.Failure_UNAVAILABLE
+				case codes.Unimplemented:
+					failureType = configapi.Failure_NOT_SUPPORTED
+				case codes.DeadlineExceeded:
+					failureType = configapi.Failure_TIMEOUT
+				case codes.Internal:
+					failureType = configapi.Failure_INTERNAL
+				}
 
-			// If we made it this far the application of the Proposal failed.
-			// Update the Configuration's applied index to indicate this Proposal was applied even though it failed.
-			log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, mastershipTerm)
-			config.Status.Applied.Index = proposal.TransactionIndex
-			config.Status.Applied.Term = mastershipTerm
-			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-				return controller.Result{}, err
-			}
+				// Update the Configuration's applied index to indicate this Proposal was applied even though it failed.
+				log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, mastershipTerm)
+				config.Status.Applied.Index = proposal.TransactionIndex
+				config.Status.Applied.Term = mastershipTerm
+				if err := r.configurations.UpdateStatus(ctx, config); err != nil {
+					log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+					return controller.Result{}, err
+				}
 
-			// Update the proposal's apply phase state.
-			log.Warnf("Failed applying Proposal '%s'", proposal.ID, err)
-			proposal.Status.Phases.Apply.State = configapi.ProposalApplyPhase_FAILED
-			proposal.Status.Phases.Apply.Term = mastershipTerm
-			proposal.Status.Phases.Apply.End = getCurrentTimestamp()
-			if err := r.updateProposalStatus(ctx, proposal); err != nil {
-				return controller.Result{}, err
+				// Add the failure to the proposal's apply phase state.
+				log.Warnf("Failed applying Proposal '%s'", proposal.ID, err)
+				proposal.Status.Phases.Apply.State = configapi.ProposalApplyPhase_FAILED
+				proposal.Status.Phases.Apply.Failure = &configapi.Failure{
+					Type:        failureType,
+					Description: err.Error(),
+				}
+				proposal.Status.Phases.Apply.Term = mastershipTerm
+				proposal.Status.Phases.Apply.End = getCurrentTimestamp()
+				if err := r.updateProposalStatus(ctx, proposal); err != nil {
+					return controller.Result{}, err
+				}
+				return controller.Result{}, nil
 			}
-			return controller.Result{}, nil
 		}
 		log.Debugf("Received SetResponse %+v", setResponse)
 
