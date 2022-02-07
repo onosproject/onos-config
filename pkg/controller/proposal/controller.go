@@ -17,6 +17,9 @@ package proposal
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	controllerutils "github.com/onosproject/onos-config/pkg/controller/utils"
 	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal"
@@ -25,8 +28,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
-	"time"
 
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 
@@ -109,6 +110,8 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 func (r *Reconciler) reconcileProposal(ctx context.Context, proposal *configapi.Proposal) (controller.Result, error) {
 	if proposal.Status.Phases.Apply != nil {
 		return r.reconcileApply(ctx, proposal)
+	} else if proposal.Status.Phases.Abort != nil {
+		return r.reconcileAbort(ctx, proposal)
 	} else if proposal.Status.Phases.Commit != nil {
 		return r.reconcileCommit(ctx, proposal)
 	} else if proposal.Status.Phases.Validate != nil {
@@ -419,6 +422,14 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 	default:
 		return controller.Result{}, nil
 	}
+}
+
+func (r *Reconciler) reconcileAbort(ctx context.Context, proposal *configapi.Proposal) (controller.Result, error) {
+	switch proposal.Status.Phases.Abort.State {
+	case configapi.ProposalAbortPhase_ABORTING:
+
+	}
+	return controller.Result{}, nil
 }
 
 func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Proposal) (controller.Result, error) {
