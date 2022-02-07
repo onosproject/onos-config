@@ -478,7 +478,16 @@ func CheckTargetValue(t *testing.T, targetGnmiClient gnmiclient.Impl, targetPath
 	} else {
 		assert.Fail(t, "Failed to query target: %v", err)
 	}
+}
 
+// CheckTargetValueDeleted makes sure target path is missing when queried via GNMI
+func CheckTargetValueDeleted(t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath) {
+	_, _, err := GetGNMIValue(MakeContext(), targetGnmiClient, targetPaths, gpb.Encoding_JSON)
+	if err == nil {
+		assert.Fail(t, "Path not deleted", targetPaths)
+	} else if !strings.Contains(err.Error(), "NotFound") {
+		assert.Fail(t, "Incorrect error received", err)
+	}
 }
 
 // GetTargetGNMIClientOrFail creates a GNMI client to a target. If there is an error, the test is failed
