@@ -16,6 +16,7 @@
 package config
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -35,7 +36,6 @@ const (
 func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	simulator := gnmiutils.CreateSimulatorWithName(t, createRemoveTargetModTargetName, true)
 	assert.NotNil(t, simulator)
-	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the target
 	ready := gnmiutils.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 1*time.Minute)
@@ -60,7 +60,14 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 
 	// Set a value using gNMI client - target is down
 	setPath2 := gnmiutils.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
-	_, _ = gnmiutils.SetGNMIValueOrFail(t, c, setPath2, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		_, _ = gnmiutils.SetGNMIValueOrFail(t, c, setPath2, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+		t.Log("Set operation is complete")
+		wg.Done()
+	}()
 
 	//  Restart simulated target
 	simulator = gnmiutils.CreateSimulatorWithName(t, createRemoveTargetModTargetName, false)
@@ -70,10 +77,13 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	ready = gnmiutils.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 2*time.Minute)
 	assert.True(t, ready)
 
+	wg.Wait()
 	// Check that the value was set correctly
 	gnmiutils.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
 
 	// interrogate the target to check that the value was set properly
 	targetGnmiClient2 := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
 	gnmiutils.CheckTargetValue(t, targetGnmiClient2, targetPath, createRemoveTargetModValue2)
+	gnmiutils.DeleteSimulator(t, simulator)
+
 }
