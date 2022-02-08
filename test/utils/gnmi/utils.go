@@ -233,9 +233,16 @@ func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duratio
 			return false
 		}
 
-		if (eventType == topo.EventType_ADDED || eventType == topo.EventType_UPDATED) &&
+		if (eventType == topo.EventType_ADDED || eventType == topo.EventType_UPDATED || eventType == topo.EventType_NONE) &&
 			rel.KindID == topo.CONTROLS {
-			return true
+			cl, err := NewTopoClient()
+			assert.NoError(t, err)
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+			_, err = cl.Get(ctx, objectID)
+			if err == nil {
+				return true
+			}
 		}
 
 		return false
@@ -250,8 +257,15 @@ func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Durat
 			return false
 		}
 
-		if eventType == topo.EventType_REMOVED && rel.KindID == topo.CONTROLS {
-			return true
+		if (eventType == topo.EventType_REMOVED || eventType == topo.EventType_NONE) && rel.KindID == topo.CONTROLS {
+			cl, err := NewTopoClient()
+			assert.NoError(t, err)
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+			_, err = cl.Get(ctx, objectID)
+			if errors.IsNotFound(err) {
+				return true
+			}
 		}
 		return false
 	}, timeout)
