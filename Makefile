@@ -18,16 +18,11 @@ mod-lint: mod-update # @HELP ensure that the required dependencies are in place
 	# dependencies are vendored, but not committed, go.sum is the only thing we need to check
 	bash -c "diff -u <(echo -n) <(git diff go.sum)"
 
-local-protos: # @HELP Copies a local version of the onos-api dependency into the vendor directory
-ifdef LOCAL_PROTOS
-	rm -rf vendor/github.com/onosproject/onos-api/go
-	mkdir -p vendor/github.com/onosproject/onos-api/go
-	cp -r ${LOCAL_PROTOS}/go/* vendor/github.com/onosproject/onos-api/go
-	rm -rf vendor/github.com/onosproject/onos-api/go/vendor
-endif
+local-deps: # @HELP imports local deps in the vendor folder
+local-deps: local-helmit local-onos-api local-onos-lib-go local-onos-ric-sdk-go local-onos-test local-onos-topo
 
 build: # @HELP build the Go binaries and run all validations (default)
-build: mod-update local-protos
+build: mod-update local-deps
 	go build -mod=vendor -o build/_output/onos-config ./cmd/onos-config
 
 test: # @HELP run the unit tests and source code validation producing a golang style report
@@ -46,7 +41,7 @@ helmit-rbac: integration-test-namespace # @HELP run helmit gnmi tests locally
 
 integration-tests: helmit-config helmit-rbac # @HELP run helmit integration tests locally
 
-onos-config-docker: mod-update local-protos # @HELP build onos-config base Docker image
+onos-config-docker: mod-update local-deps # @HELP build onos-config base Docker image
 	docker build . -f build/onos-config/Dockerfile \
 		-t ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
 
@@ -75,4 +70,44 @@ clean:: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
 	go clean -testcache github.com/onosproject/onos-config/...
 
+local-helmit: # @HELP Copies a local version of the helmit dependency into the vendor directory
+ifdef LOCAL_HELMIT
+	rm -rf vendor/github.com/onosproject/helmit/go
+	mkdir -p vendor/github.com/onosproject/helmit/go
+	cp -r ${LOCAL_HELMIT}/go/* vendor/github.com/onosproject/helmit/go
+endif
 
+local-onos-api: # @HELP Copies a local version of the onos-api dependency into the vendor directory
+ifdef LOCAL_ONOS_API
+	rm -rf vendor/github.com/onosproject/onos-api/go
+	mkdir -p vendor/github.com/onosproject/onos-api/go
+	cp -r ${LOCAL_ONOS_API}/go/* vendor/github.com/onosproject/onos-api/go
+endif
+
+local-onos-lib-go: # @HELP Copies a local version of the onos-lib-go dependency into the vendor directory
+ifdef LOCAL_ONOS_LIB_GO
+	rm -rf vendor/github.com/onosproject/onos-lib-go
+	mkdir -p vendor/github.com/onosproject/onos-lib-go
+	cp -r ${LOCAL_ONOS_LIB_GO}/* vendor/github.com/onosproject/onos-lib-go
+endif
+
+local-onos-ric-sdk-go: # @HELP Copies a local version of the onos-ric-sdk-go dependency into the vendor directory
+ifdef LOCAL_ONOS_RIC_SDK
+	rm -rf vendor/github.com/onosproject/onos-ric-sdk-go
+	mkdir -p vendor/github.com/onosproject/onos-ric-sdk-go
+	cp -r ${LOCAL_ONOS_RIC_SDK}/* vendor/github.com/onosproject/onos-ric-sdk-go
+endif
+
+local-onos-topo: # @HELP Copies a local version of the onos-topo dependency into the vendor directory
+ifdef LOCAL_ONOS_TOPO
+	rm -rf vendor/github.com/onosproject/onos-topo
+	mkdir -p vendor/github.com/onosproject/onos-topo
+	cp -r ${LOCAL_ONOS_TOPO}/* vendor/github.com/onosproject/onos-topo
+endif
+
+local-onos-test: # @HELP Copies a local version of the onos-test dependency into the vendor directory
+ifdef LOCAL_ONOS_TEST
+	rm -rf vendor/github.com/onosproject/onos-test
+	mkdir -p vendor/github.com/onosproject/onos-test
+	cp -r ${LOCAL_ONOS_TEST}/* vendor/github.com/onosproject/onos-test
+endif
