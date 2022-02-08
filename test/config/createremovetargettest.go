@@ -16,9 +16,10 @@
 package config
 
 import (
-	"sync"
 	"testing"
 	"time"
+
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -61,13 +62,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	// Set a value using gNMI client - target is down
 	setPath2 := gnmiutils.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		_, _ = gnmiutils.SetGNMIValueOrFail(t, c, setPath2, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
-		t.Log("Set operation is complete")
-		wg.Done()
-	}()
+	_, _ = gnmiutils.SetGNMIValueOrFail(t, c, setPath2, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	//  Restart simulated target
 	simulator = gnmiutils.CreateSimulatorWithName(t, createRemoveTargetModTargetName, false)
@@ -77,7 +72,8 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	ready = gnmiutils.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 2*time.Minute)
 	assert.True(t, ready)
 
-	wg.Wait()
+	err := gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
+	assert.NoError(t, err)
 	// Check that the value was set correctly
 	gnmiutils.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
 
