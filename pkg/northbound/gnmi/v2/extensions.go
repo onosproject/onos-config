@@ -17,6 +17,7 @@ package gnmi
 import (
 	"github.com/gogo/protobuf/proto"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
@@ -24,16 +25,31 @@ import (
 
 var log = logging.GetLogger("northbound", "gnmi")
 
-func getSetExtensions(request *gnmi.SetRequest) (configapi.TransactionStrategy, error) {
+func getExtensions(request interface{}) (configapi.TransactionStrategy, error) {
 	var transactionStrategy configapi.TransactionStrategy
-	for _, ext := range request.GetExtension() {
-		if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
-			regExt.RegisteredExt.Id == configapi.TransactionStrategyExtensionID {
-			bytes := regExt.RegisteredExt.Msg
-			if err := proto.Unmarshal(bytes, &transactionStrategy); err != nil {
-				return transactionStrategy, err
+	switch req := request.(type) {
+	case *gnmi.SetRequest:
+		for _, ext := range req.GetExtension() {
+			if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
+				regExt.RegisteredExt.Id == configapi.TransactionStrategyExtensionID {
+				bytes := regExt.RegisteredExt.Msg
+				if err := proto.Unmarshal(bytes, &transactionStrategy); err != nil {
+					return transactionStrategy, errors.NewInvalid(err.Error())
+				}
 			}
 		}
+		return transactionStrategy, nil
+	case *gnmi.GetRequest:
+		for _, ext := range req.GetExtension() {
+			if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
+				regExt.RegisteredExt.Id == configapi.TransactionStrategyExtensionID {
+				bytes := regExt.RegisteredExt.Msg
+				if err := proto.Unmarshal(bytes, &transactionStrategy); err != nil {
+					return transactionStrategy, errors.NewInvalid(err.Error())
+				}
+			}
+		}
+		return transactionStrategy, nil
 	}
 	return transactionStrategy, nil
 }

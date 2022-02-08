@@ -57,6 +57,11 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		return nil, errors.Status(err).Err()
 	}
 
+	_, err := getExtensions(req)
+	if err != nil {
+		return nil, errors.Status(err).Err()
+	}
+
 	prefix := req.GetPrefix()
 	targets := make(map[configapi.TargetID]*targetInfo)
 	var paths []*pathInfo
