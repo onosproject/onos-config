@@ -34,18 +34,22 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	targetClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
 
 	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 
 	// Set a value using gNMI client
 	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
-	// Check that the value was set correctly
+	// Check that the value was set correctly, both in onos-config and on the target
 	gnmiutils.CheckGNMIValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckTargetValue(t, targetClient, devicePath, tzValue)
 
 	// Remove the path we added
 	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, gnmiutils.NoPaths, devicePath, gnmiutils.SyncExtension(t))
 
-	//  Make sure it got removed
-	gnmiutils.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+	//  Make sure it got removed, both in onos-config and on the target
+	gnmiutils.CheckGNMIValue(t, gnmiClient, devicePath, "", 0,
+		"incorrect value found for path /system/clock/config/timezone-name after delete")
+	gnmiutils.CheckTargetValueDeleted(t, targetClient, devicePath)
 }
