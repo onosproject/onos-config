@@ -16,9 +16,10 @@ package transaction
 
 import (
 	"context"
+	"time"
+
 	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal"
 	transactionstore "github.com/onosproject/onos-config/pkg/store/transaction"
-	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
@@ -79,6 +80,8 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
 	if transaction.Status.Phases.Apply != nil {
 		return r.reconcileApply(ctx, transaction)
+	} else if transaction.Status.Phases.Abort != nil {
+		return r.reconcileAbort(ctx, transaction)
 	} else if transaction.Status.Phases.Commit != nil {
 		return r.reconcileCommit(ctx, transaction)
 	} else if transaction.Status.Phases.Validate != nil {
@@ -164,6 +167,11 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 					}
 					transaction.Status.State = configapi.TransactionStatus_FAILED
 					transaction.Status.Failure = failure
+					transaction.Status.Phases.Abort = &configapi.TransactionAbortPhase{
+						TransactionPhaseStatus: configapi.TransactionPhaseStatus{
+							Start: getCurrentTimestamp(),
+						},
+					}
 					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
 					transaction.Status.Phases.Initialize.Failure = failure
 					transaction.Status.Phases.Initialize.End = getCurrentTimestamp()
@@ -213,6 +221,11 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 					}
 					transaction.Status.State = configapi.TransactionStatus_FAILED
 					transaction.Status.Failure = failure
+					transaction.Status.Phases.Abort = &configapi.TransactionAbortPhase{
+						TransactionPhaseStatus: configapi.TransactionPhaseStatus{
+							Start: getCurrentTimestamp(),
+						},
+					}
 					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
 					transaction.Status.Phases.Initialize.Failure = failure
 					transaction.Status.Phases.Initialize.End = getCurrentTimestamp()
@@ -352,6 +365,11 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 				log.Infof("Transaction %d failed", transaction.Index)
 				transaction.Status.State = configapi.TransactionStatus_FAILED
 				transaction.Status.Failure = proposal.Status.Phases.Validate.Failure
+				transaction.Status.Phases.Abort = &configapi.TransactionAbortPhase{
+					TransactionPhaseStatus: configapi.TransactionPhaseStatus{
+						Start: getCurrentTimestamp(),
+					},
+				}
 				transaction.Status.Phases.Validate.State = configapi.TransactionValidatePhase_FAILED
 				transaction.Status.Phases.Validate.Failure = proposal.Status.Phases.Validate.Failure
 				transaction.Status.Phases.Validate.End = getCurrentTimestamp()
@@ -508,6 +526,52 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 	default:
 		return controller.Result{}, nil
 	}
+}
+
+func (r *Reconciler) reconcileAbort(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+	switch transaction.Status.Phases.Abort.State {
+	case configapi.TransactionAbortPhase_ABORTING:
+		allAborted := true
+		for _, proposalID := range transaction.Status.Proposals {
+			proposal, err := r.proposals.Get(ctx, proposalID)
+			if err != nil {
+				if !errors.IsNotFound(err) {
+					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
+					return controller.Result{}, err
+				}
+				return controller.Result{}, nil
+			}
+
+			if proposal.Status.Phases.Abort == nil {
+				log.Infof("Aborting Transaction %d changes to target '%s'", transaction.Index, proposal.TargetID)
+				proposal.Status.Phases.Abort = &configapi.ProposalAbortPhase{
+					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
+						Start: getCurrentTimestamp(),
+					},
+				}
+				if err := r.updateProposalStatus(ctx, proposal); err != nil {
+					return controller.Result{}, err
+				}
+				return controller.Result{}, nil
+			}
+
+			switch proposal.Status.Phases.Abort.State {
+			case configapi.ProposalAbortPhase_ABORTING:
+				allAborted = false
+			}
+		}
+
+		if allAborted {
+			log.Infof("Transaction %d aborted", transaction.Index)
+			transaction.Status.Phases.Abort.State = configapi.TransactionAbortPhase_ABORTED
+			transaction.Status.Phases.Abort.End = getCurrentTimestamp()
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		}
+	}
+	return controller.Result{}, nil
 }
 
 func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {

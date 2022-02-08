@@ -17,6 +17,9 @@ package proposal
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	controllerutils "github.com/onosproject/onos-config/pkg/controller/utils"
 	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal"
@@ -25,8 +28,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
-	"time"
 
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 
@@ -109,6 +110,8 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 func (r *Reconciler) reconcileProposal(ctx context.Context, proposal *configapi.Proposal) (controller.Result, error) {
 	if proposal.Status.Phases.Apply != nil {
 		return r.reconcileApply(ctx, proposal)
+	} else if proposal.Status.Phases.Abort != nil {
+		return r.reconcileAbort(ctx, proposal)
 	} else if proposal.Status.Phases.Commit != nil {
 		return r.reconcileCommit(ctx, proposal)
 	} else if proposal.Status.Phases.Validate != nil {
@@ -268,11 +271,6 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 		}
 		modelPlugin, ok := r.pluginRegistry.GetPlugin(configapi.TargetType(configurable.Type), configapi.TargetVersion(configurable.Version))
 		if !ok {
-			config.Status.Committed.Index = proposal.TransactionIndex
-			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-				return controller.Result{}, err
-			}
 			proposal.Status.Phases.Validate.State = configapi.ProposalValidatePhase_FAILED
 			proposal.Status.Phases.Validate.Failure = &configapi.Failure{
 				Type:        configapi.Failure_INVALID,
@@ -304,11 +302,6 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 			if config.Index != details.Rollback.RollbackIndex {
 				err := errors.NewForbidden("proposal %d is not the latest change to target '%s'", details.Rollback.RollbackIndex, proposal.TargetID)
 				log.Warnf("Transaction %d Proposal to target '%s' is invalid", proposal.TransactionIndex, proposal.TargetID, err)
-				config.Status.Committed.Index = proposal.TransactionIndex
-				if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-					log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-					return controller.Result{}, err
-				}
 				proposal.Status.Phases.Validate.State = configapi.ProposalValidatePhase_FAILED
 				proposal.Status.Phases.Validate.Failure = &configapi.Failure{
 					Type:        configapi.Failure_FORBIDDEN,
@@ -330,11 +323,6 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 				}
 				err := errors.NewForbidden("proposal %d not found for target '%s'", details.Rollback.RollbackIndex, proposal.TargetID)
 				log.Warnf("Transaction %d Proposal to target '%s' is invalid", proposal.TransactionIndex, proposal.TargetID, err)
-				config.Status.Committed.Index = proposal.TransactionIndex
-				if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-					log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-					return controller.Result{}, err
-				}
 				proposal.Status.Phases.Validate.State = configapi.ProposalValidatePhase_FAILED
 				proposal.Status.Phases.Validate.Failure = &configapi.Failure{
 					Type:        configapi.Failure_NOT_FOUND,
@@ -357,11 +345,6 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 			case *configapi.Proposal_Rollback:
 				err := errors.NewForbidden("proposal %d is not a valid change to target '%s'", details.Rollback.RollbackIndex, proposal.TargetID)
 				log.Warnf("Transaction %d Proposal to target '%s' is invalid", proposal.TransactionIndex, proposal.TargetID, err)
-				config.Status.Committed.Index = proposal.TransactionIndex
-				if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-					log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-					return controller.Result{}, err
-				}
 				proposal.Status.Phases.Validate.State = configapi.ProposalValidatePhase_FAILED
 				proposal.Status.Phases.Validate.Failure = &configapi.Failure{
 					Type:        configapi.Failure_FORBIDDEN,
@@ -389,11 +372,6 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 		err = modelPlugin.Validate(ctx, jsonTree)
 		if err != nil {
 			log.Warnf("Failed validating Proposal '%s'", proposal.ID, err)
-			config.Status.Committed.Index = proposal.TransactionIndex
-			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-				return controller.Result{}, err
-			}
 			proposal.Status.Phases.Validate.State = configapi.ProposalValidatePhase_FAILED
 			proposal.Status.Phases.Validate.Failure = &configapi.Failure{
 				Type:        configapi.Failure_INVALID,
@@ -419,6 +397,57 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 	default:
 		return controller.Result{}, nil
 	}
+}
+
+func (r *Reconciler) reconcileAbort(ctx context.Context, proposal *configapi.Proposal) (controller.Result, error) {
+	switch proposal.Status.Phases.Abort.State {
+	case configapi.ProposalAbortPhase_ABORTING:
+		configID := configuration.NewID(proposal.TargetID)
+		config, err := r.configurations.Get(ctx, configID)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		}
+
+		if config.Status.Committed.Index == proposal.Status.PrevIndex &&
+			config.Status.Applied.Index == proposal.Status.PrevIndex {
+			config.Status.Committed.Index = proposal.TransactionIndex
+			config.Status.Applied.Index = proposal.TransactionIndex
+			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
+				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				return controller.Result{}, err
+			}
+			proposal.Status.Phases.Abort.End = getCurrentTimestamp()
+			proposal.Status.Phases.Abort.State = configapi.ProposalAbortPhase_ABORTED
+			if err := r.updateProposalStatus(ctx, proposal); err != nil {
+				return controller.Result{}, err
+			}
+		} else if config.Status.Committed.Index == proposal.Status.PrevIndex {
+			config.Status.Committed.Index = proposal.TransactionIndex
+			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
+				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				return controller.Result{}, err
+			}
+		} else if config.Status.Applied.Index == proposal.Status.PrevIndex &&
+			config.Status.Committed.Index >= proposal.TransactionIndex {
+			config.Status.Committed.Index = proposal.TransactionIndex
+			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
+				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				return controller.Result{}, err
+			}
+			proposal.Status.Phases.Abort.End = getCurrentTimestamp()
+			proposal.Status.Phases.Abort.State = configapi.ProposalAbortPhase_ABORTED
+			if err := r.updateProposalStatus(ctx, proposal); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		}
+
+	}
+	return controller.Result{}, nil
 }
 
 func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Proposal) (controller.Result, error) {
