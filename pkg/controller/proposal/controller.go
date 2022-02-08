@@ -411,7 +411,21 @@ func (r *Reconciler) reconcileAbort(ctx context.Context, proposal *configapi.Pro
 			}
 			return controller.Result{}, nil
 		}
-		if config.Status.Committed.Index == proposal.Status.PrevIndex {
+
+		if config.Status.Committed.Index == proposal.Status.PrevIndex &&
+			config.Status.Applied.Index == proposal.Status.PrevIndex {
+			config.Status.Committed.Index = proposal.TransactionIndex
+			config.Status.Applied.Index = proposal.TransactionIndex
+			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
+				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				return controller.Result{}, err
+			}
+			proposal.Status.Phases.Abort.End = getCurrentTimestamp()
+			proposal.Status.Phases.Abort.State = configapi.ProposalAbortPhase_ABORTED
+			if err := r.updateProposalStatus(ctx, proposal); err != nil {
+				return controller.Result{}, err
+			}
+		} else if config.Status.Committed.Index == proposal.Status.PrevIndex {
 			config.Status.Committed.Index = proposal.TransactionIndex
 			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
 				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
@@ -430,20 +444,8 @@ func (r *Reconciler) reconcileAbort(ctx context.Context, proposal *configapi.Pro
 				return controller.Result{}, err
 			}
 			return controller.Result{}, nil
-		} else if config.Status.Committed.Index == proposal.Status.PrevIndex &&
-			config.Status.Applied.Index == proposal.Status.PrevIndex {
-			config.Status.Committed.Index = proposal.TransactionIndex
-			config.Status.Applied.Index = proposal.TransactionIndex
-			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-				return controller.Result{}, err
-			}
-			proposal.Status.Phases.Abort.End = getCurrentTimestamp()
-			proposal.Status.Phases.Abort.State = configapi.ProposalAbortPhase_ABORTED
-			if err := r.updateProposalStatus(ctx, proposal); err != nil {
-				return controller.Result{}, err
-			}
 		}
+
 	}
 	return controller.Result{}, nil
 }
