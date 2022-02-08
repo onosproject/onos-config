@@ -57,7 +57,8 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 
 	//  Shut down the simulator
 	gnmiutils.DeleteSimulator(t, simulator)
-	gnmiutils.WaitForTargetUnavailable(t, createRemoveTargetModTargetName, 1*time.Minute)
+	unavailable := gnmiutils.WaitForTargetUnavailable(t, createRemoveTargetModTargetName, 2*time.Minute)
+	assert.True(t, unavailable)
 
 	// Set a value using gNMI client - target is down
 	setPath2 := gnmiutils.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
