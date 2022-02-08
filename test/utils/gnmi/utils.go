@@ -202,40 +202,60 @@ func AddTargetToTopo(targetEntity *topo.Object) error {
 	return err
 }
 
-// WaitForTarget waits for a target to match the given predicate
-func WaitForTarget(t *testing.T, predicate func(*topo.Relation, topo.EventType) bool, timeout time.Duration) bool {
+func getKindFilter(kind string) *topo.Filters {
+	kindFilter := &topo.Filters{
+		KindFilter: &topo.Filter{
+			Filter: &topo.Filter_Equal_{
+				Equal_: &topo.EqualFilter{
+					Value: kind,
+				},
+			},
+		},
+	}
+	return kindFilter
+
+}
+
+func getControlRelationFilter() *topo.Filters {
+	return getKindFilter(topo.CONTROLS)
+}
+
+// WaitForControlRelation waits to create control relation for a given target
+func WaitForControlRelation(t *testing.T, predicate func(*topo.Relation, topo.Event) bool, timeout time.Duration) bool {
 	cl, err := NewTopoClient()
 	assert.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	stream := make(chan topo.Event)
-	err = cl.Watch(ctx, stream)
+	err = cl.Watch(ctx, stream, toposdk.WithWatchFilters(getControlRelationFilter()))
 	assert.NoError(t, err)
 	for event := range stream {
-		if rel, ok := event.Object.Obj.(*topo.Object_Relation); ok {
-			if rel.Relation.KindID == topo.CONTROLS {
-				if err == nil {
-					if predicate(rel.Relation, event.GetType()) {
-						return true
-					} // Otherwise, loop and wait for the next topo event
-				}
-			}
-		}
+		if predicate(event.Object.GetRelation(), event) {
+			return true
+		} // Otherwise, loop and wait for the next topo event
 	}
+
 	return false
 }
 
 // WaitForTargetAvailable waits for a target to become available
 func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
-	return WaitForTarget(t, func(rel *topo.Relation, eventType topo.EventType) bool {
+	return WaitForControlRelation(t, func(rel *topo.Relation, event topo.Event) bool {
 		if rel.TgtEntityID != objectID {
-			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, rel.TgtEntityID, objectID)
+			t.Logf("Topo %v event from %s (expected %s). Discarding\n", event.Type, rel.TgtEntityID, objectID)
 			return false
 		}
 
-		if (eventType == topo.EventType_ADDED || eventType == topo.EventType_UPDATED) &&
-			rel.KindID == topo.CONTROLS {
-			return true
+		if event.Type == topo.EventType_ADDED || event.Type == topo.EventType_UPDATED || event.Type == topo.EventType_NONE {
+			cl, err := NewTopoClient()
+			assert.NoError(t, err)
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+			_, err = cl.Get(ctx, event.Object.ID)
+			if err == nil {
+				t.Logf("Target %s is available", objectID)
+				return true
+			}
 		}
 
 		return false
@@ -244,14 +264,22 @@ func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duratio
 
 // WaitForTargetUnavailable waits for a target to become available
 func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
-	return WaitForTarget(t, func(rel *topo.Relation, eventType topo.EventType) bool {
+	return WaitForControlRelation(t, func(rel *topo.Relation, event topo.Event) bool {
 		if rel.TgtEntityID != objectID {
-			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, rel.TgtEntityID, objectID)
+			t.Logf("Topo %v event from %s (expected %s). Discarding\n", event, rel.TgtEntityID, objectID)
 			return false
 		}
 
-		if eventType == topo.EventType_REMOVED && rel.KindID == topo.CONTROLS {
-			return true
+		if event.Type == topo.EventType_REMOVED || event.Type == topo.EventType_NONE {
+			cl, err := NewTopoClient()
+			assert.NoError(t, err)
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+			_, err = cl.Get(ctx, event.Object.ID)
+			if errors.IsNotFound(err) {
+				t.Logf("Target %s is unavailable", objectID)
+				return true
+			}
 		}
 		return false
 	}, timeout)
