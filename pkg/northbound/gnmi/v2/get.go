@@ -134,7 +134,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	}
 
 	if transactionStrategy.Synchronicity.String() == configapi.TransactionStrategy_SYNCHRONOUS.String() {
-		log.Debug("Processing synchronous get request")
+		log.Debugf("Processing synchronous get request %+v", req)
 		wg := &sync.WaitGroup{}
 		for _, target := range targets {
 			if target.configuration.Status.Applied.Index != target.configuration.Status.Committed.Index {
@@ -146,7 +146,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 				wg.Add(1)
 				go func(id configapi.ConfigurationID) {
 					for event := range ch {
-						if event.Configuration.Status.Applied.Index > target.configuration.Status.Committed.Index {
+						if event.Configuration.Status.Applied.Index >= target.configuration.Status.Committed.Index {
 							wg.Done()
 							return
 						}
