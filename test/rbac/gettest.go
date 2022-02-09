@@ -48,7 +48,7 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 
 	// Make a GNMI client to use for requests
 	ctx := rbac.GetBearerContext(context.Background(), token)
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.WithRetry)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 
 	var interfaceNames = [...]string{starbucksInterface, acmeInterface, otherInterface}
 
@@ -61,14 +61,14 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 		setNamePath := []proto.TargetPath{
 			{TargetName: target, Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 		}
-		gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+		gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 		// Set initial values for Enabled and Description using gNMI client
 		setInitialValuesPath := []proto.TargetPath{
 			{TargetName: target, Path: enabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
 			{TargetName: target, Path: descriptionPath, PathDataValue: descriptionLeafValue, PathDataType: proto.StringVal},
 		}
-		gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setInitialValuesPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+		gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setInitialValuesPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 	}
 }
 
@@ -214,7 +214,7 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 
 				// Make a GNMI client to use for requests
 				ctx := rbac.GetBearerContext(context.Background(), token)
-				gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.WithRetry)
+				gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 				assert.NotNil(t, gnmiClient)
 
 				descriptionPath := getLeafPath(testCase.interfaceName, descriptionLeafName)

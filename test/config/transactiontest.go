@@ -64,17 +64,17 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	targets[1] = target2.Name()
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Set initial values
 	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, paths, initialValues)
-	_, _ = gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, targetPathsForInit, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+	_, _ = gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPathsForInit, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
 
 	// Create a change that can be rolled back
 	targetPathsForSet := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
-	_, transactionIndex := gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	_, transactionIndex := gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}

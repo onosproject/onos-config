@@ -53,7 +53,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 	// Make a GNMI client to use for requests
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Run the test cases
 	for _, testCase := range testCases {

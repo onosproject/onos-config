@@ -38,7 +38,7 @@ func (s *TestSuite) TestNoToken(t *testing.T) {
 	defer cancel()
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Try to fetch a value from the GNMI client
 	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)

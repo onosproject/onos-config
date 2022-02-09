@@ -45,11 +45,11 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	createOfflineTarget(t, offlineTargetName, "devicesim", "1.0.0", offlineTargetName+":11161")
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
-	gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	// Install and start target simulator
 	simulator := gnmiutils.CreateSimulatorWithName(t, offlineTargetName, false)
@@ -60,7 +60,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	err := gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
 	assert.NoError(t, err)
 
-	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, modValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the target, wait for configuration gets completed
 	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)

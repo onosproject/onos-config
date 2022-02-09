@@ -53,11 +53,11 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	gnmiutils.WaitForTargetAvailable(t, topo.ID(target1.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Set values
 	var targetPathsForSet = gnmiutils.GetTargetPathsWithValues(targets, newPaths, newValues)
-	_, transactionIndex := gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	_, transactionIndex := gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, newPaths)
 

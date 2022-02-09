@@ -561,8 +561,8 @@ func GetOnosConfigDestination() (gnmiclient.Destination, error) {
 	}, nil
 }
 
-// GetGNMIClientWithContextOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
-func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T, retryOption RetryOption) gnmiclient.Impl {
+// GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
+func GetGNMIClientOrFail(ctx context.Context, t *testing.T, retryOption RetryOption) gnmiclient.Impl {
 	t.Helper()
 	gCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -584,8 +584,8 @@ func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T, retryOpti
 	return client
 }
 
-// CheckGNMIValueWithContext makes sure a value has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, expectedValue string, expectedExtensions int, failMessage string) {
+// CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
+func CheckGNMIValue(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, expectedValue string, expectedExtensions int, failMessage string) {
 	t.Helper()
 	value, extensions, err := GetGNMIValue(ctx, gnmiClient, paths, gpb.Encoding_PROTO)
 	assert.NoError(t, err, "Get operation returned an unexpected error")
@@ -604,8 +604,8 @@ func CheckGNMIValues(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Im
 	}
 }
 
-// SetGNMIValueWithContextOrFail does a GNMI set operation to the given client, and fails the test if there is an error
-func SetGNMIValueWithContextOrFail(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
+// SetGNMIValueOrFail does a GNMI set operation to the given client, and fails the test if there is an error
+func SetGNMIValueOrFail(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
 	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
 	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index) {
 	t.Helper()
