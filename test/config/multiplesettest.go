@@ -42,7 +42,7 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
-	targetClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
+	targetClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
 
 	for i := 0; i < 10; i++ {
 

@@ -522,14 +522,12 @@ func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient
 }
 
 // GetTargetGNMIClientOrFail creates a GNMI client to a target. If there is an error, the test is failed
-func GetTargetGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) gnmiclient.Impl {
+func GetTargetGNMIClientOrFail(ctx context.Context, t *testing.T, simulator *helm.HelmRelease) gnmiclient.Impl {
 	t.Helper()
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
 	services, err := simulatorClient.CoreV1().Services().List(context.Background())
 	assert.NoError(t, err)
 	service := services[0]
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 	dest := gnmiclient.Destination{
 		Addrs:   []string{service.Ports()[0].Address(true)},
 		Target:  service.Name,

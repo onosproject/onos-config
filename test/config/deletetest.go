@@ -66,7 +66,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Check that the values are set on the targets
-	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, target1)
+	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target1)
 	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], newValue)
 
 	// Now rollback the change

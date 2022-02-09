@@ -37,7 +37,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
-	targetClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
+	targetClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
 
 	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 

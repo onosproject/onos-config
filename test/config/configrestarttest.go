@@ -54,7 +54,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, restartTzValue, 0, "Query after restart returned the wrong value")
 
 	// Check that the value is set on the target
-	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
+	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
 	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, restartTzValue)
 }
 
@@ -83,6 +83,6 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, restartTzValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value is set on the target
-	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
+	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
 	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, restartTzValue)
 }

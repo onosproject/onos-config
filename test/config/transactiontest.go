@@ -81,8 +81,8 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Check that the values are set on the targets
-	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, target1)
-	target2GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, target2)
+	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target1)
+	target2GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target2)
 
 	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], value1)
 	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[1:2], value2)
