@@ -57,7 +57,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 
 	// Wait for config to connect to the target
 	gnmiutils.WaitForTargetAvailable(t, topoapi.ID(simulator.Name()), time.Minute)
-	err := gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
+	err := gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(simulator.Name()), time.Minute)
 	assert.NoError(t, err)
 
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, modValue, 0, "Query after set returned the wrong value")

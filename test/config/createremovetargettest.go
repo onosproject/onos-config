@@ -76,7 +76,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	ready = gnmiutils.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 2*time.Minute)
 	assert.True(t, ready)
 
-	err := gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
+	err := gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(simulator.Name()), time.Minute)
 	assert.NoError(t, err)
 	// Check that the value was set correctly
 	gnmiutils.CheckGNMIValue(ctx, t, c, targetPath, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")

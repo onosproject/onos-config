@@ -94,7 +94,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	t.Logf("Testing CompactChanges - nw changes %s, %s on %s AND %s on %s AND %s on both",
 		sim1nwTransactionID1, sim1nwTransactionID2, simulator1.Name(), sim2nwTransactionID2, simulator2.Name(), bothSimNwTransactionID)
 
-	adminClient, err := gnmiutils.NewAdminServiceClient()
+	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
 	assert.NoError(t, err)
 
 	// Now try compacting changes

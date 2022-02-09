@@ -70,14 +70,14 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], newValue)
 
 	// Now rollback the change
-	adminClient, err := gnmiutils.NewAdminServiceClient()
+	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
 	assert.NoError(t, err)
 	rollbackResponse, rollbackError := adminClient.RollbackTransaction(context.Background(), &admin.RollbackRequest{Index: transactionIndex})
 
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 
-	err = gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
+	err = gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(target1.Name()), time.Minute)
 	assert.NoError(t, err)
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted

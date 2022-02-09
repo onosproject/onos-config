@@ -79,9 +79,9 @@ func MakeContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, defaultTestTimeout)
 }
 
-func getService(release *helm.HelmRelease, serviceName string) (*v1.Service, error) {
+func getService(ctx context.Context, release *helm.HelmRelease, serviceName string) (*v1.Service, error) {
 	releaseClient := kubernetes.NewForReleaseOrDie(release)
-	service, err := releaseClient.CoreV1().Services().Get(context.Background(), serviceName)
+	service, err := releaseClient.CoreV1().Services().Get(ctx, serviceName)
 	if err != nil {
 		return nil, err
 	}
@@ -89,13 +89,13 @@ func getService(release *helm.HelmRelease, serviceName string) (*v1.Service, err
 	return service, nil
 }
 
-func connectComponent(releaseName string, deploymentName string) (*grpc.ClientConn, error) {
+func connectComponent(ctx context.Context, releaseName string, deploymentName string) (*grpc.ClientConn, error) {
 	release := helm.Chart(releaseName).Release(releaseName)
-	return connectService(release, deploymentName)
+	return connectService(ctx, release, deploymentName)
 }
 
-func connectService(release *helm.HelmRelease, deploymentName string) (*grpc.ClientConn, error) {
-	service, err := getService(release, deploymentName)
+func connectService(ctx context.Context, release *helm.HelmRelease, deploymentName string) (*grpc.ClientConn, error) {
+	service, err := getService(ctx, release, deploymentName)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +167,8 @@ func NewTopoClient() (toposdk.Client, error) {
 }
 
 // NewAdminServiceClient :
-func NewAdminServiceClient() (admin.ConfigAdminServiceClient, error) {
-	conn, err := connectComponent("onos-umbrella", "onos-config")
+func NewAdminServiceClient(ctx context.Context) (admin.ConfigAdminServiceClient, error) {
+	conn, err := connectComponent(ctx, "onos-umbrella", "onos-config")
 	if err != nil {
 		return nil, err
 	}
@@ -176,8 +176,8 @@ func NewAdminServiceClient() (admin.ConfigAdminServiceClient, error) {
 }
 
 // NewTransactionServiceClient :
-func NewTransactionServiceClient() (admin.TransactionServiceClient, error) {
-	conn, err := connectComponent("onos-umbrella", "onos-config")
+func NewTransactionServiceClient(ctx context.Context) (admin.TransactionServiceClient, error) {
+	conn, err := connectComponent(ctx, "onos-umbrella", "onos-config")
 	if err != nil {
 		return nil, err
 	}
@@ -185,8 +185,8 @@ func NewTransactionServiceClient() (admin.TransactionServiceClient, error) {
 }
 
 // NewConfigurationServiceClient returns configuration store client
-func NewConfigurationServiceClient() (admin.ConfigurationServiceClient, error) {
-	conn, err := connectComponent("onos-umbrella", "onos-config")
+func NewConfigurationServiceClient(ctx context.Context) (admin.ConfigurationServiceClient, error) {
+	conn, err := connectComponent(ctx, "onos-umbrella", "onos-config")
 	if err != nil {
 		return nil, err
 	}
@@ -289,8 +289,8 @@ func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Durat
 }
 
 // WaitForConfigurationCompleteOrFail wait for a configuration to complete or fail
-func WaitForConfigurationCompleteOrFail(t *testing.T, configurationID configapi.ConfigurationID, wait time.Duration) error {
-	client, err := NewConfigurationServiceClient()
+func WaitForConfigurationCompleteOrFail(ctx context.Context, t *testing.T, configurationID configapi.ConfigurationID, wait time.Duration) error {
+	client, err := NewConfigurationServiceClient(ctx)
 	assert.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
@@ -318,8 +318,8 @@ func WaitForConfigurationCompleteOrFail(t *testing.T, configurationID configapi.
 }
 
 // WaitForRollback waits for a COMPLETED status on the most recent rollback transaction
-func WaitForRollback(t *testing.T, transactionIndex v2.Index, wait time.Duration) bool {
-	client, err := NewTransactionServiceClient()
+func WaitForRollback(ctx context.Context, t *testing.T, transactionIndex v2.Index, wait time.Duration) bool {
+	client, err := NewTransactionServiceClient(ctx)
 	assert.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
