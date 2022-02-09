@@ -44,13 +44,13 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	defer cancel()
 
 	// Get the configured targets from the environment.
-	target1 := gnmiutils.CreateSimulator(t)
+	target1 := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, target1)
 	targets := make([]string, 1)
 	targets[0] = target1.Name()
 
 	// Wait for config to connect to the target
-	gnmiutils.WaitForTargetAvailable(t, topo.ID(target1.Name()), 10*time.Second)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target1.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)

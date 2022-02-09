@@ -28,12 +28,12 @@ const (
 
 // TestSinglePath tests query/set/delete of a single GNMI path to a single device
 func (s *TestSuite) TestSinglePath(t *testing.T) {
-	// Create a simulated device
-	simulator := gnmiutils.CreateSimulator(t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
+
+	// Create a simulated device
+	simulator := gnmiutils.CreateSimulator(ctx, t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)

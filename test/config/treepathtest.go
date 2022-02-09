@@ -31,12 +31,12 @@ const (
 
 // TestTreePath tests create/set/delete of a tree of GNMI paths to a single device
 func (s *TestSuite) TestTreePath(t *testing.T) {
-	// Make a simulated device
-	simulator := gnmiutils.CreateSimulator(t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
+
+	// Make a simulated device
+	simulator := gnmiutils.CreateSimulator(ctx, t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)

@@ -28,12 +28,12 @@ const (
 
 // TestGetOperationAfterNodeRestart tests a Get operation after restarting the onos-config node
 func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
-	// Create a simulated target
-	simulator := gnmiutils.CreateSimulator(t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
+
+	// Create a simulated target
+	simulator := gnmiutils.CreateSimulator(ctx, t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for onos-config requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
@@ -60,12 +60,12 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 
 // TestSetOperationAfterNodeRestart tests a Set operation after restarting the onos-config node
 func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
-	// Create a simulated target
-	simulator := gnmiutils.CreateSimulator(t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
+
+	// Create a simulated target
+	simulator := gnmiutils.CreateSimulator(ctx, t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for onos-config requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)

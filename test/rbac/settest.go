@@ -56,7 +56,10 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 	}
 
 	// Create a simulated target
-	simulator := gnmiutils.CreateSimulator(t)
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
+	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	for testCaseIndex := range testCases {

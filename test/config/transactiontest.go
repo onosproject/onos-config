@@ -43,21 +43,21 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 		initialValues = []string{initValue1, initValue2}
 	)
 
-	// Get the configured targets from the environment.
-	target1 := gnmiutils.CreateSimulator(t)
-	defer gnmiutils.DeleteSimulator(t, target1)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
 
-	// Wait for config to connect to the targets
-	gnmiutils.WaitForTargetAvailable(t, topo.ID(target1.Name()), time.Minute)
+	// Get the configured targets from the environment.
+	target1 := gnmiutils.CreateSimulator(ctx, t)
+	defer gnmiutils.DeleteSimulator(t, target1)
 
-	target2 := gnmiutils.CreateSimulator(t)
+	// Wait for config to connect to the targets
+	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target1.Name()), time.Minute)
+
+	target2 := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, target2)
 
 	// Wait for config to connect to the targets
-	gnmiutils.WaitForTargetAvailable(t, topo.ID(target2.Name()), time.Minute)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target2.Name()), time.Minute)
 
 	targets := make([]string, 2)
 	targets[0] = target1.Name()

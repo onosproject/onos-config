@@ -32,7 +32,10 @@ func (s *TestSuite) TestModels(t *testing.T) {
 		clockTimeZonePath = "/system/clock/config/timezone-name"
 	)
 
-	simulator := gnmiutils.CreateSimulator(t)
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
+	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Data to run the test cases
@@ -51,8 +54,6 @@ func (s *TestSuite) TestModels(t *testing.T) {
 	}
 
 	// Make a GNMI client to use for requests
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Run the test cases

@@ -200,7 +200,10 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 	}
 
 	// Create a simulated device
-	simulator := gnmiutils.CreateSimulator(t)
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
+	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	setUpInterfaces(t, simulator.Name(), s.keycloakPassword)

@@ -30,12 +30,12 @@ func (s *TestSuite) TestNoToken(t *testing.T) {
 		tzValue = "Europe/Dublin"
 		tzPath  = "/system/clock/config/timezone-name"
 	)
-	// Create a simulated device
-	simulator := gnmiutils.CreateSimulator(t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
+
+	// Create a simulated device
+	simulator := gnmiutils.CreateSimulator(ctx, t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)

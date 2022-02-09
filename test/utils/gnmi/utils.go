@@ -107,12 +107,12 @@ func connectService(ctx context.Context, release *helm.HelmRelease, deploymentNa
 }
 
 // GetSimulatorTarget queries topo to find the topo object for a simulator target
-func GetSimulatorTarget(simulator *helm.HelmRelease) (*topo.Object, error) {
+func GetSimulatorTarget(ctx context.Context, simulator *helm.HelmRelease) (*topo.Object, error) {
 	client, err := NewTopoClient()
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	obj, err := client.Get(ctx, topo.ID(simulator.Name()))
 	if err != nil {
@@ -122,9 +122,9 @@ func GetSimulatorTarget(simulator *helm.HelmRelease) (*topo.Object, error) {
 }
 
 // NewSimulatorTargetEntity creates a topo entity for a device simulator target
-func NewSimulatorTargetEntity(simulator *helm.HelmRelease, targetType string, targetVersion string) (*topo.Object, error) {
+func NewSimulatorTargetEntity(ctx context.Context, simulator *helm.HelmRelease, targetType string, targetVersion string) (*topo.Object, error) {
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List(context.Background())
+	services, err := simulatorClient.CoreV1().Services().List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -194,13 +194,11 @@ func NewConfigurationServiceClient(ctx context.Context) (admin.ConfigurationServ
 }
 
 // AddTargetToTopo adds a new target to topo
-func AddTargetToTopo(targetEntity *topo.Object) error {
+func AddTargetToTopo(ctx context.Context, targetEntity *topo.Object) error {
 	client, err := NewTopoClient()
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
 	err = client.Create(ctx, targetEntity)
 	return err
 }
@@ -224,11 +222,9 @@ func getControlRelationFilter() *topo.Filters {
 }
 
 // WaitForControlRelation waits to create control relation for a given target
-func WaitForControlRelation(t *testing.T, predicate func(*topo.Relation, topo.Event) bool, timeout time.Duration) bool {
+func WaitForControlRelation(ctx context.Context, t *testing.T, predicate func(*topo.Relation, topo.Event) bool, timeout time.Duration) bool {
 	cl, err := NewTopoClient()
 	assert.NoError(t, err)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 	stream := make(chan topo.Event)
 	err = cl.Watch(ctx, stream, toposdk.WithWatchFilters(getControlRelationFilter()))
 	assert.NoError(t, err)
@@ -242,8 +238,8 @@ func WaitForControlRelation(t *testing.T, predicate func(*topo.Relation, topo.Ev
 }
 
 // WaitForTargetAvailable waits for a target to become available
-func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
-	return WaitForControlRelation(t, func(rel *topo.Relation, event topo.Event) bool {
+func WaitForTargetAvailable(ctx context.Context, t *testing.T, objectID topo.ID, timeout time.Duration) bool {
+	return WaitForControlRelation(ctx, t, func(rel *topo.Relation, event topo.Event) bool {
 		if rel.TgtEntityID != objectID {
 			t.Logf("Topo %v event from %s (expected %s). Discarding\n", event.Type, rel.TgtEntityID, objectID)
 			return false
@@ -252,8 +248,6 @@ func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duratio
 		if event.Type == topo.EventType_ADDED || event.Type == topo.EventType_UPDATED || event.Type == topo.EventType_NONE {
 			cl, err := NewTopoClient()
 			assert.NoError(t, err)
-			ctx, cancel := context.WithTimeout(context.Background(), timeout)
-			defer cancel()
 			_, err = cl.Get(ctx, event.Object.ID)
 			if err == nil {
 				t.Logf("Target %s is available", objectID)
@@ -266,8 +260,8 @@ func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duratio
 }
 
 // WaitForTargetUnavailable waits for a target to become available
-func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
-	return WaitForControlRelation(t, func(rel *topo.Relation, event topo.Event) bool {
+func WaitForTargetUnavailable(ctx context.Context, t *testing.T, objectID topo.ID, timeout time.Duration) bool {
+	return WaitForControlRelation(ctx, t, func(rel *topo.Relation, event topo.Event) bool {
 		if rel.TgtEntityID != objectID {
 			t.Logf("Topo %v event from %s (expected %s). Discarding\n", event, rel.TgtEntityID, objectID)
 			return false
@@ -275,9 +269,6 @@ func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Durat
 
 		if event.Type == topo.EventType_REMOVED || event.Type == topo.EventType_NONE {
 			cl, err := NewTopoClient()
-			assert.NoError(t, err)
-			ctx, cancel := context.WithTimeout(context.Background(), timeout)
-			defer cancel()
 			_, err = cl.Get(ctx, event.Object.ID)
 			if errors.IsNotFound(err) {
 				t.Logf("Target %s is unavailable", objectID)
@@ -293,8 +284,6 @@ func WaitForConfigurationCompleteOrFail(ctx context.Context, t *testing.T, confi
 	client, err := NewConfigurationServiceClient(ctx)
 	assert.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), wait)
-	defer cancel()
 	response, err := client.WatchConfigurations(ctx, &admin.WatchConfigurationsRequest{
 		ConfigurationID: configurationID,
 		Noreplay:        false,
@@ -321,9 +310,6 @@ func WaitForConfigurationCompleteOrFail(ctx context.Context, t *testing.T, confi
 func WaitForRollback(ctx context.Context, t *testing.T, transactionIndex v2.Index, wait time.Duration) bool {
 	client, err := NewTransactionServiceClient(ctx)
 	assert.NoError(t, err)
-
-	ctx, cancel := context.WithTimeout(context.Background(), wait)
-	defer cancel()
 
 	stream, err := client.WatchTransactions(ctx, &admin.WatchTransactionsRequest{})
 	assert.NoError(t, err)
@@ -545,7 +531,7 @@ func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient
 func GetTargetGNMIClientOrFail(ctx context.Context, t *testing.T, simulator *helm.HelmRelease) gnmiclient.Impl {
 	t.Helper()
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List(context.Background())
+	services, err := simulatorClient.CoreV1().Services().List(ctx)
 	assert.NoError(t, err)
 	service := services[0]
 	dest := gnmiclient.Destination{
@@ -560,7 +546,7 @@ func GetTargetGNMIClientOrFail(ctx context.Context, t *testing.T, simulator *hel
 }
 
 // GetOnosConfigDestination :
-func GetOnosConfigDestination() (gnmiclient.Destination, error) {
+func GetOnosConfigDestination(ctx context.Context) (gnmiclient.Destination, error) {
 	creds, err := getClientCredentials()
 	if err != nil {
 		return gnmiclient.Destination{}, err
@@ -568,7 +554,7 @@ func GetOnosConfigDestination() (gnmiclient.Destination, error) {
 	configRelease := helm.Release("onos-umbrella")
 	configClient := kubernetes.NewForReleaseOrDie(configRelease)
 
-	configService, err := configClient.CoreV1().Services().Get(context.Background(), "onos-config")
+	configService, err := configClient.CoreV1().Services().Get(ctx, "onos-config")
 	if err != nil || configService == nil {
 		return gnmiclient.Destination{}, errors.NewNotFound("can't find service for onos-config")
 	}
@@ -586,7 +572,7 @@ func GetGNMIClientOrFail(ctx context.Context, t *testing.T, retryOption RetryOpt
 	t.Helper()
 	gCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	dest, err := GetOnosConfigDestination()
+	dest, err := GetOnosConfigDestination(ctx)
 	if !assert.NoError(t, err) {
 		t.Fail()
 	}
@@ -646,12 +632,12 @@ func MakeProtoPath(target string, path string) string {
 }
 
 // CreateSimulator creates a device simulator
-func CreateSimulator(t *testing.T) *helm.HelmRelease {
-	return CreateSimulatorWithName(t, random.NewPetName(2), true)
+func CreateSimulator(ctx context.Context, t *testing.T) *helm.HelmRelease {
+	return CreateSimulatorWithName(ctx, t, random.NewPetName(2), true)
 }
 
 // CreateSimulatorWithName creates a device simulator
-func CreateSimulatorWithName(t *testing.T, name string, createTopoEntity bool) *helm.HelmRelease {
+func CreateSimulatorWithName(ctx context.Context, t *testing.T, name string, createTopoEntity bool) *helm.HelmRelease {
 	simulator := helm.
 		Chart("device-simulator", onostest.OnosChartRepo).
 		Release(name).
@@ -662,10 +648,10 @@ func CreateSimulatorWithName(t *testing.T, name string, createTopoEntity bool) *
 	time.Sleep(2 * time.Second)
 
 	if createTopoEntity {
-		simulatorTarget, err := NewSimulatorTargetEntity(simulator, SimulatorTargetType, SimulatorTargetVersion)
+		simulatorTarget, err := NewSimulatorTargetEntity(ctx, simulator, SimulatorTargetType, SimulatorTargetVersion)
 		assert.NoError(t, err, "could not make target for simulator %v", err)
 
-		err = AddTargetToTopo(simulatorTarget)
+		err = AddTargetToTopo(ctx, simulatorTarget)
 		assert.NoError(t, err, "could not add target to topo for simulator %v", err)
 	}
 

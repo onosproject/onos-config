@@ -52,11 +52,11 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	// Install and start target simulator
-	simulator := gnmiutils.CreateSimulatorWithName(t, offlineTargetName, false)
+	simulator := gnmiutils.CreateSimulatorWithName(ctx, t, offlineTargetName, false)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the target
-	gnmiutils.WaitForTargetAvailable(t, topoapi.ID(simulator.Name()), time.Minute)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), time.Minute)
 	err := gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(simulator.Name()), time.Minute)
 	assert.NoError(t, err)
 

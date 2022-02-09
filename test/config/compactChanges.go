@@ -61,13 +61,13 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	defer cancel()
 
 	// Create 2 simulators
-	simulator1 := gnmiutils.CreateSimulator(t)
-	simulator2 := gnmiutils.CreateSimulator(t)
+	simulator1 := gnmiutils.CreateSimulator(ctx, t)
+	simulator2 := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator1)
 	defer gnmiutils.DeleteSimulator(t, simulator2)
 
-	gnmiutils.WaitForTargetAvailable(t, topo.ID(simulator1.Name()), 2*time.Minute)
-	gnmiutils.WaitForTargetAvailable(t, topo.ID(simulator2.Name()), 2*time.Minute)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(simulator1.Name()), 2*time.Minute)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(simulator2.Name()), 2*time.Minute)
 
 	// Make a GNMI client to use for request
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)

@@ -31,12 +31,12 @@ const (
 
 // TestUpdateDelete tests update and delete paths in a single GNMI request
 func (s *TestSuite) TestUpdateDelete(t *testing.T) {
-	// Get the first configured simulator from the environment.
-	simulator := gnmiutils.CreateSimulator(t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
+
+	// Get the first configured simulator from the environment.
+	simulator := gnmiutils.CreateSimulator(ctx, t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)

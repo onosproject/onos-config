@@ -35,14 +35,14 @@ const (
 
 // TestCreatedRemovedTarget tests set/query of a single GNMI path to a single target that is created, removed, then created again
 func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
-	simulator := gnmiutils.CreateSimulatorWithName(t, createRemoveTargetModTargetName, true)
-	assert.NotNil(t, simulator)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
 
+	simulator := gnmiutils.CreateSimulatorWithName(ctx, t, createRemoveTargetModTargetName, true)
+	assert.NotNil(t, simulator)
+
 	// Wait for config to connect to the target
-	ready := gnmiutils.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 1*time.Minute)
+	ready := gnmiutils.WaitForTargetAvailable(ctx, t, createRemoveTargetModTargetName, 1*time.Minute)
 	assert.True(t, ready)
 
 	targetPath := gnmiutils.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
@@ -60,7 +60,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 
 	//  Shut down the simulator
 	gnmiutils.DeleteSimulator(t, simulator)
-	unavailable := gnmiutils.WaitForTargetUnavailable(t, createRemoveTargetModTargetName, 2*time.Minute)
+	unavailable := gnmiutils.WaitForTargetUnavailable(ctx, t, createRemoveTargetModTargetName, 2*time.Minute)
 	assert.True(t, unavailable)
 
 	// Set a value using gNMI client - target is down
@@ -69,11 +69,11 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	_, _ = gnmiutils.SetGNMIValueOrFail(ctx, t, c, setPath2, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	//  Restart simulated target
-	simulator = gnmiutils.CreateSimulatorWithName(t, createRemoveTargetModTargetName, false)
+	simulator = gnmiutils.CreateSimulatorWithName(ctx, t, createRemoveTargetModTargetName, false)
 	assert.NotNil(t, simulator)
 
 	// Wait for config to connect to the target
-	ready = gnmiutils.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 2*time.Minute)
+	ready = gnmiutils.WaitForTargetAvailable(ctx, t, createRemoveTargetModTargetName, 2*time.Minute)
 	assert.True(t, ready)
 
 	err := gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(simulator.Name()), time.Minute)

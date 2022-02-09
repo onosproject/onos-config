@@ -37,7 +37,7 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 	defer cancel()
 
 	// Create a simulated device
-	simulator := gnmiutils.CreateSimulator(t)
+	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
