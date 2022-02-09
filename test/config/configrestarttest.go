@@ -44,18 +44,18 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, restartTzValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after set returned the wrong value")
 
 	// Restart onos-config
 	configPod := hautils.FindPodWithPrefix(t, "onos-config")
 	hautils.CrashPodOrFail(t, configPod)
 
 	// Check that the value was set correctly in the new onos-config instance
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, restartTzValue, 0, "Query after restart returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after restart returned the wrong value")
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, restartTzValue)
+	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue)
 }
 
 // TestSetOperationAfterNodeRestart tests a Set operation after restarting the onos-config node
@@ -80,9 +80,9 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, restartTzValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, restartTzValue)
+	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue)
 }

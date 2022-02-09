@@ -47,7 +47,7 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	}
 	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, setNamePath, udtestNameValue, 0, "Query name after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, setNamePath, gnmiutils.NoExtensions, udtestNameValue, 0, "Query name after set returned the wrong value")
 
 	// Set initial values for Enabled and Description using gNMI client
 	setInitialValuesPath := []proto.TargetPath{
@@ -66,8 +66,8 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, updateEnabledPath, deleteDescriptionPath, gnmiutils.SyncExtension(t))
 
 	// Check that the Enabled value is set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, updateEnabledPath, gnmiutils.NoExtensions, "false", 0, "Query name after set returned the wrong value")
 
 	//  Make sure Description got removed
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, gnmiutils.GetTargetPath(simulator.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, gnmiutils.GetTargetPath(simulator.Name(), udtestDescriptionPath), gnmiutils.NoExtensions, "", 0, "New child was not removed")
 }

@@ -115,7 +115,7 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 				gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 				// Try to fetch a value from the GNMI client
-				_, _, err = gnmiutils.GetGNMIValue(ctx, gnmiClient, devicePath, gpb.Encoding_PROTO)
+				_, _, err = gnmiutils.GetGNMIValue(ctx, gnmiClient, devicePath, gnmiutils.NoExtensions, gpb.Encoding_PROTO)
 
 				if testCase.expectedGetError != "" {
 					// An error is expected

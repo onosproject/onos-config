@@ -70,7 +70,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	// Set initial values
 	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, paths, initialValues)
 	_, _ = gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPathsForInit, gnmiutils.NoPaths, gnmiutils.NoExtensions)
-	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
+	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, initialValues, 0, "Query after initial set returned the wrong value")
 
 	// Create a change that can be rolled back
 	targetPathsForSet := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
@@ -78,16 +78,16 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}
-	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Check that the values are set on the targets
 	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target1)
 	target2GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target2)
 
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], value1)
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[1:2], value2)
-	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[2:3], value1)
-	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[3:4], value2)
+	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], gnmiutils.NoExtensions, value1)
+	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[1:2], gnmiutils.NoExtensions, value2)
+	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[2:3], gnmiutils.NoExtensions, value1)
+	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[3:4], gnmiutils.NoExtensions, value2)
 
 	// Now rollback the change
 	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
@@ -100,11 +100,11 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Check that the values were really rolled back in onos-config
 	expectedValuesAfterRollback := []string{initValue1, initValue2}
-	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
+	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
 
 	// Check that the values were rolled back on the targets
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], initValue1)
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[1:2], initValue2)
-	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[2:3], initValue1)
-	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[3:4], initValue2)
+	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], gnmiutils.NoExtensions, initValue1)
+	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[1:2], gnmiutils.NoExtensions, initValue2)
+	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[2:3], gnmiutils.NoExtensions, initValue1)
+	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[3:4], gnmiutils.NoExtensions, initValue2)
 }

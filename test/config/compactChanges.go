@@ -173,7 +173,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 		[]proto.TargetPath{
 			sim1Path4[0], sim1Path2[0], sim1Path3[0], sim1Path5[0],
 			sim2Path1[0], sim2Path2[0], sim2Path3[0], sim2Path4[0],
-		}, gpb.Encoding_PROTO)
+		}, gnmiutils.NoExtensions, gpb.Encoding_PROTO)
 	assert.NoError(t, err)
 	for _, expectedValue := range expectedValues {
 		switch expectedValue.TargetName + "," + expectedValue.Path {

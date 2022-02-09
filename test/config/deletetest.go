@@ -63,11 +63,11 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 
 	// Check that the values were set correctly
 	expectedValues := []string{newValue}
-	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Check that the values are set on the targets
 	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target1)
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], newValue)
+	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], gnmiutils.NoExtensions, newValue)
 
 	// Now rollback the change
 	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
@@ -81,6 +81,6 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
-	_, _, err = gnmiutils.GetGNMIValue(ctx, target1GnmiClient, targetPathsForGet, gbp.Encoding_PROTO)
+	_, _, err = gnmiutils.GetGNMIValue(ctx, target1GnmiClient, targetPathsForGet, gnmiutils.NoExtensions, gbp.Encoding_PROTO)
 	assert.Error(t, err)
 }
