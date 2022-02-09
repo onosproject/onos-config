@@ -54,7 +54,7 @@ const (
 	defaultGNMITimeout = time.Second * 30
 
 	// Maximum time for an entire test to complete
-	defaultTestTimeout = 2 * time.Minute
+	defaultTestTimeout = 3 * time.Minute
 )
 
 // MakeContext returns a new context for use in GNMI requests
