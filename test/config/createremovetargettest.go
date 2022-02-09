@@ -19,8 +19,6 @@ import (
 	"testing"
 	"time"
 
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
@@ -75,11 +73,8 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	// Wait for config to connect to the target
 	ready = gnmiutils.WaitForTargetAvailable(ctx, t, createRemoveTargetModTargetName, 2*time.Minute)
 	assert.True(t, ready)
-
-	err := gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(simulator.Name()), time.Minute)
-	assert.NoError(t, err)
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, c, targetPath, gnmiutils.NoExtensions, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, c, targetPath, gnmiutils.SyncExtension(t), createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
 
 	// interrogate the target to check that the value was set properly
 	targetGnmiClient2 := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)

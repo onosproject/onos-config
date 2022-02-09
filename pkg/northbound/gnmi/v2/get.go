@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -44,6 +45,7 @@ const OIDCServerURL = "OIDC_SERVER_URL"
 
 // Get implements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
+	log.Infof("Received gNMI Get Request: %+v", req)
 	notifications := make([]*gnmi.Notification, 0)
 	groups := make([]string, 0)
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
@@ -53,6 +55,12 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	}
 	if req == nil || (req.GetEncoding() != gnmi.Encoding_PROTO && req.GetEncoding() != gnmi.Encoding_JSON_IETF && req.GetEncoding() != gnmi.Encoding_JSON) {
 		err := errors.NewInvalid("invalid encoding format in Get request. Only JSON_IETF and PROTO accepted. %v", req.Encoding)
+		log.Warn(err)
+		return nil, errors.Status(err).Err()
+	}
+
+	transactionStrategy, err := getExtensions(req)
+	if err != nil {
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
 	}
@@ -77,6 +85,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			if err != nil {
 				log.Warn(err)
 				return nil, errors.Status(err).Err()
+
 			}
 		}
 		paths = append(paths, &pathInfo{
@@ -97,6 +106,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 				return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
 			}
 		}
+
 		updates, err := s.getUpdate(ctx, targets[targetID], prefix, nil, req.GetEncoding(), groups)
 		if err != nil {
 			return nil, errors.Status(err).Err()
@@ -124,6 +134,32 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		}
 	}
 
+	switch transactionStrategy.Synchronicity {
+	case configapi.TransactionStrategy_SYNCHRONOUS:
+		log.Debugf("Processing synchronous get request %+v", req)
+		wg := &sync.WaitGroup{}
+		for _, target := range targets {
+			if target.configuration.Status.Applied.Index != target.configuration.Status.Committed.Index {
+				ch := make(chan configapi.ConfigurationEvent)
+				err = s.configurations.Watch(ctx, ch, configuration.WithConfigurationID(configuration.NewID(target.targetID)), configuration.WithReplay())
+				if err != nil {
+					return nil, errors.Status(err).Err()
+				}
+				wg.Add(1)
+				go func(id configapi.ConfigurationID) {
+					for event := range ch {
+						if event.Configuration.Status.Applied.Index >= target.configuration.Status.Committed.Index &&
+							event.Configuration.Status.Applied.Term == event.Configuration.Status.Term {
+							wg.Done()
+							return
+						}
+					}
+				}(target.configuration.ID)
+			}
+		}
+		wg.Wait()
+	}
+
 	response := gnmi.GetResponse{
 		Notification: notifications,
 	}
@@ -141,6 +177,7 @@ func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, tar
 		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
 		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
 	}
+
 	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID))
 	if err != nil {
 		return err
