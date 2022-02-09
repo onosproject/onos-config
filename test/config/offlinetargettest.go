@@ -20,8 +20,6 @@ import (
 	"testing"
 	"time"
 
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-
 	"github.com/stretchr/testify/assert"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -57,10 +55,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 
 	// Wait for config to connect to the target
 	gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), time.Minute)
-	err := gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(simulator.Name()), time.Minute)
-	assert.NoError(t, err)
-
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, modValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.SyncExtension(t), modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the target, wait for configuration gets completed
 	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)

@@ -18,7 +18,6 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	"io"
 	"strings"
 	"testing"
 	"time"
@@ -204,33 +203,6 @@ func WaitForTargetUnavailable(ctx context.Context, t *testing.T, objectID topo.I
 		}
 		return false
 	}, timeout)
-}
-
-// WaitForConfigurationCompleteOrFail wait for a configuration to complete or fail
-func WaitForConfigurationCompleteOrFail(ctx context.Context, t *testing.T, configurationID configapi.ConfigurationID, wait time.Duration) error {
-	client, err := NewConfigurationServiceClient(ctx)
-	assert.NoError(t, err)
-
-	response, err := client.WatchConfigurations(ctx, &admin.WatchConfigurationsRequest{
-		ConfigurationID: configurationID,
-		Noreplay:        false,
-	})
-	assert.NoError(t, err)
-	for {
-		resp, err := response.Recv()
-		configuration := resp.ConfigurationEvent.GetConfiguration()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return errors.NewInvalid(err.Error())
-		} else {
-			configStatus := configuration.GetStatus()
-			if configStatus.GetState() == configapi.ConfigurationStatus_SYNCHRONIZED {
-				return nil
-			}
-		}
-	}
-	return errors.NewInvalid("configuration %s  failed", configurationID)
 }
 
 // WaitForRollback waits for a COMPLETED status on the most recent rollback transaction

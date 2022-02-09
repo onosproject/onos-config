@@ -16,7 +16,6 @@ package config
 
 import (
 	"context"
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"testing"
 	"time"
 
@@ -77,10 +76,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 
-	err = gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(target1.Name()), time.Minute)
-	assert.NoError(t, err)
-
 	// Check that the value was really rolled back- should be an error here since the node was deleted
-	_, _, err = gnmiutils.GetGNMIValue(ctx, target1GnmiClient, targetPathsForGet, gnmiutils.NoExtensions, gbp.Encoding_PROTO)
+	_, _, err = gnmiutils.GetGNMIValue(ctx, target1GnmiClient, targetPathsForGet, gnmiutils.SyncExtension(t), gbp.Encoding_PROTO)
 	assert.Error(t, err)
 }
