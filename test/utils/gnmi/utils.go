@@ -34,20 +34,16 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/kubernetes"
-	v1 "github.com/onosproject/helmit/pkg/kubernetes/core/v1"
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-lib-go/pkg/grpc/retry"
 	gnmiclient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -62,48 +58,10 @@ const (
 	defaultTestTimeout = 2 * time.Minute
 )
 
-// RetryOption specifies if a client should retry request errors
-type RetryOption int
-
-const (
-	// NoRetry do not attempt to retry
-	NoRetry RetryOption = iota
-
-	// WithRetry adds a retry option to the client
-	WithRetry
-)
-
 // MakeContext returns a new context for use in GNMI requests
 func MakeContext() (context.Context, context.CancelFunc) {
 	ctx := context.Background()
 	return context.WithTimeout(ctx, defaultTestTimeout)
-}
-
-func getService(ctx context.Context, release *helm.HelmRelease, serviceName string) (*v1.Service, error) {
-	releaseClient := kubernetes.NewForReleaseOrDie(release)
-	service, err := releaseClient.CoreV1().Services().Get(ctx, serviceName)
-	if err != nil {
-		return nil, err
-	}
-
-	return service, nil
-}
-
-func connectComponent(ctx context.Context, releaseName string, deploymentName string) (*grpc.ClientConn, error) {
-	release := helm.Chart(releaseName).Release(releaseName)
-	return connectService(ctx, release, deploymentName)
-}
-
-func connectService(ctx context.Context, release *helm.HelmRelease, deploymentName string) (*grpc.ClientConn, error) {
-	service, err := getService(ctx, release, deploymentName)
-	if err != nil {
-		return nil, err
-	}
-	tlsConfig, err := getClientCredentials()
-	if err != nil {
-		return nil, err
-	}
-	return grpc.Dial(service.Ports()[0].Address(true), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 }
 
 // GetSimulatorTarget queries topo to find the topo object for a simulator target
@@ -159,38 +117,6 @@ func NewTargetEntity(name string, targetType string, targetVersion string, servi
 	}
 
 	return &o, nil
-}
-
-// NewTopoClient creates a topology client
-func NewTopoClient() (toposdk.Client, error) {
-	return toposdk.NewClient()
-}
-
-// NewAdminServiceClient :
-func NewAdminServiceClient(ctx context.Context) (admin.ConfigAdminServiceClient, error) {
-	conn, err := connectComponent(ctx, "onos-umbrella", "onos-config")
-	if err != nil {
-		return nil, err
-	}
-	return admin.NewConfigAdminServiceClient(conn), nil
-}
-
-// NewTransactionServiceClient :
-func NewTransactionServiceClient(ctx context.Context) (admin.TransactionServiceClient, error) {
-	conn, err := connectComponent(ctx, "onos-umbrella", "onos-config")
-	if err != nil {
-		return nil, err
-	}
-	return admin.NewTransactionServiceClient(conn), nil
-}
-
-// NewConfigurationServiceClient returns configuration store client
-func NewConfigurationServiceClient(ctx context.Context) (admin.ConfigurationServiceClient, error) {
-	conn, err := connectComponent(ctx, "onos-umbrella", "onos-config")
-	if err != nil {
-		return nil, err
-	}
-	return admin.NewConfigurationServiceClient(conn), nil
 }
 
 // AddTargetToTopo adds a new target to topo
@@ -526,69 +452,6 @@ func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient
 	} else if !strings.Contains(err.Error(), "NotFound") {
 		assert.Fail(t, "Incorrect error received", err)
 	}
-}
-
-// GetTargetGNMIClientOrFail creates a GNMI client to a target. If there is an error, the test is failed
-func GetTargetGNMIClientOrFail(ctx context.Context, t *testing.T, simulator *helm.HelmRelease) gnmiclient.Impl {
-	t.Helper()
-	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List(ctx)
-	assert.NoError(t, err)
-	service := services[0]
-	dest := gnmiclient.Destination{
-		Addrs:   []string{service.Ports()[0].Address(true)},
-		Target:  service.Name,
-		Timeout: 10 * time.Second,
-	}
-	client, err := gclient.New(ctx, dest)
-	assert.NoError(t, err)
-	assert.True(t, client != nil, "Fetching target client returned nil")
-	return client
-}
-
-// GetOnosConfigDestination :
-func GetOnosConfigDestination(ctx context.Context) (gnmiclient.Destination, error) {
-	creds, err := getClientCredentials()
-	if err != nil {
-		return gnmiclient.Destination{}, err
-	}
-	configRelease := helm.Release("onos-umbrella")
-	configClient := kubernetes.NewForReleaseOrDie(configRelease)
-
-	configService, err := configClient.CoreV1().Services().Get(ctx, "onos-config")
-	if err != nil || configService == nil {
-		return gnmiclient.Destination{}, errors.NewNotFound("can't find service for onos-config")
-	}
-
-	return gnmiclient.Destination{
-		Addrs:   []string{configService.Ports()[0].Address(true)},
-		Target:  configService.Name,
-		TLS:     creds,
-		Timeout: 10 * time.Second,
-	}, nil
-}
-
-// GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
-func GetGNMIClientOrFail(ctx context.Context, t *testing.T, retryOption RetryOption) gnmiclient.Impl {
-	t.Helper()
-	gCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	dest, err := GetOnosConfigDestination(ctx)
-	if !assert.NoError(t, err) {
-		t.Fail()
-	}
-	opts := make([]grpc.DialOption, 0)
-	opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(dest.TLS)))
-	if retryOption == WithRetry {
-		opts = append(opts, grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()))
-	}
-
-	conn, err := grpc.DialContext(gCtx, dest.Addrs[0], opts...)
-	assert.NoError(t, err)
-	client, err := gclient.NewFromConn(gCtx, conn, dest)
-	assert.NoError(t, err)
-	assert.True(t, client != nil, "Fetching target client returned nil")
-	return client
 }
 
 // CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
