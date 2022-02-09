@@ -45,6 +45,7 @@ const OIDCServerURL = "OIDC_SERVER_URL"
 
 // Get implements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
+	log.Infof("Received gNMI Get Request: %+v", req)
 	notifications := make([]*gnmi.Notification, 0)
 	groups := make([]string, 0)
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {

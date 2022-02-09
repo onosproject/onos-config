@@ -42,7 +42,7 @@ import (
 
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
-	log.Infof("Received gNMI Set Request %v", req)
+	log.Infof("Received gNMI Set Request %+v", req)
 	var userName string
 	if md := metautils.ExtractIncoming(ctx); md != nil {
 		log.Infof("gNMI Set() called by '%s (%s) (%s)'. Groups [%v]",
