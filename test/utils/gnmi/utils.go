@@ -269,6 +269,7 @@ func WaitForTargetUnavailable(ctx context.Context, t *testing.T, objectID topo.I
 
 		if event.Type == topo.EventType_REMOVED || event.Type == topo.EventType_NONE {
 			cl, err := NewTopoClient()
+			assert.NoError(t, err)
 			_, err = cl.Get(ctx, event.Object.ID)
 			if errors.IsNotFound(err) {
 				t.Logf("Target %s is unavailable", objectID)
