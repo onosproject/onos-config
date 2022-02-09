@@ -15,10 +15,11 @@
 package config
 
 import (
+	"testing"
+
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	hautils "github.com/onosproject/onos-config/test/utils/ha"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"testing"
 )
 
 const (
@@ -80,7 +81,7 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.SyncExtension(t), restartTzValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
