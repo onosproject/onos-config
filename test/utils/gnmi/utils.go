@@ -409,8 +409,26 @@ func convertGetResults(response *gpb.GetResponse) ([]protoutils.TargetPath, []*g
 	return result, response.Extension, nil
 }
 
-func extractSetTransactionID(response *gpb.SetResponse) string {
-	return string(response.Extension[0].GetRegisteredExt().Msg)
+func extractSetTransactionID(response *gpb.SetResponse) (configapi.TransactionID, v2.Index, error) {
+	var transactionInfo *configapi.TransactionInfo
+	extensionsSet := response.Extension
+	for _, extension := range extensionsSet {
+		if ext, ok := extension.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
+			ext.RegisteredExt.Id == configapi.TransactionInfoExtensionID {
+			bytes := ext.RegisteredExt.Msg
+			transactionInfo = &configapi.TransactionInfo{}
+			err := proto.Unmarshal(bytes, transactionInfo)
+			if err != nil {
+				return "", 0, err
+			}
+		}
+	}
+
+	if transactionInfo == nil {
+		return "", 0, errors.NewNotFound("transaction ID extension not found")
+	}
+
+	return transactionInfo.ID, transactionInfo.Index, nil
 }
 
 // GetGNMIValue generates a GET request on the given client for a Path on a target
@@ -433,7 +451,8 @@ func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.Tar
 }
 
 // SetGNMIValue generates a SET request on the given client for update and delete paths on a target
-func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) (string, []*gnmi_ext.Extension, error) {
+func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protoutils.TargetPath,
+	deletePaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index, error) {
 	var protoBuilder strings.Builder
 	for _, updatePath := range updatePaths {
 		protoBuilder.WriteString(protoutils.MakeProtoUpdatePath(updatePath))
@@ -445,15 +464,16 @@ func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protouti
 	setTZRequest := &gpb.SetRequest{}
 
 	if err := proto.UnmarshalText(protoBuilder.String(), setTZRequest); err != nil {
-		return "", nil, err
+		return "", 0, err
 	}
 
 	setTZRequest.Extension = extensions
 	setResult, err := c.(*gclient.Client).Set(ctx, setTZRequest)
 	if err != nil {
-		return "", nil, err
+		return "", 0, err
 	}
-	return extractSetTransactionID(setResult), setResult.Extension, nil
+	id, index, err := extractSetTransactionID(setResult)
+	return id, index, err
 }
 
 // GetTargetPath creates a target path
@@ -609,38 +629,10 @@ func SetGNMIValueOrFail(ctx context.Context, t *testing.T, gnmiClient gnmiclient
 	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
 	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index) {
 	t.Helper()
-	transactionID, transactionIndex, err := SetGNMIValueWithContext(ctx, t, gnmiClient, updatePaths, deletePaths, extensions)
+	transactionID, transactionIndex, err := SetGNMIValue(ctx, gnmiClient, updatePaths, deletePaths, extensions)
 	assert.NoError(t, err, "Set operation returned unexpected error")
 
 	return transactionID, transactionIndex
-}
-
-// SetGNMIValueWithContext does a GNMI set operation to the given client, and fails the test if there is an error
-func SetGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
-	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
-	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index, error) {
-	t.Helper()
-	_, extensionsSet, err := SetGNMIValue(ctx, gnmiClient, updatePaths, deletePaths, extensions)
-	if err != nil {
-		return "", 0, err
-	}
-
-	var transactionInfo *configapi.TransactionInfo
-	for _, extension := range extensionsSet {
-		if ext, ok := extension.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
-			ext.RegisteredExt.Id == configapi.TransactionInfoExtensionID {
-			bytes := ext.RegisteredExt.Msg
-			transactionInfo = &configapi.TransactionInfo{}
-			err := proto.Unmarshal(bytes, transactionInfo)
-			assert.NoError(t, err)
-		}
-	}
-
-	if transactionInfo == nil {
-		return "", 0, errors.NewNotFound("transaction ID extension not found")
-	}
-
-	return transactionInfo.ID, transactionInfo.Index, err
 }
 
 // MakeProtoPath returns a Path: element for a given target and Path
