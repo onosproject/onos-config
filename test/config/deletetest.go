@@ -40,6 +40,9 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 		newValues = []string{newValue}
 	)
 
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// Get the configured targets from the environment.
 	target1 := gnmiutils.CreateSimulator(t)
 	defer gnmiutils.DeleteSimulator(t, target1)
@@ -50,21 +53,21 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	gnmiutils.WaitForTargetAvailable(t, topo.ID(target1.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Set values
 	var targetPathsForSet = gnmiutils.GetTargetPathsWithValues(targets, newPaths, newValues)
-	_, transactionIndex := gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	_, transactionIndex := gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, newPaths)
 
 	// Check that the values were set correctly
 	expectedValues := []string{newValue}
-	gnmiutils.CheckGNMIValues(t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Check that the values are set on the targets
 	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, target1)
-	gnmiutils.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[0:1], newValue)
+	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], newValue)
 
 	// Now rollback the change
 	adminClient, err := gnmiutils.NewAdminServiceClient()
@@ -78,6 +81,6 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
-	_, _, err = gnmiutils.GetGNMIValue(gnmiutils.MakeContext(), target1GnmiClient, targetPathsForGet, gbp.Encoding_PROTO)
+	_, _, err = gnmiutils.GetGNMIValue(ctx, target1GnmiClient, targetPathsForGet, gbp.Encoding_PROTO)
 	assert.Error(t, err)
 }

@@ -34,8 +34,11 @@ func (s *TestSuite) TestNoToken(t *testing.T) {
 	simulator := gnmiutils.CreateSimulator(t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Try to fetch a value from the GNMI client
 	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)

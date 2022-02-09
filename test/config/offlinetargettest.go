@@ -38,15 +38,18 @@ const (
 
 // TestOfflineTarget tests set/query of a single GNMI path to a single target that is initially not connected to onos-config
 func (s *TestSuite) TestOfflineTarget(t *testing.T) {
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// create a target entity in topo
 	createOfflineTarget(t, offlineTargetName, "devicesim", "1.0.0", offlineTargetName+":11161")
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
-	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+	gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	// Install and start target simulator
 	simulator := gnmiutils.CreateSimulatorWithName(t, offlineTargetName, false)
@@ -57,11 +60,11 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	err := gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
 	assert.NoError(t, err)
 
-	gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, modValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the target, wait for configuration gets completed
 	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
-	gnmiutils.CheckTargetValue(t, targetGnmiClient, targetPath, modValue)
+	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, modValue)
 }
 
 func createOfflineTarget(t *testing.T, targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {

@@ -35,23 +35,26 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	simulator := gnmiutils.CreateSimulator(t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Create interface tree using gNMI client
 	setNamePath := []proto.TargetPath{
 		{TargetName: simulator.Name(), Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
 	}
-	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
-	gnmiutils.CheckGNMIValue(t, gnmiClient, setNamePath, udtestNameValue, 0, "Query name after set returned the wrong value")
+	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, setNamePath, udtestNameValue, 0, "Query name after set returned the wrong value")
 
 	// Set initial values for Enabled and Description using gNMI client
 	setInitialValuesPath := []proto.TargetPath{
 		{TargetName: simulator.Name(), Path: udtestEnabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
 		{TargetName: simulator.Name(), Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
 	}
-	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setInitialValuesPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Update Enabled, delete Description using gNMI client
 	updateEnabledPath := []proto.TargetPath{
@@ -60,11 +63,11 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	deleteDescriptionPath := []proto.TargetPath{
 		{TargetName: simulator.Name(), Path: udtestDescriptionPath},
 	}
-	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, gnmiutils.SyncExtension(t))
+	gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, updateEnabledPath, deleteDescriptionPath, gnmiutils.SyncExtension(t))
 
 	// Check that the Enabled value is set correctly
-	gnmiutils.CheckGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
+	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
 
 	//  Make sure Description got removed
-	gnmiutils.CheckGNMIValue(t, gnmiClient, gnmiutils.GetTargetPath(simulator.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
+	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, gnmiutils.GetTargetPath(simulator.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
 }

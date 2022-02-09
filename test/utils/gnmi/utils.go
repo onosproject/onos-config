@@ -56,7 +56,10 @@ const (
 	// SimulatorTargetType type for simulated target
 	SimulatorTargetType = "devicesim"
 
-	defaultTimeout = time.Second * 30
+	defaultGNMITimeout = time.Second * 30
+
+	// Maximum time for an entire test to complete
+	defaultTestTimeout = 2 * time.Minute
 )
 
 // RetryOption specifies if a client should retry request errors
@@ -71,9 +74,9 @@ const (
 )
 
 // MakeContext returns a new context for use in GNMI requests
-func MakeContext() context.Context {
+func MakeContext() (context.Context, context.CancelFunc) {
 	ctx := context.Background()
-	return ctx
+	return context.WithTimeout(ctx, defaultTestTimeout)
 }
 
 func getService(release *helm.HelmRelease, serviceName string) (*v1.Service, error) {
@@ -145,7 +148,7 @@ func NewTargetEntity(name string, targetType string, targetVersion string, servi
 		return nil, err
 	}
 
-	timeout := defaultTimeout
+	timeout := defaultGNMITimeout
 	if err := o.SetAspect(&topo.Configurable{
 		Type:    targetType,
 		Address: serviceAddress,
@@ -497,8 +500,8 @@ func GetTargetPathsWithValues(targets []string, paths []string, values []string)
 }
 
 // CheckTargetValue makes sure a value has been assigned properly to a target path by querying GNMI
-func CheckTargetValue(t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, expectedValue string) {
-	targetValues, extensions, err := GetGNMIValue(MakeContext(), targetGnmiClient, targetPaths, gpb.Encoding_JSON)
+func CheckTargetValue(ctx context.Context, t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, expectedValue string) {
+	targetValues, extensions, err := GetGNMIValue(ctx, targetGnmiClient, targetPaths, gpb.Encoding_JSON)
 	if err == nil {
 		assert.NoError(t, err, "GNMI get operation to target returned an error")
 		assert.Equal(t, expectedValue, targetValues[0].PathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
@@ -509,8 +512,8 @@ func CheckTargetValue(t *testing.T, targetGnmiClient gnmiclient.Impl, targetPath
 }
 
 // CheckTargetValueDeleted makes sure target path is missing when queried via GNMI
-func CheckTargetValueDeleted(t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath) {
-	_, _, err := GetGNMIValue(MakeContext(), targetGnmiClient, targetPaths, gpb.Encoding_JSON)
+func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath) {
+	_, _, err := GetGNMIValue(ctx, targetGnmiClient, targetPaths, gpb.Encoding_JSON)
 	if err == nil {
 		assert.Fail(t, "Path not deleted", targetPaths)
 	} else if !strings.Contains(err.Error(), "NotFound") {
@@ -583,12 +586,6 @@ func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T, retryOpti
 	return client
 }
 
-// GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
-func GetGNMIClientOrFail(t *testing.T) gnmiclient.Impl {
-	t.Helper()
-	return GetGNMIClientWithContextOrFail(context.Background(), t, WithRetry)
-}
-
 // CheckGNMIValueWithContext makes sure a value has been assigned properly by querying the onos-config northbound API
 func CheckGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, expectedValue string, expectedExtensions int, failMessage string) {
 	t.Helper()
@@ -598,16 +595,10 @@ func CheckGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnm
 	assert.Equal(t, expectedValue, value[0].PathDataValue, "%s: %s", failMessage, value)
 }
 
-// CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValue(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, expectedValue string, expectedExtensions int, failMessage string) {
-	t.Helper()
-	CheckGNMIValueWithContext(MakeContext(), t, gnmiClient, paths, expectedValue, expectedExtensions, failMessage)
-}
-
 // CheckGNMIValues makes sure a list of values has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValues(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, expectedValues []string, expectedExtensions int, failMessage string) {
+func CheckGNMIValues(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, expectedValues []string, expectedExtensions int, failMessage string) {
 	t.Helper()
-	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths, gpb.Encoding_PROTO)
+	value, extensions, err := GetGNMIValue(ctx, gnmiClient, paths, gpb.Encoding_PROTO)
 	assert.NoError(t, err, "Get operation returned unexpected error")
 	assert.Equal(t, expectedExtensions, len(extensions))
 	for index, expectedValue := range expectedValues {
@@ -652,13 +643,6 @@ func SetGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmic
 	}
 
 	return transactionInfo.ID, transactionInfo.Index, err
-}
-
-// SetGNMIValueOrFail does a GNMI set operation to the given client, and fails the test if there is an error
-func SetGNMIValueOrFail(t *testing.T, gnmiClient gnmiclient.Impl,
-	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
-	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index) {
-	return SetGNMIValueWithContextOrFail(MakeContext(), t, gnmiClient, updatePaths, deletePaths, extensions)
 }
 
 // MakeProtoPath returns a Path: element for a given target and Path

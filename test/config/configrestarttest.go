@@ -15,7 +15,6 @@
 package config
 
 import (
-	"context"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	hautils "github.com/onosproject/onos-config/test/utils/ha"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -33,28 +32,30 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	simulator := gnmiutils.CreateSimulator(t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// Make a GNMI client to use for onos-config requests
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(context.Background(), t, gnmiutils.WithRetry)
+	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.WithRetry)
 
 	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
 
 	// Set a value using onos-config
-	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, restartTzValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, restartTzValue, 0, "Query after set returned the wrong value")
 
 	// Restart onos-config
 	configPod := hautils.FindPodWithPrefix(t, "onos-config")
 	hautils.CrashPodOrFail(t, configPod)
 
 	// Check that the value was set correctly in the new onos-config instance
-	gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, restartTzValue, 0, "Query after restart returned the wrong value")
+	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, restartTzValue, 0, "Query after restart returned the wrong value")
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
-	gnmiutils.CheckTargetValue(t, targetGnmiClient, targetPath, restartTzValue)
-
+	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, restartTzValue)
 }
 
 // TestSetOperationAfterNodeRestart tests a Set operation after restarting the onos-config node
@@ -63,8 +64,11 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	simulator := gnmiutils.CreateSimulator(t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// Make a GNMI client to use for onos-config requests
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(context.Background(), t, gnmiutils.WithRetry)
+	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.WithRetry)
 
 	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
 
@@ -73,12 +77,12 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	hautils.CrashPodOrFail(t, configPod)
 
 	// Set a value using onos-config
-	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, restartTzValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, restartTzValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
-	gnmiutils.CheckTargetValue(t, targetGnmiClient, targetPath, restartTzValue)
+	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, restartTzValue)
 }
