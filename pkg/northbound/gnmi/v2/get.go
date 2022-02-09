@@ -148,7 +148,8 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 				wg.Add(1)
 				go func(id configapi.ConfigurationID) {
 					for event := range ch {
-						if event.Configuration.Status.Applied.Index >= target.configuration.Status.Committed.Index {
+						if event.Configuration.Status.Applied.Index >= target.configuration.Status.Committed.Index &&
+							event.Configuration.Status.Applied.Term == event.Configuration.Status.Term {
 							wg.Done()
 							return
 						}
