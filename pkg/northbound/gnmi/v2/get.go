@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -57,8 +58,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		return nil, errors.Status(err).Err()
 	}
 
-	_, err := getExtensions(req)
+	transactionStrategy, err := getExtensions(req)
 	if err != nil {
+		log.Warn(err)
 		return nil, errors.Status(err).Err()
 	}
 
@@ -82,6 +84,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			if err != nil {
 				log.Warn(err)
 				return nil, errors.Status(err).Err()
+
 			}
 		}
 		paths = append(paths, &pathInfo{
@@ -102,6 +105,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 				return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
 			}
 		}
+
 		updates, err := s.getUpdate(ctx, targets[targetID], prefix, nil, req.GetEncoding(), groups)
 		if err != nil {
 			return nil, errors.Status(err).Err()
@@ -129,6 +133,30 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		}
 	}
 
+	if transactionStrategy.Synchronicity.String() == configapi.TransactionStrategy_SYNCHRONOUS.String() {
+		log.Debug("Processing synchronous get request")
+		wg := &sync.WaitGroup{}
+		for _, target := range targets {
+			if target.configuration.Status.Applied.Index != target.configuration.Status.Committed.Index {
+				ch := make(chan configapi.ConfigurationEvent)
+				err = s.configurations.Watch(ctx, ch, configuration.WithConfigurationID(configuration.NewID(target.targetID)), configuration.WithReplay())
+				if err != nil {
+					return nil, errors.Status(err).Err()
+				}
+				wg.Add(1)
+				go func(id configapi.ConfigurationID) {
+					for event := range ch {
+						if event.Configuration.Status.Applied.Index > target.configuration.Status.Committed.Index {
+							wg.Done()
+							return
+						}
+					}
+				}(target.configuration.ID)
+			}
+		}
+		wg.Wait()
+	}
+
 	response := gnmi.GetResponse{
 		Notification: notifications,
 	}
@@ -146,6 +174,7 @@ func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, tar
 		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
 		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
 	}
+
 	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID))
 	if err != nil {
 		return err
