@@ -23,13 +23,10 @@ jenkins-test: build deps license_check linters
 helmit-config: integration-test-namespace # @HELP run helmit gnmi tests locally
 	helmit test -n test ./cmd/onos-config-tests --suite config
 
-helmit-cli: integration-test-namespace # @HELP run helmit cli tests locally
-	helmit test -n test ./cmd/onos-config-tests --suite cli
-
 helmit-rbac: integration-test-namespace # @HELP run helmit gnmi tests locally
 	helmit test -n test ./cmd/onos-config-tests --suite rbac --secret keycloak-password=${keycloak_password}
 
-integration-tests: helmit-config helmit-cli helmit-rbac # @HELP run helmit integration tests locally
+integration-tests: helmit-config helmit-rbac # @HELP run helmit integration tests locally
 
 onos-config-docker: # @HELP build onos-config base Docker image
 	docker build . -f build/onos-config/Dockerfile \

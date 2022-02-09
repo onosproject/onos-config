@@ -17,16 +17,16 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/helmit/pkg/benchmark"
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	gbp "github.com/openconfig/gnmi/proto/gnmi"
 	"time"
 )
 
 // BenchmarkGet tests get of GNMI paths
 func (s *BenchmarkSuite) BenchmarkGet(b *benchmark.Benchmark) error {
-	devicePath := gnmi.GetTargetPath(s.simulator.Name(), "/system/config/motd-banner")
+	devicePath := gnmiutils.GetTargetPath(s.simulator.Name(), "/system/config/motd-banner")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, _, err := gnmi.GetGNMIValue(ctx, s.client, devicePath, gbp.Encoding_PROTO)
+	_, _, err := gnmiutils.GetGNMIValue(ctx, s.client, devicePath, gnmiutils.NoExtensions, gbp.Encoding_PROTO)
 	return err
 }

@@ -74,11 +74,14 @@ func (s *TestSuite) checkTopo(t *testing.T, targetID topoapi.ID) {
 
 // TestTopoIntegration checks that the correct topology entities and relations are created
 func (s *TestSuite) TestTopoIntegration(t *testing.T) {
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// Create simulated targets
 	targetID := "test-topo-integration-target-1"
-	simulator := gnmiutils.CreateSimulatorWithName(t, targetID, true)
+	simulator := gnmiutils.CreateSimulatorWithName(ctx, t, targetID, true)
 	assert.NotNil(t, simulator)
-	gnmiutils.WaitForTargetAvailable(t, topoapi.ID(targetID), 2*time.Minute)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(targetID), 2*time.Minute)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 	s.checkTopo(t, topoapi.ID(targetID))
 }

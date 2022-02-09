@@ -72,7 +72,7 @@ var _ benchmark.SetupWorker = &BenchmarkSuite{}
 func getGNMIClient() (*client.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	dest, err := gnmi.GetOnosConfigDestination()
+	dest, err := gnmi.GetOnosConfigDestination(ctx)
 	if err != nil {
 		return nil, err
 	}

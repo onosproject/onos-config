@@ -56,7 +56,10 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 	}
 
 	// Create a simulated target
-	simulator := gnmiutils.CreateSimulator(t)
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
+	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	for testCaseIndex := range testCases {
@@ -70,7 +73,7 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 
 				// Make a GNMI client to use for requests
 				ctx := rbac.GetBearerContext(context.Background(), token)
-				gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.WithRetry)
+				gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 				assert.NotNil(t, gnmiClient)
 
 				// Get path for the test value
@@ -78,17 +81,17 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 				assert.NotNil(t, targetPath)
 
 				// Set a value using gNMI client
-				_, _, err = gnmiutils.SetGNMIValueWithContext(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+				_, _, err = gnmiutils.SetGNMIValue(ctx, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 				if testCase.expectedError != "" {
 					assert.Contains(t, err.Error(), testCase.expectedError)
 					return
 				}
 
 				// Check that the value was set correctly
-				gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, tzValue, 0, "Query after set returned the wrong value")
+				gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, tzValue, 0, "Query after set returned the wrong value")
 
 				// Remove the path we added
-				gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, gnmiutils.NoPaths, targetPath, gnmiutils.NoExtensions)
+				gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, gnmiutils.NoPaths, targetPath, gnmiutils.NoExtensions)
 			},
 		)
 	}

@@ -32,7 +32,10 @@ func (s *TestSuite) TestModels(t *testing.T) {
 		clockTimeZonePath = "/system/clock/config/timezone-name"
 	)
 
-	simulator := gnmiutils.CreateSimulator(t)
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
+	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Data to run the test cases
@@ -51,7 +54,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 	}
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Run the test cases
 	for _, testCase := range testCases {
@@ -66,7 +69,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 				t.Logf("testing %q", description)
 
 				setResult := gnmiutils.GetTargetPathWithValue(simulator.Name(), path, value, valueType)
-				msg, _, err := gnmiutils.SetGNMIValue(gnmiutils.MakeContext(), gnmiClient, setResult, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+				msg, _, err := gnmiutils.SetGNMIValue(ctx, gnmiClient, setResult, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 				assert.NotNil(t, err, "Set operation for %s does not generate an error", description)
 				assert.Contains(t, status.Convert(err).Message(), expectedError,
 					"set operation for %s generates wrong error %s", description, msg)

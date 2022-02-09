@@ -30,16 +30,19 @@ func (s *TestSuite) TestNoToken(t *testing.T) {
 		tzValue = "Europe/Dublin"
 		tzPath  = "/system/clock/config/timezone-name"
 	)
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// Create a simulated device
-	simulator := gnmiutils.CreateSimulator(t)
+	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Try to fetch a value from the GNMI client
 	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
-	_, _, err := gnmiutils.GetGNMIValue(context.Background(), gnmiClient, devicePath, gpb.Encoding_PROTO)
+	_, _, err := gnmiutils.GetGNMIValue(context.Background(), gnmiClient, devicePath, gnmiutils.NoExtensions, gpb.Encoding_PROTO)
 
 	// An error indicating an unauthenticated request is expected
 	assert.Error(t, err)

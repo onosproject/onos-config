@@ -40,44 +40,47 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 		newValues = []string{newValue}
 	)
 
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// Get the configured targets from the environment.
-	target1 := gnmiutils.CreateSimulator(t)
+	target1 := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, target1)
 	targets := make([]string, 1)
 	targets[0] = target1.Name()
 
 	// Wait for config to connect to the target
-	gnmiutils.WaitForTargetAvailable(t, topo.ID(target1.Name()), 10*time.Second)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target1.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Set values
 	var targetPathsForSet = gnmiutils.GetTargetPathsWithValues(targets, newPaths, newValues)
-	_, transactionIndex := gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	_, transactionIndex := gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, newPaths)
 
 	// Check that the values were set correctly
 	expectedValues := []string{newValue}
-	gnmiutils.CheckGNMIValues(t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Check that the values are set on the targets
-	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, target1)
-	gnmiutils.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[0:1], newValue)
+	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target1)
+	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], gnmiutils.NoExtensions, newValue)
 
 	// Now rollback the change
-	adminClient, err := gnmiutils.NewAdminServiceClient()
+	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
 	assert.NoError(t, err)
 	rollbackResponse, rollbackError := adminClient.RollbackTransaction(context.Background(), &admin.RollbackRequest{Index: transactionIndex})
 
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 
-	err = gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
+	err = gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(target1.Name()), time.Minute)
 	assert.NoError(t, err)
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
-	_, _, err = gnmiutils.GetGNMIValue(gnmiutils.MakeContext(), target1GnmiClient, targetPathsForGet, gbp.Encoding_PROTO)
+	_, _, err = gnmiutils.GetGNMIValue(ctx, target1GnmiClient, targetPathsForGet, gnmiutils.NoExtensions, gbp.Encoding_PROTO)
 	assert.Error(t, err)
 }

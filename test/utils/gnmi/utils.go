@@ -34,20 +34,16 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/kubernetes"
-	v1 "github.com/onosproject/helmit/pkg/kubernetes/core/v1"
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-lib-go/pkg/grpc/retry"
 	gnmiclient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -56,60 +52,25 @@ const (
 	// SimulatorTargetType type for simulated target
 	SimulatorTargetType = "devicesim"
 
-	defaultTimeout = time.Second * 30
-)
+	defaultGNMITimeout = time.Second * 30
 
-// RetryOption specifies if a client should retry request errors
-type RetryOption int
-
-const (
-	// NoRetry do not attempt to retry
-	NoRetry RetryOption = iota
-
-	// WithRetry adds a retry option to the client
-	WithRetry
+	// Maximum time for an entire test to complete
+	defaultTestTimeout = 2 * time.Minute
 )
 
 // MakeContext returns a new context for use in GNMI requests
-func MakeContext() context.Context {
+func MakeContext() (context.Context, context.CancelFunc) {
 	ctx := context.Background()
-	return ctx
-}
-
-func getService(release *helm.HelmRelease, serviceName string) (*v1.Service, error) {
-	releaseClient := kubernetes.NewForReleaseOrDie(release)
-	service, err := releaseClient.CoreV1().Services().Get(context.Background(), serviceName)
-	if err != nil {
-		return nil, err
-	}
-
-	return service, nil
-}
-
-func connectComponent(releaseName string, deploymentName string) (*grpc.ClientConn, error) {
-	release := helm.Chart(releaseName).Release(releaseName)
-	return connectService(release, deploymentName)
-}
-
-func connectService(release *helm.HelmRelease, deploymentName string) (*grpc.ClientConn, error) {
-	service, err := getService(release, deploymentName)
-	if err != nil {
-		return nil, err
-	}
-	tlsConfig, err := getClientCredentials()
-	if err != nil {
-		return nil, err
-	}
-	return grpc.Dial(service.Ports()[0].Address(true), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	return context.WithTimeout(ctx, defaultTestTimeout)
 }
 
 // GetSimulatorTarget queries topo to find the topo object for a simulator target
-func GetSimulatorTarget(simulator *helm.HelmRelease) (*topo.Object, error) {
+func GetSimulatorTarget(ctx context.Context, simulator *helm.HelmRelease) (*topo.Object, error) {
 	client, err := NewTopoClient()
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	obj, err := client.Get(ctx, topo.ID(simulator.Name()))
 	if err != nil {
@@ -119,9 +80,9 @@ func GetSimulatorTarget(simulator *helm.HelmRelease) (*topo.Object, error) {
 }
 
 // NewSimulatorTargetEntity creates a topo entity for a device simulator target
-func NewSimulatorTargetEntity(simulator *helm.HelmRelease, targetType string, targetVersion string) (*topo.Object, error) {
+func NewSimulatorTargetEntity(ctx context.Context, simulator *helm.HelmRelease, targetType string, targetVersion string) (*topo.Object, error) {
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List(context.Background())
+	services, err := simulatorClient.CoreV1().Services().List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +106,7 @@ func NewTargetEntity(name string, targetType string, targetVersion string, servi
 		return nil, err
 	}
 
-	timeout := defaultTimeout
+	timeout := defaultGNMITimeout
 	if err := o.SetAspect(&topo.Configurable{
 		Type:    targetType,
 		Address: serviceAddress,
@@ -158,46 +119,12 @@ func NewTargetEntity(name string, targetType string, targetVersion string, servi
 	return &o, nil
 }
 
-// NewTopoClient creates a topology client
-func NewTopoClient() (toposdk.Client, error) {
-	return toposdk.NewClient()
-}
-
-// NewAdminServiceClient :
-func NewAdminServiceClient() (admin.ConfigAdminServiceClient, error) {
-	conn, err := connectComponent("onos-umbrella", "onos-config")
-	if err != nil {
-		return nil, err
-	}
-	return admin.NewConfigAdminServiceClient(conn), nil
-}
-
-// NewTransactionServiceClient :
-func NewTransactionServiceClient() (admin.TransactionServiceClient, error) {
-	conn, err := connectComponent("onos-umbrella", "onos-config")
-	if err != nil {
-		return nil, err
-	}
-	return admin.NewTransactionServiceClient(conn), nil
-}
-
-// NewConfigurationServiceClient returns configuration store client
-func NewConfigurationServiceClient() (admin.ConfigurationServiceClient, error) {
-	conn, err := connectComponent("onos-umbrella", "onos-config")
-	if err != nil {
-		return nil, err
-	}
-	return admin.NewConfigurationServiceClient(conn), nil
-}
-
 // AddTargetToTopo adds a new target to topo
-func AddTargetToTopo(targetEntity *topo.Object) error {
+func AddTargetToTopo(ctx context.Context, targetEntity *topo.Object) error {
 	client, err := NewTopoClient()
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
 	err = client.Create(ctx, targetEntity)
 	return err
 }
@@ -221,11 +148,9 @@ func getControlRelationFilter() *topo.Filters {
 }
 
 // WaitForControlRelation waits to create control relation for a given target
-func WaitForControlRelation(t *testing.T, predicate func(*topo.Relation, topo.Event) bool, timeout time.Duration) bool {
+func WaitForControlRelation(ctx context.Context, t *testing.T, predicate func(*topo.Relation, topo.Event) bool, timeout time.Duration) bool {
 	cl, err := NewTopoClient()
 	assert.NoError(t, err)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 	stream := make(chan topo.Event)
 	err = cl.Watch(ctx, stream, toposdk.WithWatchFilters(getControlRelationFilter()))
 	assert.NoError(t, err)
@@ -239,8 +164,8 @@ func WaitForControlRelation(t *testing.T, predicate func(*topo.Relation, topo.Ev
 }
 
 // WaitForTargetAvailable waits for a target to become available
-func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
-	return WaitForControlRelation(t, func(rel *topo.Relation, event topo.Event) bool {
+func WaitForTargetAvailable(ctx context.Context, t *testing.T, objectID topo.ID, timeout time.Duration) bool {
+	return WaitForControlRelation(ctx, t, func(rel *topo.Relation, event topo.Event) bool {
 		if rel.TgtEntityID != objectID {
 			t.Logf("Topo %v event from %s (expected %s). Discarding\n", event.Type, rel.TgtEntityID, objectID)
 			return false
@@ -249,8 +174,6 @@ func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duratio
 		if event.Type == topo.EventType_ADDED || event.Type == topo.EventType_UPDATED || event.Type == topo.EventType_NONE {
 			cl, err := NewTopoClient()
 			assert.NoError(t, err)
-			ctx, cancel := context.WithTimeout(context.Background(), timeout)
-			defer cancel()
 			_, err = cl.Get(ctx, event.Object.ID)
 			if err == nil {
 				t.Logf("Target %s is available", objectID)
@@ -263,8 +186,8 @@ func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duratio
 }
 
 // WaitForTargetUnavailable waits for a target to become available
-func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
-	return WaitForControlRelation(t, func(rel *topo.Relation, event topo.Event) bool {
+func WaitForTargetUnavailable(ctx context.Context, t *testing.T, objectID topo.ID, timeout time.Duration) bool {
+	return WaitForControlRelation(ctx, t, func(rel *topo.Relation, event topo.Event) bool {
 		if rel.TgtEntityID != objectID {
 			t.Logf("Topo %v event from %s (expected %s). Discarding\n", event, rel.TgtEntityID, objectID)
 			return false
@@ -273,8 +196,6 @@ func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Durat
 		if event.Type == topo.EventType_REMOVED || event.Type == topo.EventType_NONE {
 			cl, err := NewTopoClient()
 			assert.NoError(t, err)
-			ctx, cancel := context.WithTimeout(context.Background(), timeout)
-			defer cancel()
 			_, err = cl.Get(ctx, event.Object.ID)
 			if errors.IsNotFound(err) {
 				t.Logf("Target %s is unavailable", objectID)
@@ -286,12 +207,10 @@ func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Durat
 }
 
 // WaitForConfigurationCompleteOrFail wait for a configuration to complete or fail
-func WaitForConfigurationCompleteOrFail(t *testing.T, configurationID configapi.ConfigurationID, wait time.Duration) error {
-	client, err := NewConfigurationServiceClient()
+func WaitForConfigurationCompleteOrFail(ctx context.Context, t *testing.T, configurationID configapi.ConfigurationID, wait time.Duration) error {
+	client, err := NewConfigurationServiceClient(ctx)
 	assert.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), wait)
-	defer cancel()
 	response, err := client.WatchConfigurations(ctx, &admin.WatchConfigurationsRequest{
 		ConfigurationID: configurationID,
 		Noreplay:        false,
@@ -315,12 +234,9 @@ func WaitForConfigurationCompleteOrFail(t *testing.T, configurationID configapi.
 }
 
 // WaitForRollback waits for a COMPLETED status on the most recent rollback transaction
-func WaitForRollback(t *testing.T, transactionIndex v2.Index, wait time.Duration) bool {
-	client, err := NewTransactionServiceClient()
+func WaitForRollback(ctx context.Context, t *testing.T, transactionIndex v2.Index, wait time.Duration) bool {
+	client, err := NewTransactionServiceClient(ctx)
 	assert.NoError(t, err)
-
-	ctx, cancel := context.WithTimeout(context.Background(), wait)
-	defer cancel()
 
 	stream, err := client.WatchTransactions(ctx, &admin.WatchTransactionsRequest{})
 	assert.NoError(t, err)
@@ -406,12 +322,31 @@ func convertGetResults(response *gpb.GetResponse) ([]protoutils.TargetPath, []*g
 	return result, response.Extension, nil
 }
 
-func extractSetTransactionID(response *gpb.SetResponse) string {
-	return string(response.Extension[0].GetRegisteredExt().Msg)
+func extractSetTransactionID(response *gpb.SetResponse) (configapi.TransactionID, v2.Index, error) {
+	var transactionInfo *configapi.TransactionInfo
+	extensionsSet := response.Extension
+	for _, extension := range extensionsSet {
+		if ext, ok := extension.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
+			ext.RegisteredExt.Id == configapi.TransactionInfoExtensionID {
+			bytes := ext.RegisteredExt.Msg
+			transactionInfo = &configapi.TransactionInfo{}
+			err := proto.Unmarshal(bytes, transactionInfo)
+			if err != nil {
+				return "", 0, err
+			}
+		}
+	}
+
+	if transactionInfo == nil {
+		return "", 0, errors.NewNotFound("transaction ID extension not found")
+	}
+
+	return transactionInfo.ID, transactionInfo.Index, nil
 }
 
 // GetGNMIValue generates a GET request on the given client for a Path on a target
-func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.TargetPath, encoding gpb.Encoding) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
+func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension,
+	encoding gpb.Encoding) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
 	protoString := ""
 	for _, targetPath := range paths {
 		protoString = protoString + MakeProtoPath(targetPath.TargetName, targetPath.Path)
@@ -422,6 +357,7 @@ func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.Tar
 		return nil, nil, err
 	}
 	getTZRequest.Encoding = encoding
+	getTZRequest.Extension = extensions
 	response, err := c.(*gclient.Client).Get(ctx, getTZRequest)
 	if err != nil || response == nil {
 		return nil, nil, err
@@ -430,7 +366,8 @@ func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.Tar
 }
 
 // SetGNMIValue generates a SET request on the given client for update and delete paths on a target
-func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) (string, []*gnmi_ext.Extension, error) {
+func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protoutils.TargetPath,
+	deletePaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index, error) {
 	var protoBuilder strings.Builder
 	for _, updatePath := range updatePaths {
 		protoBuilder.WriteString(protoutils.MakeProtoUpdatePath(updatePath))
@@ -442,15 +379,16 @@ func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protouti
 	setTZRequest := &gpb.SetRequest{}
 
 	if err := proto.UnmarshalText(protoBuilder.String(), setTZRequest); err != nil {
-		return "", nil, err
+		return "", 0, err
 	}
 
 	setTZRequest.Extension = extensions
 	setResult, err := c.(*gclient.Client).Set(ctx, setTZRequest)
 	if err != nil {
-		return "", nil, err
+		return "", 0, err
 	}
-	return extractSetTransactionID(setResult), setResult.Extension, nil
+	id, index, err := extractSetTransactionID(setResult)
+	return id, index, err
 }
 
 // GetTargetPath creates a target path
@@ -497,8 +435,8 @@ func GetTargetPathsWithValues(targets []string, paths []string, values []string)
 }
 
 // CheckTargetValue makes sure a value has been assigned properly to a target path by querying GNMI
-func CheckTargetValue(t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, expectedValue string) {
-	targetValues, extensions, err := GetGNMIValue(MakeContext(), targetGnmiClient, targetPaths, gpb.Encoding_JSON)
+func CheckTargetValue(ctx context.Context, t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValue string) {
+	targetValues, extensions, err := GetGNMIValue(ctx, targetGnmiClient, targetPaths, extensions, gpb.Encoding_JSON)
 	if err == nil {
 		assert.NoError(t, err, "GNMI get operation to target returned an error")
 		assert.Equal(t, expectedValue, targetValues[0].PathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
@@ -509,8 +447,8 @@ func CheckTargetValue(t *testing.T, targetGnmiClient gnmiclient.Impl, targetPath
 }
 
 // CheckTargetValueDeleted makes sure target path is missing when queried via GNMI
-func CheckTargetValueDeleted(t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath) {
-	_, _, err := GetGNMIValue(MakeContext(), targetGnmiClient, targetPaths, gpb.Encoding_JSON)
+func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) {
+	_, _, err := GetGNMIValue(ctx, targetGnmiClient, targetPaths, extensions, gpb.Encoding_JSON)
 	if err == nil {
 		assert.Fail(t, "Path not deleted", targetPaths)
 	} else if !strings.Contains(err.Error(), "NotFound") {
@@ -518,96 +456,19 @@ func CheckTargetValueDeleted(t *testing.T, targetGnmiClient gnmiclient.Impl, tar
 	}
 }
 
-// GetTargetGNMIClientOrFail creates a GNMI client to a target. If there is an error, the test is failed
-func GetTargetGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) gnmiclient.Impl {
+// CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
+func CheckGNMIValue(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValue string, expectedExtensions int, failMessage string) {
 	t.Helper()
-	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List(context.Background())
-	assert.NoError(t, err)
-	service := services[0]
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	dest := gnmiclient.Destination{
-		Addrs:   []string{service.Ports()[0].Address(true)},
-		Target:  service.Name,
-		Timeout: 10 * time.Second,
-	}
-	client, err := gclient.New(ctx, dest)
-	assert.NoError(t, err)
-	assert.True(t, client != nil, "Fetching target client returned nil")
-	return client
-}
-
-// GetOnosConfigDestination :
-func GetOnosConfigDestination() (gnmiclient.Destination, error) {
-	creds, err := getClientCredentials()
-	if err != nil {
-		return gnmiclient.Destination{}, err
-	}
-	configRelease := helm.Release("onos-umbrella")
-	configClient := kubernetes.NewForReleaseOrDie(configRelease)
-
-	configService, err := configClient.CoreV1().Services().Get(context.Background(), "onos-config")
-	if err != nil || configService == nil {
-		return gnmiclient.Destination{}, errors.NewNotFound("can't find service for onos-config")
-	}
-
-	return gnmiclient.Destination{
-		Addrs:   []string{configService.Ports()[0].Address(true)},
-		Target:  configService.Name,
-		TLS:     creds,
-		Timeout: 10 * time.Second,
-	}, nil
-}
-
-// GetGNMIClientWithContextOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
-func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T, retryOption RetryOption) gnmiclient.Impl {
-	t.Helper()
-	gCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	dest, err := GetOnosConfigDestination()
-	if !assert.NoError(t, err) {
-		t.Fail()
-	}
-	opts := make([]grpc.DialOption, 0)
-	opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(dest.TLS)))
-	if retryOption == WithRetry {
-		opts = append(opts, grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()))
-	}
-
-	conn, err := grpc.DialContext(gCtx, dest.Addrs[0], opts...)
-	assert.NoError(t, err)
-	client, err := gclient.NewFromConn(gCtx, conn, dest)
-	assert.NoError(t, err)
-	assert.True(t, client != nil, "Fetching target client returned nil")
-	return client
-}
-
-// GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
-func GetGNMIClientOrFail(t *testing.T) gnmiclient.Impl {
-	t.Helper()
-	return GetGNMIClientWithContextOrFail(context.Background(), t, WithRetry)
-}
-
-// CheckGNMIValueWithContext makes sure a value has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, expectedValue string, expectedExtensions int, failMessage string) {
-	t.Helper()
-	value, extensions, err := GetGNMIValue(ctx, gnmiClient, paths, gpb.Encoding_PROTO)
+	value, extensions, err := GetGNMIValue(ctx, gnmiClient, paths, extensions, gpb.Encoding_PROTO)
 	assert.NoError(t, err, "Get operation returned an unexpected error")
 	assert.Equal(t, expectedExtensions, len(extensions))
 	assert.Equal(t, expectedValue, value[0].PathDataValue, "%s: %s", failMessage, value)
 }
 
-// CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValue(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, expectedValue string, expectedExtensions int, failMessage string) {
-	t.Helper()
-	CheckGNMIValueWithContext(MakeContext(), t, gnmiClient, paths, expectedValue, expectedExtensions, failMessage)
-}
-
 // CheckGNMIValues makes sure a list of values has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValues(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, expectedValues []string, expectedExtensions int, failMessage string) {
+func CheckGNMIValues(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValues []string, expectedExtensions int, failMessage string) {
 	t.Helper()
-	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths, gpb.Encoding_PROTO)
+	value, extensions, err := GetGNMIValue(ctx, gnmiClient, paths, extensions, gpb.Encoding_PROTO)
 	assert.NoError(t, err, "Get operation returned unexpected error")
 	assert.Equal(t, expectedExtensions, len(extensions))
 	for index, expectedValue := range expectedValues {
@@ -615,50 +476,15 @@ func CheckGNMIValues(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutil
 	}
 }
 
-// SetGNMIValueWithContextOrFail does a GNMI set operation to the given client, and fails the test if there is an error
-func SetGNMIValueWithContextOrFail(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
+// SetGNMIValueOrFail does a GNMI set operation to the given client, and fails the test if there is an error
+func SetGNMIValueOrFail(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
 	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
 	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index) {
 	t.Helper()
-	transactionID, transactionIndex, err := SetGNMIValueWithContext(ctx, t, gnmiClient, updatePaths, deletePaths, extensions)
+	transactionID, transactionIndex, err := SetGNMIValue(ctx, gnmiClient, updatePaths, deletePaths, extensions)
 	assert.NoError(t, err, "Set operation returned unexpected error")
 
 	return transactionID, transactionIndex
-}
-
-// SetGNMIValueWithContext does a GNMI set operation to the given client, and fails the test if there is an error
-func SetGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
-	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
-	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index, error) {
-	t.Helper()
-	_, extensionsSet, err := SetGNMIValue(ctx, gnmiClient, updatePaths, deletePaths, extensions)
-	if err != nil {
-		return "", 0, err
-	}
-
-	var transactionInfo *configapi.TransactionInfo
-	for _, extension := range extensionsSet {
-		if ext, ok := extension.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
-			ext.RegisteredExt.Id == configapi.TransactionInfoExtensionID {
-			bytes := ext.RegisteredExt.Msg
-			transactionInfo = &configapi.TransactionInfo{}
-			err := proto.Unmarshal(bytes, transactionInfo)
-			assert.NoError(t, err)
-		}
-	}
-
-	if transactionInfo == nil {
-		return "", 0, errors.NewNotFound("transaction ID extension not found")
-	}
-
-	return transactionInfo.ID, transactionInfo.Index, err
-}
-
-// SetGNMIValueOrFail does a GNMI set operation to the given client, and fails the test if there is an error
-func SetGNMIValueOrFail(t *testing.T, gnmiClient gnmiclient.Impl,
-	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
-	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index) {
-	return SetGNMIValueWithContextOrFail(MakeContext(), t, gnmiClient, updatePaths, deletePaths, extensions)
 }
 
 // MakeProtoPath returns a Path: element for a given target and Path
@@ -672,12 +498,12 @@ func MakeProtoPath(target string, path string) string {
 }
 
 // CreateSimulator creates a device simulator
-func CreateSimulator(t *testing.T) *helm.HelmRelease {
-	return CreateSimulatorWithName(t, random.NewPetName(2), true)
+func CreateSimulator(ctx context.Context, t *testing.T) *helm.HelmRelease {
+	return CreateSimulatorWithName(ctx, t, random.NewPetName(2), true)
 }
 
 // CreateSimulatorWithName creates a device simulator
-func CreateSimulatorWithName(t *testing.T, name string, createTopoEntity bool) *helm.HelmRelease {
+func CreateSimulatorWithName(ctx context.Context, t *testing.T, name string, createTopoEntity bool) *helm.HelmRelease {
 	simulator := helm.
 		Chart("device-simulator", onostest.OnosChartRepo).
 		Release(name).
@@ -688,10 +514,10 @@ func CreateSimulatorWithName(t *testing.T, name string, createTopoEntity bool) *
 	time.Sleep(2 * time.Second)
 
 	if createTopoEntity {
-		simulatorTarget, err := NewSimulatorTargetEntity(simulator, SimulatorTargetType, SimulatorTargetVersion)
+		simulatorTarget, err := NewSimulatorTargetEntity(ctx, simulator, SimulatorTargetType, SimulatorTargetVersion)
 		assert.NoError(t, err, "could not make target for simulator %v", err)
 
-		err = AddTargetToTopo(simulatorTarget)
+		err = AddTargetToTopo(ctx, simulatorTarget)
 		assert.NoError(t, err, "could not add target to topo for simulator %v", err)
 	}
 

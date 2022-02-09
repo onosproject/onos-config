@@ -38,30 +38,33 @@ const (
 
 // TestOfflineTarget tests set/query of a single GNMI path to a single target that is initially not connected to onos-config
 func (s *TestSuite) TestOfflineTarget(t *testing.T) {
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
 	// create a target entity in topo
 	createOfflineTarget(t, offlineTargetName, "devicesim", "1.0.0", offlineTargetName+":11161")
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
-	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	// Install and start target simulator
-	simulator := gnmiutils.CreateSimulatorWithName(t, offlineTargetName, false)
+	simulator := gnmiutils.CreateSimulatorWithName(ctx, t, offlineTargetName, false)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the target
-	gnmiutils.WaitForTargetAvailable(t, topoapi.ID(simulator.Name()), time.Minute)
-	err := gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), time.Minute)
+	err := gnmiutils.WaitForConfigurationCompleteOrFail(ctx, t, configapi.ConfigurationID(simulator.Name()), time.Minute)
 	assert.NoError(t, err)
 
-	gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, modValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the target, wait for configuration gets completed
-	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
-	gnmiutils.CheckTargetValue(t, targetGnmiClient, targetPath, modValue)
+	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
+	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, modValue)
 }
 
 func createOfflineTarget(t *testing.T, targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {
