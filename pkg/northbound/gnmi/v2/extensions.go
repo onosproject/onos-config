@@ -25,31 +25,29 @@ import (
 
 var log = logging.GetLogger("northbound", "gnmi")
 
-func getExtensions(request interface{}) (configapi.TransactionStrategy, error) {
+func processExtension(ext *gnmi_ext.Extension) (configapi.TransactionStrategy, error) {
 	var transactionStrategy configapi.TransactionStrategy
+	if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
+		regExt.RegisteredExt.Id == configapi.TransactionStrategyExtensionID {
+		bytes := regExt.RegisteredExt.Msg
+
+		if err := proto.Unmarshal(bytes, &transactionStrategy); err != nil {
+			return transactionStrategy, errors.NewInvalid(err.Error())
+		}
+	}
+	return transactionStrategy, nil
+}
+
+func getExtensions(request interface{}) (configapi.TransactionStrategy, error) {
 	switch req := request.(type) {
 	case *gnmi.SetRequest:
 		for _, ext := range req.GetExtension() {
-			if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
-				regExt.RegisteredExt.Id == configapi.TransactionStrategyExtensionID {
-				bytes := regExt.RegisteredExt.Msg
-				if err := proto.Unmarshal(bytes, &transactionStrategy); err != nil {
-					return transactionStrategy, errors.NewInvalid(err.Error())
-				}
-			}
+			return processExtension(ext)
 		}
-		return transactionStrategy, nil
 	case *gnmi.GetRequest:
 		for _, ext := range req.GetExtension() {
-			if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
-				regExt.RegisteredExt.Id == configapi.TransactionStrategyExtensionID {
-				bytes := regExt.RegisteredExt.Msg
-				if err := proto.Unmarshal(bytes, &transactionStrategy); err != nil {
-					return transactionStrategy, errors.NewInvalid(err.Error())
-				}
-			}
+			return processExtension(ext)
 		}
-		return transactionStrategy, nil
 	}
-	return transactionStrategy, nil
+	return configapi.TransactionStrategy{}, nil
 }

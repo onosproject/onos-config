@@ -134,7 +134,8 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		}
 	}
 
-	if transactionStrategy.Synchronicity.String() == configapi.TransactionStrategy_SYNCHRONOUS.String() {
+	switch transactionStrategy.Synchronicity {
+	case configapi.TransactionStrategy_SYNCHRONOUS:
 		log.Debugf("Processing synchronous get request %+v", req)
 		wg := &sync.WaitGroup{}
 		for _, target := range targets {
