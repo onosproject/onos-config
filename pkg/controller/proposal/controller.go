@@ -236,9 +236,9 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 		}
 
 		// If the previous proposal has not yet been committed, wait for it.
-		if config.Status.Committed.Index != proposal.Status.PrevIndex {
+		if proposal.Status.PrevIndex != 0 && config.Status.Committed.Index != proposal.Status.PrevIndex {
 			log.Infof("Transaction %d Proposal to target '%s' waiting for Transaction %d Proposal to be committed", proposal.TransactionIndex, proposal.TargetID, proposal.Status.PrevIndex)
-			return controller.Result{}, nil
+			return controller.Result{Requeue: proposal.Status.PrevIndex}, nil
 		}
 
 		log.Infof("Validating Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID)
@@ -534,9 +534,9 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		}
 
 		// If the previous proposal has not yet been applied, wait for it.
-		if config.Status.Applied.Index != proposal.Status.PrevIndex {
+		if proposal.Status.PrevIndex != 0 && config.Status.Applied.Index != proposal.Status.PrevIndex {
 			log.Infof("Transaction %d Proposal to target '%s' waiting for Transaction %d Proposal to be applied", proposal.TransactionIndex, proposal.TargetID, proposal.Status.PrevIndex)
-			return controller.Result{}, nil
+			return controller.Result{Requeue: proposal.Status.PrevIndex}, nil
 		}
 
 		// If the configuration is not synchronized, wait for it.
