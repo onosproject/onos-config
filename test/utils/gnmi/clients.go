@@ -23,8 +23,6 @@ import (
 
 	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
 
-	"github.com/onosproject/onos-lib-go/pkg/errors"
-
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/kubernetes"
 	v1 "github.com/onosproject/helmit/pkg/kubernetes/core/v1"
@@ -45,6 +43,12 @@ const (
 
 	// WithRetry adds a retry option to the client
 	WithRetry
+)
+
+const (
+	onosConfigName = "onos-config"
+	onosConfigPort = "5150"
+	onosConfig     = onosConfigName + ":" + onosConfigPort
 )
 
 func getService(ctx context.Context, release *helm.HelmRelease, serviceName string) (*v1.Service, error) {
@@ -118,10 +122,8 @@ func GetTargetGNMIClientOrFail(ctx context.Context, t *testing.T, simulator *hel
 		Target:  service.Name,
 		Timeout: 10 * time.Second,
 	}
-	client, err := gclient.New(ctx, dest)
-	assert.NoError(t, err)
-	assert.True(t, client != nil, "Fetching target client returned nil")
-	return client
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	return newClientOrFail(ctx, t, dest, opts)
 }
 
 // GetOnosConfigDestination :
@@ -130,17 +132,10 @@ func GetOnosConfigDestination(ctx context.Context) (gnmiclient.Destination, erro
 	if err != nil {
 		return gnmiclient.Destination{}, err
 	}
-	configRelease := helm.Release("onos-umbrella")
-	configClient := kubernetes.NewForReleaseOrDie(configRelease)
-
-	configService, err := configClient.CoreV1().Services().Get(ctx, "onos-config")
-	if err != nil || configService == nil {
-		return gnmiclient.Destination{}, errors.NewNotFound("can't find service for onos-config")
-	}
 
 	return gnmiclient.Destination{
-		Addrs:   []string{configService.Ports()[0].Address(true)},
-		Target:  configService.Name,
+		Addrs:   []string{onosConfig},
+		Target:  onosConfigName,
 		TLS:     creds,
 		Timeout: 10 * time.Second,
 	}, nil
@@ -157,6 +152,14 @@ func GetGNMIClientOrFail(ctx context.Context, t *testing.T, retryOption RetryOpt
 		opts = append(opts, grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()))
 	}
 
+	conn, err := grpc.DialContext(ctx, dest.Addrs[0], opts...)
+	assert.NoError(t, err)
+	client, err := gclient.NewFromConn(ctx, conn, dest)
+	assert.NoError(t, err)
+	return client
+}
+
+func newClientOrFail(ctx context.Context, t *testing.T, dest gnmiclient.Destination, opts []grpc.DialOption) gnmiclient.Impl {
 	conn, err := grpc.DialContext(ctx, dest.Addrs[0], opts...)
 	assert.NoError(t, err)
 	client, err := gclient.NewFromConn(ctx, conn, dest)
