@@ -81,7 +81,7 @@ func NewTopoClient() (toposdk.Client, error) {
 
 // NewAdminServiceClient :
 func NewAdminServiceClient(ctx context.Context) (admin.ConfigAdminServiceClient, error) {
-	conn, err := connectComponent(ctx, "onos-umbrella", "onos-config")
+	conn, err := connectService(nil, nil, "")
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func NewAdminServiceClient(ctx context.Context) (admin.ConfigAdminServiceClient,
 
 // NewTransactionServiceClient :
 func NewTransactionServiceClient(ctx context.Context) (admin.TransactionServiceClient, error) {
-	conn, err := connectComponent(ctx, "onos-umbrella", "onos-config")
+	conn, err := connectService(nil, nil, "")
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func NewTransactionServiceClient(ctx context.Context) (admin.TransactionServiceC
 
 // NewConfigurationServiceClient returns configuration store client
 func NewConfigurationServiceClient(ctx context.Context) (admin.ConfigurationServiceClient, error) {
-	conn, err := connectComponent(ctx, "onos-umbrella", "onos-config")
+	conn, err := connectService(nil, nil, "")
 	if err != nil {
 		return nil, err
 	}
