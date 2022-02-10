@@ -152,11 +152,7 @@ func GetGNMIClientOrFail(ctx context.Context, t *testing.T, retryOption RetryOpt
 		opts = append(opts, grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()))
 	}
 
-	conn, err := grpc.DialContext(ctx, dest.Addrs[0], opts...)
-	assert.NoError(t, err)
-	client, err := gclient.NewFromConn(ctx, conn, dest)
-	assert.NoError(t, err)
-	return client
+	return newClientOrFail(ctx, t, dest, opts)
 }
 
 func newClientOrFail(ctx context.Context, t *testing.T, dest gnmiclient.Destination, opts []grpc.DialOption) gnmiclient.Impl {
