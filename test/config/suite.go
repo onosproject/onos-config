@@ -46,7 +46,6 @@ func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	registry := c.GetArg("registry").String("")
 	umbrella := charts.CreateUmbrellaRelease()
 	r := umbrella.
-		Set("onos-config.logging.loggers.root.level", "debug").
 		Set("global.image.registry", registry).
 		Set("import.onos-cli.enabled", false). // not needed - can be enabled by adding '--set onos-umbrella.import.onos-cli.enabled=true' to helmit args for investigations
 		Install(true)
