@@ -67,15 +67,11 @@ func connectComponent(ctx context.Context, releaseName string, deploymentName st
 }
 
 func connectService(ctx context.Context, release *helm.HelmRelease, deploymentName string) (*grpc.ClientConn, error) {
-	service, err := getService(ctx, release, deploymentName)
-	if err != nil {
-		return nil, err
-	}
 	tlsConfig, err := getClientCredentials()
 	if err != nil {
 		return nil, err
 	}
-	return grpc.Dial(service.Ports()[0].Address(true), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	return grpc.Dial(onosConfig, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 }
 
 // NewTopoClient creates a topology client
@@ -110,6 +106,21 @@ func NewConfigurationServiceClient(ctx context.Context) (admin.ConfigurationServ
 	return admin.NewConfigurationServiceClient(conn), nil
 }
 
+// GetOnosConfigDestination returns a gnmi Destination for the onos-config service
+func GetOnosConfigDestination(ctx context.Context) (gnmiclient.Destination, error) {
+	creds, err := getClientCredentials()
+	if err != nil {
+		return gnmiclient.Destination{}, err
+	}
+
+	return gnmiclient.Destination{
+		Addrs:   []string{onosConfig},
+		Target:  onosConfigName,
+		TLS:     creds,
+		Timeout: 10 * time.Second,
+	}, nil
+}
+
 // GetTargetGNMIClientOrFail creates a GNMI client to a target. If there is an error, the test is failed
 func GetTargetGNMIClientOrFail(ctx context.Context, t *testing.T, simulator *helm.HelmRelease) gnmiclient.Impl {
 	t.Helper()
@@ -126,21 +137,6 @@ func GetTargetGNMIClientOrFail(ctx context.Context, t *testing.T, simulator *hel
 	return newClientOrFail(ctx, t, dest, opts)
 }
 
-// GetOnosConfigDestination :
-func GetOnosConfigDestination(ctx context.Context) (gnmiclient.Destination, error) {
-	creds, err := getClientCredentials()
-	if err != nil {
-		return gnmiclient.Destination{}, err
-	}
-
-	return gnmiclient.Destination{
-		Addrs:   []string{onosConfig},
-		Target:  onosConfigName,
-		TLS:     creds,
-		Timeout: 10 * time.Second,
-	}, nil
-}
-
 // GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
 func GetGNMIClientOrFail(ctx context.Context, t *testing.T, retryOption RetryOption) gnmiclient.Impl {
 	t.Helper()
@@ -155,6 +151,7 @@ func GetGNMIClientOrFail(ctx context.Context, t *testing.T, retryOption RetryOpt
 	return newClientOrFail(ctx, t, dest, opts)
 }
 
+// newClientOrFail returns a gnmi client
 func newClientOrFail(ctx context.Context, t *testing.T, dest gnmiclient.Destination, opts []grpc.DialOption) gnmiclient.Impl {
 	conn, err := grpc.DialContext(ctx, dest.Addrs[0], opts...)
 	assert.NoError(t, err)
