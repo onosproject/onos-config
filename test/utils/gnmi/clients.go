@@ -18,6 +18,7 @@ package gnmi
 import (
 	"context"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
+	"math"
 	"testing"
 	"time"
 
@@ -137,6 +138,8 @@ func NewOnosConfigGNMIClientOrFail(ctx context.Context, t *testing.T, retryOptio
 
 // newGNMIClientOrFail returns a gnmi client
 func newGNMIClientOrFail(ctx context.Context, t *testing.T, dest gnmiclient.Destination, opts []grpc.DialOption) gnmiclient.Impl {
+	opts = append(opts, grpc.WithBlock())
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)))
 	conn, err := grpc.DialContext(ctx, dest.Addrs[0], opts...)
 	assert.NoError(t, err)
 	client, err := gclient.NewFromConn(ctx, conn, dest)
