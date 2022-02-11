@@ -112,7 +112,7 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 
 				// Make a GNMI client to use for requests
 				ctx := rbac.GetBearerContext(context.Background(), testCase.token)
-				gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+				gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 				// Try to fetch a value from the GNMI client
 				_, _, err = gnmiutils.GetGNMIValue(ctx, gnmiClient, devicePath, gnmiutils.NoExtensions, gpb.Encoding_PROTO)

@@ -54,7 +54,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 	}
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Run the test cases
 	for _, testCase := range testCases {

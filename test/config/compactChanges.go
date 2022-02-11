@@ -70,7 +70,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(simulator2.Name()), 2*time.Minute)
 
 	// Make a GNMI client to use for request
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Set a value using gNMI client
 	sim1Path1 := gnmiutils.GetTargetPathWithValue(simulator1.Name(), tzPath, tzValue, proto.StringVal)

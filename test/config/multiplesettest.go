@@ -41,8 +41,8 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
-	targetClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	targetClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
 
 	for i := 0; i < 10; i++ {
 

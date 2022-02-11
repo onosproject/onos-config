@@ -64,7 +64,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	targets[1] = target2.Name()
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Set initial values
@@ -81,8 +81,8 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Check that the values are set on the targets
-	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target1)
-	target2GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target2)
+	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
+	target2GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target2)
 
 	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], gnmiutils.NoExtensions, value1)
 	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[1:2], gnmiutils.NoExtensions, value2)
