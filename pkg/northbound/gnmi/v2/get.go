@@ -222,7 +222,7 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *
 	filteredValues := make([]*configapi.PathValue, 0)
 	pathRegexp := utils.MatchWildcardRegexp(pathAsString, false)
 	for _, cv := range configValuesAllowed {
-		if pathRegexp.MatchString(cv.Path) {
+		if pathRegexp.MatchString(cv.Path) && !cv.Deleted {
 			filteredValues = append(filteredValues, cv)
 		}
 	}
