@@ -61,12 +61,7 @@ func getService(ctx context.Context, release *helm.HelmRelease, serviceName stri
 	return service, nil
 }
 
-func connectComponent(ctx context.Context, releaseName string, deploymentName string) (*grpc.ClientConn, error) {
-	release := helm.Chart(releaseName).Release(releaseName)
-	return connectService(ctx, release, deploymentName)
-}
-
-func connectService(ctx context.Context, release *helm.HelmRelease, deploymentName string) (*grpc.ClientConn, error) {
+func getOnosConfigConnection() (*grpc.ClientConn, error) {
 	tlsConfig, err := getClientCredentials()
 	if err != nil {
 		return nil, err
@@ -81,7 +76,7 @@ func NewTopoClient() (toposdk.Client, error) {
 
 // NewAdminServiceClient :
 func NewAdminServiceClient(ctx context.Context) (admin.ConfigAdminServiceClient, error) {
-	conn, err := connectService(nil, nil, "")
+	conn, err := getOnosConfigConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +85,7 @@ func NewAdminServiceClient(ctx context.Context) (admin.ConfigAdminServiceClient,
 
 // NewTransactionServiceClient :
 func NewTransactionServiceClient(ctx context.Context) (admin.TransactionServiceClient, error) {
-	conn, err := connectService(nil, nil, "")
+	conn, err := getOnosConfigConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +94,7 @@ func NewTransactionServiceClient(ctx context.Context) (admin.TransactionServiceC
 
 // NewConfigurationServiceClient returns configuration store client
 func NewConfigurationServiceClient(ctx context.Context) (admin.ConfigurationServiceClient, error) {
-	conn, err := connectService(nil, nil, "")
+	conn, err := getOnosConfigConnection()
 	if err != nil {
 		return nil, err
 	}
