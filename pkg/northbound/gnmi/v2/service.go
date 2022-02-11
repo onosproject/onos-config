@@ -17,8 +17,9 @@ package gnmi
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/store/proposal"
 	"sync"
+
+	"github.com/onosproject/onos-config/pkg/store/proposal"
 
 	"github.com/golang/protobuf/proto"
 	protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -32,6 +33,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
 
+	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
@@ -45,6 +47,7 @@ type Service struct {
 	transactions   transaction.Store
 	proposals      proposal.Store
 	configurations configuration.Store
+	conns          sb.ConnManager
 }
 
 // NewService allocates a Service struct with the given parameters
@@ -53,13 +56,14 @@ func NewService(
 	transactions transaction.Store,
 	proposals proposal.Store,
 	configurations configuration.Store,
-	pluginRegistry pluginregistry.PluginRegistry) Service {
+	pluginRegistry pluginregistry.PluginRegistry, conns sb.ConnManager) Service {
 	return Service{
 		pluginRegistry: pluginRegistry,
 		topo:           topo,
 		transactions:   transactions,
 		proposals:      proposals,
 		configurations: configurations,
+		conns:          conns,
 	}
 }
 
@@ -72,6 +76,7 @@ func (s Service) Register(r *grpc.Server) {
 			transactions:   s.transactions,
 			proposals:      s.proposals,
 			configurations: s.configurations,
+			conns:          s.conns,
 		})
 }
 
@@ -83,6 +88,7 @@ type Server struct {
 	transactions   transaction.Store
 	proposals      proposal.Store
 	configurations configuration.Store
+	conns          sb.ConnManager
 }
 
 // Capabilities implements gNMI Capabilities

@@ -87,7 +87,7 @@ func (m *Manager) startNorthboundServer(
 	transactionsStore transaction.Store,
 	proposalsStore proposal.Store,
 	configurationsStore configuration.Store,
-	pluginRegistry pluginregistry.PluginRegistry) error {
+	pluginRegistry pluginregistry.PluginRegistry, conns sb.ConnManager) error {
 	authorization := false
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
 		authorization = true
@@ -108,7 +108,7 @@ func (m *Manager) startNorthboundServer(
 	s.AddService(logging.Service{})
 
 	adminService := admin.NewService(transactionsStore, configurationsStore, pluginRegistry)
-	gnmi := gnminb.NewService(topo, transactionsStore, proposalsStore, configurationsStore, pluginRegistry)
+	gnmi := gnminb.NewService(topo, transactionsStore, proposalsStore, configurationsStore, pluginRegistry, conns)
 	s.AddService(adminService)
 	s.AddService(gnmi)
 
@@ -237,7 +237,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	err = m.startNorthboundServer(topoStore, transactions, proposals, configurations, m.pluginRegistry)
+	err = m.startNorthboundServer(topoStore, transactions, proposals, configurations, m.pluginRegistry, conns)
 	if err != nil {
 		return err
 	}

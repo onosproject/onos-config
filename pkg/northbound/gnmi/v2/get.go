@@ -25,6 +25,10 @@ import (
 	"sync"
 	"time"
 
+	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
+
+	"github.com/onosproject/onos-config/pkg/utils/node"
+
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 
@@ -88,10 +92,25 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 			}
 		}
-		paths = append(paths, &pathInfo{
-			targetID: targetID,
-			path:     path,
-		})
+
+		if targetInfo, ok := targets[targetID]; ok {
+			pathAsString := utils.StrPath(path)
+			if prefix != nil && prefix.Elem != nil {
+				pathAsString = utils.StrPath(prefix) + pathAsString
+			}
+			pathAsString = strings.TrimSuffix(pathAsString, "/")
+			pathInfo := &pathInfo{
+				targetID:     targetID,
+				path:         path,
+				pathAsString: pathAsString,
+				readOnly:     false,
+			}
+			if _, ok := targetInfo.plugin.GetInfo().ReadOnlyPaths[pathAsString]; ok {
+				pathInfo.readOnly = true
+			}
+			paths = append(paths, pathInfo)
+		}
+
 	}
 
 	// if there's only the prefix
@@ -119,19 +138,68 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		notifications = append(notifications, notification)
 	}
 
-	for _, pathInfo := range paths {
-		if targetInfo, ok := targets[pathInfo.targetID]; ok {
-			updates, err := s.getUpdate(ctx, targetInfo, prefix, pathInfo.path, req.GetEncoding(), groups)
+	roPathMap := make(map[configapi.TargetID][]*gnmi.Path)
+	for _, pathInfoValue := range paths {
+		if targetInfo, ok := targets[pathInfoValue.targetID]; ok {
+			if !pathInfoValue.readOnly {
+				updates, err := s.getUpdate(ctx, targetInfo, prefix, pathInfoValue, req.GetEncoding(), groups)
+				if err != nil {
+					return nil, errors.Status(err).Err()
+				}
+				notification := &gnmi.Notification{
+					Timestamp: time.Now().Unix(),
+					Update:    updates,
+					Prefix:    prefix,
+				}
+				notifications = append(notifications, notification)
+			} else {
+				if pathList, ok := roPathMap[pathInfoValue.targetID]; ok {
+					pathList = append(pathList, pathInfoValue.path)
+					roPathMap[pathInfoValue.targetID] = pathList
+				} else {
+					var pathList []*gnmi.Path
+					pathList = append(pathList, pathInfoValue.path)
+					roPathMap[pathInfoValue.targetID] = pathList
+				}
+
+			}
+		}
+	}
+
+	// Get Read only path values from the targets directly
+	for targetID, roPaths := range roPathMap {
+		roGetReq := &gnmi.GetRequest{
+			Encoding:  req.Encoding,
+			Type:      req.Type,
+			UseModels: req.UseModels,
+			Extension: req.Extension,
+			Path:      roPaths,
+		}
+		controlRelationFilter := &topoapi.Filters{
+			RelationFilter: &topoapi.RelationFilter{
+				RelationKind: topoapi.CONTROLS,
+				TargetId:     string(targetID),
+				SrcId:        string(node.GetOnosConfigID()),
+				Scope:        topoapi.RelationFilterScope_RELATIONS_ONLY,
+			},
+		}
+		relations, err := s.topo.List(ctx, controlRelationFilter)
+		if err != nil {
+			log.Warn(err)
+			return nil, errors.Status(err).Err()
+		}
+		for _, relation := range relations {
+			conn, ok := s.conns.Get(ctx, sb.ConnID(relation.ID))
+			if !ok {
+				return nil, errors.NewNotFound("connection %s not found", relation.ID)
+			}
+			resp, err := conn.Get(ctx, roGetReq)
 			if err != nil {
 				return nil, errors.Status(err).Err()
 			}
-			notification := &gnmi.Notification{
-				Timestamp: time.Now().Unix(),
-				Update:    updates,
-				Prefix:    prefix,
-			}
-			notifications = append(notifications, notification)
+			notifications = append(notifications, resp.Notification...)
 		}
+
 	}
 
 	switch transactionStrategy.Synchronicity {
@@ -188,17 +256,12 @@ func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, tar
 }
 
 // getUpdate utility method for getting an Update for a given path
-func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *gnmi.Path, path *gnmi.Path,
+func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *gnmi.Path, pathInfo *pathInfo,
 	encoding gnmi.Encoding, groups []string) ([]*gnmi.Update, error) {
-	if (path == nil || path.Target == "") && (prefix == nil || prefix.Target == "") {
-		return nil, errors.NewInvalid("invalid request - Path %s has no target", utils.StrPath(path))
+	if (pathInfo.path == nil || pathInfo.path.Target == "") && (prefix == nil || prefix.Target == "") {
+		return nil, errors.NewInvalid("invalid request - Path %s has no target", utils.StrPath(pathInfo.path))
 	}
 
-	pathAsString := utils.StrPath(path)
-	if prefix != nil && prefix.Elem != nil {
-		pathAsString = utils.StrPath(prefix) + pathAsString
-	}
-	pathAsString = strings.TrimSuffix(pathAsString, "/")
 	targetConfig := targetInfo.configuration
 
 	var configValues []*configapi.PathValue
@@ -220,14 +283,14 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *
 	}
 
 	filteredValues := make([]*configapi.PathValue, 0)
-	pathRegexp := utils.MatchWildcardRegexp(pathAsString, false)
+	pathRegexp := utils.MatchWildcardRegexp(pathInfo.pathAsString, false)
 	for _, cv := range configValuesAllowed {
 		if pathRegexp.MatchString(cv.Path) && !cv.Deleted {
 			filteredValues = append(filteredValues, cv)
 		}
 	}
 
-	return createUpdate(prefix, path, filteredValues, encoding)
+	return createUpdate(prefix, pathInfo.path, filteredValues, encoding)
 }
 
 func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo *targetInfo, configValues []*configapi.PathValue, groups []string) ([]*configapi.PathValue, error) {
