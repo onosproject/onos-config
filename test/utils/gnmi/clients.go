@@ -118,7 +118,7 @@ func NewSimulatorGNMIClientOrFail(ctx context.Context, t *testing.T, simulator *
 		Timeout: 10 * time.Second,
 	}
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	return newClientOrFail(ctx, t, dest, opts)
+	return newGNMIClientOrFail(ctx, t, dest, opts)
 }
 
 // NewOnosConfigGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
@@ -132,11 +132,11 @@ func NewOnosConfigGNMIClientOrFail(ctx context.Context, t *testing.T, retryOptio
 		opts = append(opts, grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()))
 	}
 
-	return newClientOrFail(ctx, t, dest, opts)
+	return newGNMIClientOrFail(ctx, t, dest, opts)
 }
 
-// newClientOrFail returns a gnmi client
-func newClientOrFail(ctx context.Context, t *testing.T, dest gnmiclient.Destination, opts []grpc.DialOption) gnmiclient.Impl {
+// newGNMIClientOrFail returns a gnmi client
+func newGNMIClientOrFail(ctx context.Context, t *testing.T, dest gnmiclient.Destination, opts []grpc.DialOption) gnmiclient.Impl {
 	conn, err := grpc.DialContext(ctx, dest.Addrs[0], opts...)
 	assert.NoError(t, err)
 	client, err := gclient.NewFromConn(ctx, conn, dest)
