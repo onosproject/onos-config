@@ -18,9 +18,6 @@ import (
 	"context"
 	"io"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
 	"github.com/golang/protobuf/proto"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -51,48 +48,6 @@ type client struct {
 func (c *client) Subscribe(ctx context.Context, q baseClient.Query) error {
 	err := c.client.Subscribe(ctx, q)
 	return errors.FromGRPC(err)
-}
-
-// newGNMIClient creates a new gnmi client
-func newGNMIClient(ctx context.Context, d baseClient.Destination, opts []grpc.DialOption) (*client, *grpc.ClientConn, error) {
-	switch d.TLS {
-	case nil:
-		opts = append(opts, grpc.WithInsecure())
-	default:
-		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(d.TLS)))
-	}
-
-	if d.Credentials != nil {
-		secure := true
-		if d.TLS == nil {
-			secure = false
-		}
-		pc := newPassCred(d.Credentials.Username, d.Credentials.Password, secure)
-		opts = append(opts, grpc.WithPerRPCCredentials(pc))
-	}
-
-	gCtx, cancel := context.WithTimeout(ctx, d.Timeout)
-	defer cancel()
-
-	addr := ""
-	if len(d.Addrs) != 0 {
-		addr = d.Addrs[0]
-	}
-	conn, err := grpc.DialContext(gCtx, addr, opts...)
-	if err != nil {
-		return nil, nil, errors.NewInternal("Dialer(%s, %v): %v", addr, d.Timeout, err)
-	}
-
-	cl, err := gclient.NewFromConn(gCtx, conn, d)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	gnmiClient := &client{
-		client: cl,
-	}
-
-	return gnmiClient, conn, nil
 }
 
 // Capabilities returns the capabilities of the target

@@ -18,12 +18,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 )
-
-var log = logging.GetLogger("northbound", "gnmi")
 
 // extractExtension extract the value of an extension from a list given an extension ID
 // if extType is passed we assume the content of the extension is a proto that needs to be Unmarshalled,

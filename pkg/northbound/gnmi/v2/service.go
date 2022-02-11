@@ -19,6 +19,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	"github.com/onosproject/onos-config/pkg/store/proposal"
 
 	"github.com/golang/protobuf/proto"
@@ -38,6 +40,8 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 )
+
+var log = logging.GetLogger("northbound", "gnmi")
 
 // Service implements Service for GNMI
 type Service struct {
