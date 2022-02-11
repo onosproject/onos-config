@@ -25,29 +25,44 @@ import (
 
 var log = logging.GetLogger("northbound", "gnmi")
 
-func processExtension(ext *gnmi_ext.Extension) (configapi.TransactionStrategy, error) {
-	var transactionStrategy configapi.TransactionStrategy
-	if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
-		regExt.RegisteredExt.Id == configapi.TransactionStrategyExtensionID {
-		bytes := regExt.RegisteredExt.Msg
-
-		if err := proto.Unmarshal(bytes, &transactionStrategy); err != nil {
-			return transactionStrategy, errors.NewInvalid(err.Error())
+// extractExtension extract the value of an extension from a list given an extension ID
+// if extType is passed we assume the content of the extension is a proto that needs to be Unmarshalled,
+// if extType is nil we return the value as is
+func extractExtension(ext []*gnmi_ext.Extension, extID configapi.ExtensionID, extType proto.Message) (interface{}, error) {
+	for _, ex := range ext {
+		if regExt, ok := ex.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
+			regExt.RegisteredExt.Id == extID {
+			// if the extensions is proto message, then unmarshal it
+			if extType != nil {
+				if err := proto.Unmarshal(regExt.RegisteredExt.Msg, extType); err != nil {
+					return nil, errors.NewInvalid(err.Error())
+				}
+				return extType, nil
+			}
+			// otherwise just return the values
+			return regExt.RegisteredExt.Msg, nil
 		}
 	}
-	return transactionStrategy, nil
+	return extType, nil
 }
 
-func getExtensions(request interface{}) (configapi.TransactionStrategy, error) {
+func getTransactionStrategy(request interface{}) (*configapi.TransactionStrategy, error) {
+	var err error
+	var s interface{}
 	switch req := request.(type) {
 	case *gnmi.SetRequest:
-		for _, ext := range req.GetExtension() {
-			return processExtension(ext)
-		}
+		s, err = extractExtension(req.GetExtension(), configapi.TransactionStrategyExtensionID, &configapi.TransactionStrategy{})
 	case *gnmi.GetRequest:
-		for _, ext := range req.GetExtension() {
-			return processExtension(ext)
-		}
+		s, err = extractExtension(req.GetExtension(), configapi.TransactionStrategyExtensionID, &configapi.TransactionStrategy{})
+	default:
+		return nil, errors.NewInvalid("invalid-request-type")
 	}
-	return configapi.TransactionStrategy{}, nil
+	if err != nil {
+		return nil, err
+	}
+	strategy, ok := s.(*configapi.TransactionStrategy)
+	if !ok {
+		return nil, errors.NewInternal("extracted-the-wrong-extensions")
+	}
+	return strategy, nil
 }

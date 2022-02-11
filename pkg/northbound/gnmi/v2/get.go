@@ -59,7 +59,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		return nil, errors.Status(err).Err()
 	}
 
-	transactionStrategy, err := getExtensions(req)
+	transactionStrategy, err := getTransactionStrategy(req)
 	if err != nil {
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
