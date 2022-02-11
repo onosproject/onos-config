@@ -46,14 +46,14 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	targetPath := gnmiutils.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
 
 	// Set a value using gNMI client - target is up
-	c := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	c := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 	_, _ = gnmiutils.SetGNMIValueOrFail(ctx, t, c, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the value was set correctly
 	gnmiutils.CheckGNMIValue(ctx, t, c, targetPath, gnmiutils.NoExtensions, createRemoveTargetModValue1, 0, "Query after set returned the wrong value")
 
 	// interrogate the target to check that the value was set properly
-	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
+	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
 	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, createRemoveTargetModValue1)
 
 	//  Shut down the simulator
@@ -77,7 +77,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	gnmiutils.CheckGNMIValue(ctx, t, c, targetPath, gnmiutils.SyncExtension(t), createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
 
 	// interrogate the target to check that the value was set properly
-	targetGnmiClient2 := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
+	targetGnmiClient2 := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
 	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient2, targetPath, gnmiutils.NoExtensions, createRemoveTargetModValue2)
 	gnmiutils.DeleteSimulator(t, simulator)
 

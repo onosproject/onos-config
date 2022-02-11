@@ -43,7 +43,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	createOfflineTarget(t, offlineTargetName, "devicesim", "1.0.0", offlineTargetName+":11161")
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
@@ -58,7 +58,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.SyncExtension(t), modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the target, wait for configuration gets completed
-	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
+	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
 	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, modValue)
 }
 

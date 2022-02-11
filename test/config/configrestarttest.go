@@ -37,7 +37,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for onos-config requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 
 	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
 
@@ -55,7 +55,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after restart returned the wrong value")
 
 	// Check that the value is set on the target
-	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
+	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
 	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue)
 }
 
@@ -69,7 +69,7 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for onos-config requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 
 	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
 
@@ -84,6 +84,6 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.SyncExtension(t), restartTzValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value is set on the target
-	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, simulator)
+	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
 	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue)
 }

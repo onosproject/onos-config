@@ -39,7 +39,7 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Create interface tree using gNMI client
 	setNamePath := []proto.TargetPath{

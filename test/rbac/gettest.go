@@ -48,7 +48,7 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 
 	// Make a GNMI client to use for requests
 	ctx := rbac.GetBearerContext(context.Background(), token)
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 
 	var interfaceNames = [...]string{starbucksInterface, acmeInterface, otherInterface}
 
@@ -217,7 +217,7 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 
 				// Make a GNMI client to use for requests
 				ctx := rbac.GetBearerContext(context.Background(), token)
-				gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
+				gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 				assert.NotNil(t, gnmiClient)
 
 				descriptionPath := getLeafPath(testCase.interfaceName, descriptionLeafName)

@@ -52,7 +52,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target1.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.GetGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Set values
 	var targetPathsForSet = gnmiutils.GetTargetPathsWithValues(targets, newPaths, newValues)
@@ -65,7 +65,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Check that the values are set on the targets
-	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(ctx, t, target1)
+	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
 	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], gnmiutils.NoExtensions, newValue)
 
 	// Now rollback the change
