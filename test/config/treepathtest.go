@@ -40,7 +40,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 
 	// Make a simulated device
 	simulator := gnmiutils.CreateSimulator(ctx, t)
-	//defer gnmiutils.DeleteSimulator(t, simulator)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
