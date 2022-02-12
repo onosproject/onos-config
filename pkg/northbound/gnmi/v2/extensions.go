@@ -46,7 +46,7 @@ func extractExtension(ext []*gnmi_ext.Extension, extID configapi.ExtensionID, ex
 	return extType, nil
 }
 
-func getTransactionStrategy(request interface{}) (*configapi.TransactionStrategy, error) {
+func getTransactionStrategy(request interface{}) (configapi.TransactionStrategy, error) {
 	var err error
 	var s interface{}
 	switch req := request.(type) {
@@ -55,14 +55,14 @@ func getTransactionStrategy(request interface{}) (*configapi.TransactionStrategy
 	case *gnmi.GetRequest:
 		s, err = extractExtension(req.GetExtension(), configapi.TransactionStrategyExtensionID, &configapi.TransactionStrategy{})
 	default:
-		return nil, errors.NewInvalid("invalid-request-type")
+		return configapi.TransactionStrategy{}, errors.NewInvalid("invalid-request-type")
 	}
 	if err != nil {
-		return nil, err
+		return configapi.TransactionStrategy{}, err
 	}
 	strategy, ok := s.(*configapi.TransactionStrategy)
 	if !ok {
-		return nil, errors.NewInternal("extracted-the-wrong-extensions")
+		return configapi.TransactionStrategy{}, errors.NewInternal("extracted-the-wrong-extensions")
 	}
-	return strategy, nil
+	return *strategy, nil
 }
