@@ -17,12 +17,16 @@ package config
 import (
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 const (
+	newInterfacesPath      = "/interfaces"
 	newRootName            = "new-root"
-	newRootPath            = "/interfaces/interface[name=" + newRootName + "]"
+	newRootPath            = newInterfacesPath + "/interface[name=" + newRootName + "]"
+	newConfigPath          = newRootPath + "/config"
 	newRootConfigNamePath  = newRootPath + "/config/name"
 	newRootEnabledPath     = newRootPath + "/config/enabled"
 	newRootDescriptionPath = newRootPath + "/config/description"
@@ -36,7 +40,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 
 	// Make a simulated device
 	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
+	//defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
@@ -70,4 +74,13 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 
 	//  Make sure new root got removed
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, getPath, gnmiutils.NoExtensions, "", 0, "New root was not removed")
+
+	// Make sure path got removed
+	interfacesPath := gnmiutils.GetTargetPath(simulator.Name(), newConfigPath)
+	intfs, _, err := gnmiutils.GetGNMIValue(ctx, gnmiClient, interfacesPath, gnmiutils.NoExtensions, gpb.Encoding_PROTO)
+	assert.NoError(t, err)
+
+	for _, intf := range intfs {
+		assert.NotEqual(t, newRootEnabledPath, intf.Path)
+	}
 }
