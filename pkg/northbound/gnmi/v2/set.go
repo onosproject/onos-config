@@ -61,7 +61,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	prefixTargetID := configapi.TargetID(req.GetPrefix().GetTarget())
 	targets := make(map[configapi.TargetID]*targetInfo)
 
-	transactionStrategy, err := getExtensions(req)
+	transactionStrategy, err := getTransactionStrategy(req)
 	if err != nil {
 		log.Warn(err)
 		return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
