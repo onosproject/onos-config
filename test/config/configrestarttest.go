@@ -23,8 +23,12 @@ import (
 )
 
 const (
-	restartTzValue = "Europe/Milan"
-	restartTzPath  = "/system/clock/config/timezone-name"
+	restartTzValue          = "Europe/Milan"
+	restartTzPath           = "/system/clock/config/timezone-name"
+	restartLoginBannerPath  = "/system/config/login-banner"
+	restartMotdBannerPath   = "/system/config/motd-banner"
+	restartLoginBannerValue = "LOGIN BANNER"
+	restartMotdBannerValue  = "MOTD BANNER"
 )
 
 // TestGetOperationAfterNodeRestart tests a Get operation after restarting the onos-config node
@@ -71,19 +75,33 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	// Make a GNMI client to use for onos-config requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 
-	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
+	tzPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
+	loginBannerPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartLoginBannerPath, restartLoginBannerValue, proto.StringVal)
+	motdBannerPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartMotdBannerPath, restartMotdBannerValue, proto.StringVal)
+
+	targets := []string{simulator.Name(), simulator.Name()}
+	paths := []string{restartLoginBannerPath, restartMotdBannerPath}
+	values := []string{restartLoginBannerValue, restartMotdBannerValue}
+
+	bannerPaths := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
 
 	// Restart onos-config
 	configPod := hautils.FindPodWithPrefix(t, "onos-config")
 	hautils.CrashPodOrFail(t, configPod)
 
-	// Set a value using onos-config
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	// Set values using onos-config
+	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, tzPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, bannerPaths, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
-	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.SyncExtension(t), restartTzValue, 0, "Query after set returned the wrong value")
+	// Check that the values were set correctly
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, tzPath, gnmiutils.SyncExtension(t), restartTzValue, 0, "Query TZ after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, loginBannerPath, gnmiutils.SyncExtension(t), restartLoginBannerValue, 0, "Query login banner after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, motdBannerPath, gnmiutils.SyncExtension(t), restartMotdBannerValue, 0, "Query MOTD banner after set returned the wrong value")
 
-	// Check that the value is set on the target
+	// Check that the values are set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue)
+	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, tzPath, gnmiutils.NoExtensions, restartTzValue)
+	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, loginBannerPath, gnmiutils.NoExtensions, restartLoginBannerValue)
+	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, motdBannerPath, gnmiutils.NoExtensions, restartMotdBannerValue)
+
 }
