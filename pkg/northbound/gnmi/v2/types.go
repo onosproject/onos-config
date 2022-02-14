@@ -34,5 +34,4 @@ type pathInfo struct {
 	targetID     configapi.TargetID
 	path         *gnmi.Path
 	pathAsString string
-	readOnly     bool
 }

@@ -104,7 +104,6 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 				targetID:     targetID,
 				path:         path,
 				pathAsString: pathAsString,
-				readOnly:     false,
 			}
 			err := s.addTarget(ctx, targetID, targets, pathInfo)
 			if err != nil {
