@@ -15,6 +15,7 @@
 package tree
 
 import (
+	"fmt"
 	"testing"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
@@ -52,6 +53,8 @@ const testJSON1 = `{
 
 const (
 	Test1Cont1ALeaf1a       = "/cont1a/leaf1a"
+	Test1Cont1AList2a       = "/cont1a/list2a"
+	Test1Cont1AList2a1      = "/cont1a/list2a[name=First]"
 	Test1Cont1AList2a1t     = "/cont1a/list2a[name=First]/tx-power"
 	Test1Cont1AList2a1r     = "/cont1a/list2a[name=First]/rx-power"
 	Test1Cont1AList2a2t     = "/cont1a/list2a[name=Second]/tx-power"
@@ -148,4 +151,30 @@ func Test_BuildTree(t *testing.T) {
 
 	assert.Equal(t, ValueLeaftopWxy1234, *model.LeafAtTopLevel)
 
+}
+
+func Test_PrunedPaths(t *testing.T) {
+	setUpTree()
+
+	// Nothing is pruned, but list is ordered
+	pruned := PrunePathValues(configValues, true)
+	assert.Equal(t, len(pruned), len(configValues))
+
+	configValues = append(configValues, &configapi.PathValue{Path: Test1Cont1AList2a1, Deleted: true})
+	pruned = PrunePathValues(configValues, true)
+	assert.Equal(t, len(pruned), len(configValues)-2) // two sub-paths
+
+	pruned = PrunePathValues(configValues, false)
+	assert.Equal(t, len(pruned), len(configValues)-3) // path + two sub-paths
+
+	configValues = append(configValues, &configapi.PathValue{Path: Test1Cont1AList2a, Deleted: true})
+	pruned = PrunePathValues(configValues, true)
+	assert.Equal(t, len(pruned), len(configValues)-5) // path + 1 deleted sub-path + 4 sub-paths
+}
+
+// PrintPaths prints out the give list of paths for convenience
+func PrintPaths(paths []*configapi.PathValue) {
+	for i, pv := range paths {
+		fmt.Printf("%4d: %s: %5t: %+v\n", i, pv.Path, pv.Deleted, pv.Value)
+	}
 }
