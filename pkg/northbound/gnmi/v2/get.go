@@ -74,7 +74,11 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		return resp, nil
 	}
 
-	return s.processRequest(ctx, req, groups, transactionStrategy)
+	resp, err := s.processRequest(ctx, req, groups, transactionStrategy)
+	if err != nil {
+		return nil, errors.Status(err).Err()
+	}
+	return resp, nil
 
 }
 
