@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
@@ -38,10 +39,9 @@ const (
 // string - therefore all float value must be string in JSON
 // Same with int64 and uin64 as per RFC 7951
 func BuildTree(values []*configapi.PathValue, jsonRFC7951 bool) ([]byte, error) {
-
 	root := make(map[string]interface{})
 	rootif := interface{}(root)
-	for _, cv := range values {
+	for _, cv := range PrunePathValues(values, false) {
 		err := addPathToTree(cv.Path, &cv.Value, &rootif, jsonRFC7951)
 		if err != nil {
 			return nil, err
@@ -257,4 +257,56 @@ func handleLeafValue(nodemap map[string]interface{}, value *configapi.TypedValue
 		(nodemap)[pathelems[0]] = fmt.Sprintf("unexpected %d", value.Type)
 	}
 
+}
+
+// PrunePathValues produces a copy of the given path values list, with paths marked as deleted and their sub-paths removed.
+// If leaveTopDeletedPaths parameter is true, the top-most deleted node will be left behind as a tomb-stone; otherwise all
+// deleted nodes will be pruned from the list.
+func PrunePathValues(paths []*configapi.PathValue, leaveTopDeletedPaths bool) []*configapi.PathValue {
+	sortedPaths := make([]*configapi.PathValue, len(paths))
+	copy(sortedPaths, paths)
+
+	// Order the paths to be pruned lexicographically (and shortest to longest) to make subsequent pruning easier
+	sort.Slice(sortedPaths, func(i, j int) bool {
+		return sortedPaths[i].Path < sortedPaths[j].Path
+	})
+
+	prunedPaths := make([]*configapi.PathValue, 0, len(sortedPaths))
+	deletingPrefix := ""
+	for _, pv := range sortedPaths {
+		// If this path is marked as deleted and we're already not deleting this subtree, start deleting
+		if pv.Deleted && (len(deletingPrefix) == 0 || !strings.HasPrefix(pv.Path, deletingPrefix)) {
+			deletingPrefix = pv.Path
+
+			// If we're asked to leave behind the top deleted node of a sub-tree, add it here
+			if leaveTopDeletedPaths {
+				prunedPaths = append(prunedPaths, pv)
+			}
+		}
+
+		// If we're not currently deleting or if the node is not part of the sub-tree, add it and cancel deletion
+		// since we have left the sub-tree.
+		if len(deletingPrefix) == 0 || !strings.HasPrefix(pv.Path, deletingPrefix) {
+			prunedPaths = append(prunedPaths, pv)
+			deletingPrefix = ""
+		}
+	}
+
+	return prunedPaths
+}
+
+// PrunePathMap produces a copy of the given path values map, with paths marked as deleted and their sub-paths removed.
+// If leaveTopDeletedPaths parameter is true, the top-most deleted node will be left behind as a tomb-stone; otherwise all
+// deleted nodes will be pruned from the list.
+func PrunePathMap(pathMap map[string]*configapi.PathValue, leaveTopDeletedPaths bool) map[string]*configapi.PathValue {
+	paths := make([]*configapi.PathValue, 0, len(pathMap))
+	for _, pv := range pathMap {
+		paths = append(paths, pv)
+	}
+	prunedPaths := PrunePathValues(paths, leaveTopDeletedPaths)
+	pruneMap := make(map[string]*configapi.PathValue)
+	for _, pv := range prunedPaths {
+		pruneMap[pv.Path] = pv
+	}
+	return pruneMap
 }

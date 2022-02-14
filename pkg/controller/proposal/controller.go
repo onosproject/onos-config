@@ -480,6 +480,8 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 			for path, changeValue := range changeValues {
 				config.Values[path] = changeValue
 			}
+			config.Values = tree.PrunePathMap(config.Values, true)
+
 			config.Status.Committed.Index = proposal.TransactionIndex
 			err = r.configurations.Update(ctx, config)
 			if err != nil {
@@ -617,6 +619,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		for _, changeValue := range changeValues {
 			pathValues = append(pathValues, changeValue)
 		}
+		pathValues = tree.PrunePathValues(pathValues, true)
 
 		log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
 
@@ -721,6 +724,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		for path, changeValue := range changeValues {
 			config.Status.Applied.Values[path] = changeValue
 		}
+		config.Status.Applied.Values = tree.PrunePathMap(config.Status.Applied.Values, true)
+
 		if err := r.configurations.UpdateStatus(ctx, config); err != nil {
 			log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 			return controller.Result{}, err
