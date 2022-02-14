@@ -16,6 +16,7 @@
 package config
 
 import (
+	protognmi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
@@ -47,7 +48,14 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 
 	// Set a value using gNMI client - target is up
 	c := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
-	_, _ = gnmiutils.SetGNMIValueOrFail(ctx, t, c, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      c,
+		Extensions:  gnmiutils.SyncExtension(t),
+		Encoding:    protognmi.Encoding_PROTO,
+		UpdatePaths: targetPath,
+	}
+	setReq.SetOrFail(t)
 
 	// Check that the value was set correctly
 	gnmiutils.CheckGNMIValue(ctx, t, c, targetPath, gnmiutils.NoExtensions, createRemoveTargetModValue1, 0, "Query after set returned the wrong value")
@@ -64,7 +72,9 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	// Set a value using gNMI client - target is down
 	setPath2 := gnmiutils.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
 
-	_, _ = gnmiutils.SetGNMIValueOrFail(ctx, t, c, setPath2, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+	setReq.UpdatePaths = setPath2
+	setReq.Extensions = nil
+	setReq.SetOrFail(t)
 
 	//  Restart simulated target
 	simulator = gnmiutils.CreateSimulatorWithName(ctx, t, createRemoveTargetModTargetName, false)

@@ -36,7 +36,6 @@ import (
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/config/v2"
-	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
 	gnmiclient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
@@ -268,32 +267,6 @@ func TransactionStrategyExtension(t *testing.T,
 	}
 }
 
-func convertGetResults(response *gpb.GetResponse) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
-	entryCount := len(response.Notification)
-	result := make([]protoutils.TargetPath, entryCount)
-
-	for index, notification := range response.Notification {
-		value := notification.Update[0].Val
-
-		result[index].TargetName = notification.Update[0].Path.Target
-		pathString := ""
-
-		for _, elem := range notification.Update[0].Path.Elem {
-			pathString = pathString + "/" + elem.Name
-		}
-		result[index].Path = pathString
-
-		result[index].PathDataType = "string_val"
-		if value != nil {
-			result[index].PathDataValue = utils.StrVal(value)
-		} else {
-			result[index].PathDataValue = ""
-		}
-	}
-
-	return result, response.Extension, nil
-}
-
 func extractSetTransactionID(response *gpb.SetResponse) (configapi.TransactionID, v2.Index, error) {
 	var transactionInfo *configapi.TransactionInfo
 	extensionsSet := response.Extension
@@ -335,32 +308,6 @@ func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.Tar
 		return nil, nil, err
 	}
 	return convertGetResults(response)
-}
-
-// SetGNMIValue generates a SET request on the given client for update and delete paths on a target
-func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protoutils.TargetPath,
-	deletePaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index, error) {
-	var protoBuilder strings.Builder
-	for _, updatePath := range updatePaths {
-		protoBuilder.WriteString(protoutils.MakeProtoUpdatePath(updatePath))
-	}
-	for _, deletePath := range deletePaths {
-		protoBuilder.WriteString(protoutils.MakeProtoDeletePath(deletePath.TargetName, deletePath.Path))
-	}
-
-	setTZRequest := &gpb.SetRequest{}
-
-	if err := proto.UnmarshalText(protoBuilder.String(), setTZRequest); err != nil {
-		return "", 0, err
-	}
-
-	setTZRequest.Extension = extensions
-	setResult, err := c.(*gclient.Client).Set(ctx, setTZRequest)
-	if err != nil {
-		return "", 0, err
-	}
-	id, index, err := extractSetTransactionID(setResult)
-	return id, index, err
 }
 
 // GetTargetPath creates a target path
@@ -446,17 +393,6 @@ func CheckGNMIValues(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Im
 	for index, expectedValue := range expectedValues {
 		assert.Equal(t, expectedValue, value[index].PathDataValue, "%s: %s", failMessage, value)
 	}
-}
-
-// SetGNMIValueOrFail does a GNMI set operation to the given client, and fails the test if there is an error
-func SetGNMIValueOrFail(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
-	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
-	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index) {
-	t.Helper()
-	transactionID, transactionIndex, err := SetGNMIValue(ctx, gnmiClient, updatePaths, deletePaths, extensions)
-	assert.NoError(t, err, "Set operation returned unexpected error")
-
-	return transactionID, transactionIndex
 }
 
 // MakeProtoPath returns a Path: element for a given target and Path

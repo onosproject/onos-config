@@ -17,6 +17,7 @@ package config
 import (
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gbp "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 )
 
@@ -47,14 +48,21 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	setNamePath := []proto.TargetPath{
 		{TargetName: simulator.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		Encoding:    gbp.Encoding_PROTO,
+		UpdatePaths: setNamePath,
+	}
+	setReq.SetOrFail(t)
 
 	// Set values using gNMI client
 	setPath := []proto.TargetPath{
 		{TargetName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
 		{TargetName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	setReq.UpdatePaths = setPath
+	setReq.SetOrFail(t)
 
 	// Check that the name value was set correctly
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, setNamePath, gnmiutils.NoExtensions, newRootName, 0, "Query name after set returned the wrong value")
@@ -63,7 +71,9 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, getPath, gnmiutils.NoExtensions, "false", 0, "Query enabled after set returned the wrong value")
 
 	// Remove the root path we added
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, gnmiutils.NoPaths, getPath, gnmiutils.SyncExtension(t))
+	setReq.UpdatePaths = nil
+	setReq.DeletePaths = getPath
+	setReq.SetOrFail(t)
 
 	//  Make sure child got removed
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, setNamePath, gnmiutils.NoExtensions, newRootName, 0, "New child was not removed")

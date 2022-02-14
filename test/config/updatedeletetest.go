@@ -17,6 +17,7 @@ package config
 import (
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gbp "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 )
 
@@ -45,7 +46,14 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	setNamePath := []proto.TargetPath{
 		{TargetName: simulator.Name(), Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
 	}
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		Extensions:  gnmiutils.SyncExtension(t),
+		Encoding:    gbp.Encoding_PROTO,
+		UpdatePaths: setNamePath,
+	}
+	setReq.SetOrFail(t)
 
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, setNamePath, gnmiutils.NoExtensions, udtestNameValue, 0, "Query name after set returned the wrong value")
 
@@ -54,7 +62,8 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 		{TargetName: simulator.Name(), Path: udtestEnabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
 		{TargetName: simulator.Name(), Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
 	}
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setInitialValuesPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	setReq.UpdatePaths = setInitialValuesPath
+	setReq.SetOrFail(t)
 
 	// Update Enabled, delete Description using gNMI client
 	updateEnabledPath := []proto.TargetPath{
@@ -63,7 +72,9 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	deleteDescriptionPath := []proto.TargetPath{
 		{TargetName: simulator.Name(), Path: udtestDescriptionPath},
 	}
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, updateEnabledPath, deleteDescriptionPath, gnmiutils.SyncExtension(t))
+	setReq.UpdatePaths = updateEnabledPath
+	setReq.DeletePaths = deleteDescriptionPath
+	setReq.SetOrFail(t)
 
 	// Check that the Enabled value is set correctly
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, updateEnabledPath, gnmiutils.NoExtensions, "false", 0, "Query name after set returned the wrong value")

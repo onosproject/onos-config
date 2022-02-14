@@ -15,6 +15,7 @@
 package config
 
 import (
+	protognmi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -46,7 +47,15 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
 
 	// Set a value using onos-config
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		UpdatePaths: targetPath,
+		Extensions:  gnmiutils.SyncExtension(t),
+		Encoding:    protognmi.Encoding_PROTO,
+	}
+	setReq.SetOrFail(t)
 
 	// Check that the value was set correctly
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after set returned the wrong value")
@@ -90,8 +99,16 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	hautils.CrashPodOrFail(t, configPod)
 
 	// Set values using onos-config
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, tzPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, bannerPaths, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Extensions: gnmiutils.SyncExtension(t),
+		Encoding:   protognmi.Encoding_PROTO,
+	}
+	setReq.UpdatePaths = tzPath
+	setReq.SetOrFail(t)
+	setReq.UpdatePaths = bannerPaths
+	setReq.SetOrFail(t)
 
 	// Check that the values were set correctly
 	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, tzPath, gnmiutils.SyncExtension(t), restartTzValue, 0, "Query TZ after set returned the wrong value")

@@ -16,6 +16,7 @@ package config
 
 import (
 	"context"
+	gbp "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
@@ -69,12 +70,21 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Set initial values
 	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, paths, initialValues)
-	_, _ = gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPathsForInit, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
-	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.SyncExtension(t), initialValues, 0, "Query after initial set returned the wrong value")
+
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		Encoding:    gbp.Encoding_PROTO,
+		Extensions:  gnmiutils.SyncExtension(t),
+		UpdatePaths: targetPathsForInit,
+	}
+	setReq.SetOrFail(t)
+	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, initialValues, 0, "Query after initial set returned the wrong value")
 
 	// Create a change that can be rolled back
 	targetPathsForSet := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
-	_, transactionIndex := gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	setReq.UpdatePaths = targetPathsForSet
+	_, transactionIndex := setReq.SetOrFail(t)
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}

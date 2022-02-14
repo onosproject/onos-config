@@ -17,6 +17,7 @@ package config
 
 import (
 	"context"
+	gbp "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
@@ -47,7 +48,13 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		Encoding:    gbp.Encoding_PROTO,
+		UpdatePaths: targetPath,
+	}
+	setReq.SetOrFail(t)
 
 	// Install and start target simulator
 	simulator := gnmiutils.CreateSimulatorWithName(ctx, t, offlineTargetName, false)

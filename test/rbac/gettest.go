@@ -61,14 +61,21 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 		setNamePath := []proto.TargetPath{
 			{TargetName: target, Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 		}
-		gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+		var setReq = &gnmiutils.SetRequest{
+			Ctx:         ctx,
+			Client:      gnmiClient,
+			Encoding:    gpb.Encoding_PROTO,
+			UpdatePaths: setNamePath,
+		}
+		setReq.SetOrFail(t)
 
 		// Set initial values for Enabled and Description using gNMI client
 		setInitialValuesPath := []proto.TargetPath{
 			{TargetName: target, Path: enabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
 			{TargetName: target, Path: descriptionPath, PathDataValue: descriptionLeafValue, PathDataType: proto.StringVal},
 		}
-		gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setInitialValuesPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+		setReq.UpdatePaths = setInitialValuesPath
+		setReq.SetOrFail(t)
 	}
 }
 

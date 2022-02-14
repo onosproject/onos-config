@@ -24,6 +24,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-api/go/onos/config/v2"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
 	gnmiclient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
@@ -40,6 +41,33 @@ type GetRequest struct {
 	Extensions []*gnmi_ext.Extension
 	Encoding   protognmi.Encoding
 	DataType   protognmi.GetRequest_DataType
+}
+
+// convertGetResults extracts path/value pairs from a GNMI get response
+func convertGetResults(response *protognmi.GetResponse) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
+	entryCount := len(response.Notification)
+	result := make([]protoutils.TargetPath, entryCount)
+
+	for index, notification := range response.Notification {
+		value := notification.Update[0].Val
+
+		result[index].TargetName = notification.Update[0].Path.Target
+		pathString := ""
+
+		for _, elem := range notification.Update[0].Path.Elem {
+			pathString = pathString + "/" + elem.Name
+		}
+		result[index].Path = pathString
+
+		result[index].PathDataType = "string_val"
+		if value != nil {
+			result[index].PathDataValue = utils.StrVal(value)
+		} else {
+			result[index].PathDataValue = ""
+		}
+	}
+
+	return result, response.Extension, nil
 }
 
 // Get performs a Get operation
@@ -115,4 +143,11 @@ func (req *SetRequest) Set() (configapi.TransactionID, v2.Index, error) {
 	}
 	id, index, err := extractSetTransactionID(setResult)
 	return id, index, err
+}
+
+// SetOrFail performs a Set operation and fails the test if an error occurs
+func (req *SetRequest) SetOrFail(t *testing.T) (configapi.TransactionID, v2.Index) {
+	transactionID, transactionIndex, err := req.Set()
+	assert.NoError(t, err)
+	return transactionID, transactionIndex
 }

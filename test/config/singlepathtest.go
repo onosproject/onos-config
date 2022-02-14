@@ -15,10 +15,8 @@
 package config
 
 import (
-	"testing"
-
 	protognmi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
+	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -67,8 +65,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	}
 
 	// Set a new value for the time zone using onos-config
-	_, _, err := onosConfigSetReq.Set()
-	assert.NoError(t, err)
+	onosConfigSetReq.SetOrFail(t)
 
 	// Check that the value was set correctly, both in onos-config and on the target
 	onosConfigGetReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value from onos-config")
@@ -77,8 +74,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	// Remove the path we added
 	onosConfigSetReq.DeletePaths = targetPaths
 	onosConfigSetReq.UpdatePaths = nil
-	_, _, err = onosConfigSetReq.Set()
-	assert.NoError(t, err)
+	onosConfigSetReq.SetOrFail(t)
 
 	//  Make sure it got removed, both in onos-config and on the target
 	onosConfigGetReq.CheckValue(t, "", 0, "incorrect value from onos-config for path /system/clock/config/timezone-name after delete")

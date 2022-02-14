@@ -56,7 +56,14 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 
 	// Set values
 	var targetPathsForSet = gnmiutils.GetTargetPathsWithValues(targets, newPaths, newValues)
-	_, transactionIndex := gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		Extensions:  gnmiutils.SyncExtension(t),
+		Encoding:    gbp.Encoding_PROTO,
+		UpdatePaths: targetPathsForSet,
+	}
+	_, transactionIndex := setReq.SetOrFail(t)
 
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, newPaths)
 
