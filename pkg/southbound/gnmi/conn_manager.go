@@ -67,7 +67,7 @@ func (m *connManager) GetByTarget(ctx context.Context, targetID topoapi.ID) (Cli
 			return gnmiClient, nil
 		}
 	}
-	return nil, errors.NewNotFound("connection for target %s not found", targetID)
+	return nil, errors.NewNotFound("gnmi client for target %s not found", targetID)
 }
 
 func (m *connManager) Get(ctx context.Context, connID ConnID) (Conn, bool) {

@@ -79,11 +79,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		return nil, errors.Status(err).Err()
 	}
 	return resp, nil
-
 }
 
 func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, groups []string, transactionStrategy configapi.TransactionStrategy) (*gnmi.GetResponse, error) {
-	log.Debugf("Processing get request %+v", req)
 	notifications := make([]*gnmi.Notification, 0)
 	prefix := req.GetPrefix()
 	targets := make(map[configapi.TargetID]*targetInfo)
@@ -100,24 +98,23 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 		}
 
 		if _, ok := targets[targetID]; !ok {
-			pathAsString := utils.StrPath(path)
-			if prefix != nil && prefix.Elem != nil {
-				pathAsString = utils.StrPath(prefix) + pathAsString
-			}
-			pathAsString = strings.TrimSuffix(pathAsString, "/")
-			pathInfo := &pathInfo{
-				targetID:     targetID,
-				path:         path,
-				pathAsString: pathAsString,
-			}
-			err := s.addTarget(ctx, targetID, targets, pathInfo)
+			err := s.addTarget(ctx, targetID, targets)
 			if err != nil {
 				log.Warn(err)
 				return nil, errors.Status(err).Err()
 
 			}
-			paths = append(paths, pathInfo)
 		}
+		pathAsString := utils.StrPath(path)
+		if prefix != nil && prefix.Elem != nil {
+			pathAsString = utils.StrPath(prefix) + pathAsString
+		}
+		pathAsString = strings.TrimSuffix(pathAsString, "/")
+		paths = append(paths, &pathInfo{
+			targetID:     targetID,
+			path:         path,
+			pathAsString: pathAsString,
+		})
 	}
 
 	// if there's only the prefix
@@ -127,7 +124,7 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 			return nil, errors.Status(errors.NewInvalid("has no target")).Err()
 		}
 		if _, ok := targets[targetID]; !ok {
-			err := s.addTarget(ctx, targetID, targets, nil)
+			err := s.addTarget(ctx, targetID, targets)
 			if err != nil {
 				return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
 			}
@@ -145,9 +142,9 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 		notifications = append(notifications, notification)
 	}
 
-	for _, pathInfoValue := range paths {
-		if targetInfo, ok := targets[pathInfoValue.targetID]; ok {
-			updates, err := s.getUpdate(ctx, targetInfo, prefix, pathInfoValue, req.GetEncoding(), groups)
+	for _, pathInfo := range paths {
+		if targetInfo, ok := targets[pathInfo.targetID]; ok {
+			updates, err := s.getUpdate(ctx, targetInfo, prefix, pathInfo, req.GetEncoding(), groups)
 			if err != nil {
 				return nil, errors.Status(err).Err()
 			}
@@ -186,11 +183,10 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 		wg.Wait()
 	}
 
-	response := &gnmi.GetResponse{
+	response := gnmi.GetResponse{
 		Notification: notifications,
 	}
-	log.Debugf("Returning Get response for request: %+v", response, req)
-	return response, nil
+	return &response, nil
 }
 
 func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
@@ -241,7 +237,7 @@ func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi
 
 }
 
-func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, targets map[configapi.TargetID]*targetInfo, pathInfo *pathInfo) error {
+func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, targets map[configapi.TargetID]*targetInfo) error {
 	modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
 	if err != nil {
 		log.Warn(err)
@@ -251,7 +247,6 @@ func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, tar
 		targetID:      targetID,
 		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
 		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
-		plugin:        modelPlugin,
 	}
 
 	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID))
