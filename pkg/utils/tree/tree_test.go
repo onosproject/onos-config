@@ -91,27 +91,23 @@ var (
 )
 
 func setUpTree() {
-	configValues = make([]*configapi.PathValue, 13)
+	configValues = make([]*configapi.PathValue, 12)
 	configValues[0] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: *configapi.NewTypedValueUint(ValueLeaf2A12, 8)}
-	configValues[1] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: *configapi.NewTypedValueUint(ValueLeaf2A12, 8)}
 	configValues[1] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2B, Value: *configapi.NewTypedValueFloat(ValueLeaf2B114)}
 
 	configValues[2] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: *configapi.NewTypedValueString(ValueLeaf2CMyValue)}
-	configValues[3] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: *configapi.NewTypedValueString(ValueLeaf2CMyValue)}
-	configValues[4] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: *configapi.NewTypedValueString(ValueLeaf2CMyValue)}
 	configValues[3] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2D, Value: *configapi.NewTypedValueDecimal(ValueLeaf2D114, 5)}
-	//configValues[4] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2E, Value: devicechange.NewTypedValueInt(ValueLeaf2A12)}
 
-	configValues[5] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2F, Value: *configapi.NewTypedValueBytes([]byte(ValueList2A2F))}
-	configValues[6] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2G, Value: *configapi.NewTypedValueBool(ValueList2A2G)}
-	configValues[7] = &configapi.PathValue{Path: Test1Cont1ALeaf1a, Value: *configapi.NewTypedValueString(ValueLeaf1AMyValue)}
+	configValues[4] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2F, Value: *configapi.NewTypedValueBytes([]byte(ValueList2A2F))}
+	configValues[5] = &configapi.PathValue{Path: Test1Cont1ACont2ALeaf2G, Value: *configapi.NewTypedValueBool(ValueList2A2G)}
+	configValues[6] = &configapi.PathValue{Path: Test1Cont1ALeaf1a, Value: *configapi.NewTypedValueString(ValueLeaf1AMyValue)}
 
-	configValues[8] = &configapi.PathValue{Path: Test1Cont1AList2a1t, Value: *configapi.NewTypedValueUint(ValueList2b1PwrT, 16)}
-	configValues[9] = &configapi.PathValue{Path: Test1Cont1AList2a1r, Value: *configapi.NewTypedValueUint(ValueList2b1PwrR, 16)}
-	configValues[10] = &configapi.PathValue{Path: Test1Cont1AList2a2t, Value: *configapi.NewTypedValueUint(ValueList2b2PwrT, 16)}
-	configValues[11] = &configapi.PathValue{Path: Test1Cont1AList2a2r, Value: *configapi.NewTypedValueUint(ValueList2b2PwrR, 16)}
+	configValues[7] = &configapi.PathValue{Path: Test1Cont1AList2a1t, Value: *configapi.NewTypedValueUint(ValueList2b1PwrT, 16)}
+	configValues[8] = &configapi.PathValue{Path: Test1Cont1AList2a1r, Value: *configapi.NewTypedValueUint(ValueList2b1PwrR, 16)}
+	configValues[9] = &configapi.PathValue{Path: Test1Cont1AList2a2t, Value: *configapi.NewTypedValueUint(ValueList2b2PwrT, 16)}
+	configValues[10] = &configapi.PathValue{Path: Test1Cont1AList2a2r, Value: *configapi.NewTypedValueUint(ValueList2b2PwrR, 16)}
 	// TODO add back in a double key list - but must be added to the YANG model first
-	configValues[12] = &configapi.PathValue{Path: Test1Leaftoplevel, Value: *configapi.NewTypedValueString(ValueLeaftopWxy1234)}
+	configValues[11] = &configapi.PathValue{Path: Test1Leaftoplevel, Value: *configapi.NewTypedValueString(ValueLeaftopWxy1234)}
 }
 
 func Test_BuildTree(t *testing.T) {
@@ -158,23 +154,46 @@ func Test_PrunedPaths(t *testing.T) {
 
 	// Nothing is pruned, but list is ordered
 	pruned := PrunePathValues(configValues, true)
-	assert.Equal(t, len(pruned), len(configValues))
+	assert.Equal(t, len(pruned), len(configValues)) // nothing to prune
+	prunedMap := PrunePathMap(ListToMap(configValues), true)
+	assert.Equal(t, len(prunedMap), len(pruned))
 
 	configValues = append(configValues, &configapi.PathValue{Path: Test1Cont1AList2a1, Deleted: true})
 	pruned = PrunePathValues(configValues, true)
 	assert.Equal(t, len(pruned), len(configValues)-2) // two sub-paths
+	prunedMap = PrunePathMap(ListToMap(configValues), true)
+	assert.Equal(t, len(prunedMap), len(pruned))
 
 	pruned = PrunePathValues(configValues, false)
 	assert.Equal(t, len(pruned), len(configValues)-3) // path + two sub-paths
+	prunedMap = PrunePathMap(ListToMap(configValues), false)
+	assert.Equal(t, len(prunedMap), len(pruned))
 
 	configValues = append(configValues, &configapi.PathValue{Path: Test1Cont1AList2a, Deleted: true})
 	pruned = PrunePathValues(configValues, true)
-	assert.Equal(t, len(pruned), len(configValues)-5) // path + 1 deleted sub-path + 4 sub-paths
+	assert.Equal(t, len(pruned), len(configValues)-5) // path + 1 explicitly deleted sub-path + 4 sub-paths
+	prunedMap = PrunePathMap(ListToMap(configValues), true)
+	assert.Equal(t, len(prunedMap), len(pruned))
+}
+
+func ListToMap(paths []*configapi.PathValue) map[string]*configapi.PathValue {
+	pm := make(map[string]*configapi.PathValue, len(paths))
+	for _, pv := range paths {
+		pm[pv.Path] = pv
+	}
+	return pm
 }
 
 // PrintPaths prints out the give list of paths for convenience
 func PrintPaths(paths []*configapi.PathValue) {
 	for i, pv := range paths {
 		fmt.Printf("%4d: %s: %5t: %+v\n", i, pv.Path, pv.Deleted, pv.Value)
+	}
+}
+
+// PrintPathMap prints out the give list of paths for convenience
+func PrintPathMap(paths map[string]*configapi.PathValue) {
+	for p, pv := range paths {
+		fmt.Printf("%s: %s: %5t: %+v\n", p, pv.Path, pv.Deleted, pv.Value)
 	}
 }

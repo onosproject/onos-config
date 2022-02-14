@@ -41,7 +41,7 @@ const (
 func BuildTree(values []*configapi.PathValue, jsonRFC7951 bool) ([]byte, error) {
 	root := make(map[string]interface{})
 	rootif := interface{}(root)
-	for _, cv := range values {
+	for _, cv := range PrunePathValues(values, false) {
 		err := addPathToTree(cv.Path, &cv.Value, &rootif, jsonRFC7951)
 		if err != nil {
 			return nil, err
@@ -293,4 +293,20 @@ func PrunePathValues(paths []*configapi.PathValue, leaveTopDeletedPaths bool) []
 	}
 
 	return prunedPaths
+}
+
+// PrunePathMap produces a copy of the given path values map, with paths marked as deleted and their sub-paths removed.
+// If leaveTopDeletedPaths parameter is true, the top-most deleted node will be left behind as a tomb-stone; otherwise all
+// deleted nodes will be pruned from the list.
+func PrunePathMap(pathMap map[string]*configapi.PathValue, leaveTopDeletedPaths bool) map[string]*configapi.PathValue {
+	paths := make([]*configapi.PathValue, 0, len(pathMap))
+	for _, pv := range pathMap {
+		paths = append(paths, pv)
+	}
+	prunedPaths := PrunePathValues(paths, leaveTopDeletedPaths)
+	pruneMap := make(map[string]*configapi.PathValue)
+	for _, pv := range prunedPaths {
+		pruneMap[pv.Path] = pv
+	}
+	return pruneMap
 }
