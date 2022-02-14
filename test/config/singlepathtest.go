@@ -15,9 +15,10 @@
 package config
 
 import (
+	"testing"
+
 	protognmi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
-	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -50,7 +51,6 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 		Client:   gnmiClient,
 		Paths:    targetPaths,
 		Encoding: protognmi.Encoding_PROTO,
-		DataType: protognmi.GetRequest_CONFIG,
 	}
 	var simulatorGetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,

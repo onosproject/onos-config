@@ -46,7 +46,6 @@ const OIDCServerURL = "OIDC_SERVER_URL"
 // Get implements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 	log.Infof("Received gNMI Get Request: %+v", req)
-	notifications := make([]*gnmi.Notification, 0)
 	groups := make([]string, 0)
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
 		groups = append(groups, strings.Split(md.Get("groups"), ";")...)
@@ -64,11 +63,29 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
 	}
+	// If the request data type is STATE or OPERATIONAL, get it from the target directly
+	if req.Type == gnmi.GetRequest_STATE || req.Type == gnmi.GetRequest_OPERATIONAL {
+		log.Debugf("Process request with data type: %s", req.Type.String())
+		resp, err := s.processStateOrOperationalRequest(ctx, req)
+		if err != nil {
+			log.Warn(err)
+			return nil, errors.Status(err).Err()
+		}
+		return resp, nil
+	}
 
+	resp, err := s.processRequest(ctx, req, groups, transactionStrategy)
+	if err != nil {
+		return nil, errors.Status(err).Err()
+	}
+	return resp, nil
+}
+
+func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, groups []string, transactionStrategy configapi.TransactionStrategy) (*gnmi.GetResponse, error) {
+	notifications := make([]*gnmi.Notification, 0)
 	prefix := req.GetPrefix()
 	targets := make(map[configapi.TargetID]*targetInfo)
 	var paths []*pathInfo
-
 	// Get configuration for each target and forms targets info map
 	// and process paths in the request and forms a map of paths info
 	for _, path := range req.GetPath() {
@@ -88,9 +105,15 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 			}
 		}
+		pathAsString := utils.StrPath(path)
+		if prefix != nil && prefix.Elem != nil {
+			pathAsString = utils.StrPath(prefix) + pathAsString
+		}
+		pathAsString = strings.TrimSuffix(pathAsString, "/")
 		paths = append(paths, &pathInfo{
-			targetID: targetID,
-			path:     path,
+			targetID:     targetID,
+			path:         path,
+			pathAsString: pathAsString,
 		})
 	}
 
@@ -107,7 +130,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			}
 		}
 
-		updates, err := s.getUpdate(ctx, targets[targetID], prefix, nil, req.GetEncoding(), groups)
+		updates, err := s.getUpdate(ctx, targets[targetID], prefix, &pathInfo{}, req.GetEncoding(), groups)
 		if err != nil {
 			return nil, errors.Status(err).Err()
 		}
@@ -121,7 +144,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	for _, pathInfo := range paths {
 		if targetInfo, ok := targets[pathInfo.targetID]; ok {
-			updates, err := s.getUpdate(ctx, targetInfo, prefix, pathInfo.path, req.GetEncoding(), groups)
+			updates, err := s.getUpdate(ctx, targetInfo, prefix, pathInfo, req.GetEncoding(), groups)
 			if err != nil {
 				return nil, errors.Status(err).Err()
 			}
@@ -141,7 +164,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		for _, target := range targets {
 			if target.configuration.Status.Applied.Index != target.configuration.Status.Committed.Index {
 				ch := make(chan configapi.ConfigurationEvent)
-				err = s.configurations.Watch(ctx, ch, configuration.WithConfigurationID(configuration.NewID(target.targetID)), configuration.WithReplay())
+				err := s.configurations.Watch(ctx, ch, configuration.WithConfigurationID(configuration.NewID(target.targetID)), configuration.WithReplay())
 				if err != nil {
 					return nil, errors.Status(err).Err()
 				}
@@ -166,6 +189,54 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	return &response, nil
 }
 
+func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
+	prefix := req.GetPrefix()
+	paths := make(map[configapi.TargetID][]*gnmi.Path)
+	notifications := make([]*gnmi.Notification, 0)
+	for _, path := range req.GetPath() {
+		targetID := configapi.TargetID(path.Target)
+		if targetID == "" && prefix != nil {
+			targetID = configapi.TargetID(prefix.Target)
+		}
+		if targetID == "" {
+			return nil, errors.Status(errors.NewInvalid("has no target")).Err()
+		}
+		if pathList, ok := paths[targetID]; ok {
+			pathList = append(pathList, path)
+			paths[targetID] = pathList
+		} else {
+			var pathList []*gnmi.Path
+			pathList = append(pathList, path)
+			paths[targetID] = pathList
+		}
+	}
+
+	for targetID, paths := range paths {
+		roGetReq := &gnmi.GetRequest{
+			Encoding:  req.Encoding,
+			Type:      req.Type,
+			UseModels: req.UseModels,
+			Extension: req.Extension,
+			Path:      paths,
+		}
+
+		conn, err := s.conns.GetByTarget(ctx, topoapi.ID(targetID))
+		if err != nil {
+			return nil, errors.Status(err).Err()
+		}
+		resp, err := conn.Get(ctx, roGetReq)
+		if err != nil {
+			return nil, errors.Status(err).Err()
+		}
+		notifications = append(notifications, resp.Notification...)
+	}
+	response := gnmi.GetResponse{
+		Notification: notifications,
+	}
+	return &response, nil
+
+}
+
 func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, targets map[configapi.TargetID]*targetInfo) error {
 	modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
 	if err != nil {
@@ -188,17 +259,12 @@ func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, tar
 }
 
 // getUpdate utility method for getting an Update for a given path
-func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *gnmi.Path, path *gnmi.Path,
+func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *gnmi.Path, pathInfo *pathInfo,
 	encoding gnmi.Encoding, groups []string) ([]*gnmi.Update, error) {
-	if (path == nil || path.Target == "") && (prefix == nil || prefix.Target == "") {
-		return nil, errors.NewInvalid("invalid request - Path %s has no target", utils.StrPath(path))
+	if (pathInfo.path == nil || pathInfo.path.Target == "") && (prefix == nil || prefix.Target == "") {
+		return nil, errors.NewInvalid("invalid request - Path %s has no target", utils.StrPath(pathInfo.path))
 	}
 
-	pathAsString := utils.StrPath(path)
-	if prefix != nil && prefix.Elem != nil {
-		pathAsString = utils.StrPath(prefix) + pathAsString
-	}
-	pathAsString = strings.TrimSuffix(pathAsString, "/")
 	targetConfig := targetInfo.configuration
 
 	var configValues []*configapi.PathValue
@@ -220,14 +286,14 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *
 	}
 
 	filteredValues := make([]*configapi.PathValue, 0)
-	pathRegexp := utils.MatchWildcardRegexp(pathAsString, false)
+	pathRegexp := utils.MatchWildcardRegexp(pathInfo.pathAsString, false)
 	for _, cv := range configValuesAllowed {
 		if pathRegexp.MatchString(cv.Path) && !cv.Deleted {
 			filteredValues = append(filteredValues, cv)
 		}
 	}
 
-	return createUpdate(prefix, path, filteredValues, encoding)
+	return createUpdate(prefix, pathInfo.path, filteredValues, encoding)
 }
 
 func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo *targetInfo, configValues []*configapi.PathValue, groups []string) ([]*configapi.PathValue, error) {

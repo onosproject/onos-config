@@ -12,26 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gnmi
+package node
 
 import (
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	"github.com/onosproject/onos-config/pkg/pluginregistry"
-	"github.com/openconfig/gnmi/proto/gnmi"
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-lib-go/pkg/env"
+	"github.com/onosproject/onos-lib-go/pkg/uri"
 )
 
-type targetInfo struct {
-	targetID      configapi.TargetID
-	targetVersion configapi.TargetVersion
-	targetType    configapi.TargetType
-	plugin        pluginregistry.ModelPlugin
-	updates       configapi.TypedValueMap
-	removes       []string
-	configuration *configapi.Configuration
-}
-
-type pathInfo struct {
-	targetID     configapi.TargetID
-	path         *gnmi.Path
-	pathAsString string
+// GetOnosConfigID gets onos-config URI
+func GetOnosConfigID() topoapi.ID {
+	return topoapi.ID(uri.NewURI(
+		uri.WithScheme("gnmi"),
+		uri.WithOpaque(env.GetPodID())).String())
 }

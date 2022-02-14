@@ -16,6 +16,9 @@ package gnmi
 
 import (
 	"context"
+	"math"
+	"sync"
+
 	"github.com/google/uuid"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -24,13 +27,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
-	"math"
-	"sync"
 )
 
 // ConnManager gNMI connection manager
 type ConnManager interface {
 	Get(ctx context.Context, connID ConnID) (Conn, bool)
+	GetByTarget(ctx context.Context, targetID topoapi.ID) (Client, error)
 	Connect(ctx context.Context, target *topoapi.Object) error
 	Disconnect(ctx context.Context, targetID topoapi.ID) error
 	Watch(ctx context.Context, ch chan<- Conn) error
@@ -39,7 +41,7 @@ type ConnManager interface {
 // NewConnManager creates a new gNMI connection manager
 func NewConnManager() ConnManager {
 	mgr := &connManager{
-		targets:  make(map[topoapi.ID]*grpc.ClientConn),
+		targets:  make(map[topoapi.ID]*client),
 		conns:    make(map[ConnID]Conn),
 		watchers: make(map[uuid.UUID]chan<- Conn),
 		eventCh:  make(chan Conn),
@@ -49,12 +51,23 @@ func NewConnManager() ConnManager {
 }
 
 type connManager struct {
-	targets    map[topoapi.ID]*grpc.ClientConn
+	targets    map[topoapi.ID]*client
 	conns      map[ConnID]Conn
 	connsMu    sync.RWMutex
 	watchers   map[uuid.UUID]chan<- Conn
 	watchersMu sync.RWMutex
 	eventCh    chan Conn
+}
+
+func (m *connManager) GetByTarget(ctx context.Context, targetID topoapi.ID) (Client, error) {
+	m.connsMu.RLock()
+	defer m.connsMu.RUnlock()
+	for id, gnmiClient := range m.targets {
+		if id == targetID {
+			return gnmiClient, nil
+		}
+	}
+	return nil, errors.NewNotFound("gnmi client for target %s not found", targetID)
 }
 
 func (m *connManager) Get(ctx context.Context, connID ConnID) (Conn, bool) {
@@ -66,7 +79,7 @@ func (m *connManager) Get(ctx context.Context, connID ConnID) (Conn, bool) {
 
 func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error {
 	m.connsMu.RLock()
-	clientConn, ok := m.targets[target.ID]
+	gnmiClient, ok := m.targets[target.ID]
 	m.connsMu.RUnlock()
 	if ok {
 		return errors.NewAlreadyExists("target '%s' already exists", target.ID)
@@ -75,7 +88,7 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 	m.connsMu.Lock()
 	defer m.connsMu.Unlock()
 
-	clientConn, ok = m.targets[target.ID]
+	gnmiClient, ok = m.targets[target.ID]
 	if ok {
 		return errors.NewAlreadyExists("target '%s' already exists", target.ID)
 	}
@@ -104,7 +117,8 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 		log.Warnf("Failed to connect to the gNMI target %s: %s", destination.Target, err)
 		return err
 	}
-	m.targets[target.ID] = clientConn
+
+	m.targets[target.ID] = gnmiClient
 
 	go func() {
 		var conn Conn

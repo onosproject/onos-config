@@ -15,8 +15,9 @@
 package gnmi
 
 import (
-	"fmt"
 	"regexp"
+
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
@@ -83,7 +84,7 @@ func createUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*configapi.
 		}
 		return updates, nil
 	default:
-		return nil, fmt.Errorf("unsupported encoding %v", encoding)
+		return nil, errors.NewInvalid("unsupported encoding %v", encoding)
 	}
 }
 

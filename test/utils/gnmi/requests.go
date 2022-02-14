@@ -18,6 +18,9 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-api/go/onos/config/v2"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
@@ -27,8 +30,6 @@ import (
 	protognmi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 )
 
 // GetRequest represents a GNMI Get request
@@ -54,6 +55,7 @@ func (req *GetRequest) Get() ([]protoutils.TargetPath, []*gnmi_ext.Extension, er
 	}
 	gnmiGetRequest.Encoding = req.Encoding
 	gnmiGetRequest.Extension = req.Extensions
+	gnmiGetRequest.Type = req.DataType
 	response, err := req.Client.(*gclient.Client).Get(req.Ctx, gnmiGetRequest)
 	if err != nil || response == nil {
 		return nil, nil, err
