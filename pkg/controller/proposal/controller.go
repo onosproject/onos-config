@@ -724,6 +724,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		for path, changeValue := range changeValues {
 			config.Status.Applied.Values[path] = changeValue
 		}
+		config.Status.Applied.Values = tree.PrunePathMap(config.Status.Applied.Values, true)
+
 		if err := r.configurations.UpdateStatus(ctx, config); err != nil {
 			log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 			return controller.Result{}, err
