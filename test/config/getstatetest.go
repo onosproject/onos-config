@@ -16,6 +16,9 @@ package config
 
 import (
 	"testing"
+	"time"
+
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -35,6 +38,7 @@ func (s *TestSuite) TestGetState(t *testing.T) {
 	// Create a simulated device
 	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), time.Minute)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)

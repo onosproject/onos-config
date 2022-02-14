@@ -62,10 +62,8 @@ type connManager struct {
 func (m *connManager) GetByTarget(ctx context.Context, targetID topoapi.ID) (Client, error) {
 	m.connsMu.RLock()
 	defer m.connsMu.RUnlock()
-	for id, gnmiClient := range m.targets {
-		if id == targetID {
-			return gnmiClient, nil
-		}
+	if gnmiClient, ok := m.targets[targetID]; ok {
+		return gnmiClient, nil
 	}
 	return nil, errors.NewNotFound("gnmi client for target %s not found", targetID)
 }
