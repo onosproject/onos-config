@@ -15,6 +15,8 @@
 package config
 
 import (
+	protognmi "github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -39,20 +41,48 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 	targetClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
 
-	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	// Get the GNMI path
+	targetPaths := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 
-	// Set a value using gNMI client
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, devicePath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	// Set up requests
+	var onosConfigGetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   gnmiClient,
+		Paths:    targetPaths,
+		Encoding: protognmi.Encoding_PROTO,
+		DataType: protognmi.GetRequest_CONFIG,
+	}
+	var simulatorGetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   targetClient,
+		Paths:    targetPaths,
+		Encoding: protognmi.Encoding_JSON,
+	}
+	var onosConfigSetReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		UpdatePaths: targetPaths,
+		Extensions:  gnmiutils.SyncExtension(t),
+		Encoding:    protognmi.Encoding_PROTO,
+	}
+
+	// Set a new value for the time zone using onos-config
+	_, _, err := onosConfigSetReq.Set()
+	assert.NoError(t, err)
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, devicePath, gnmiutils.NoExtensions, tzValue, 0, "Query after set returned the wrong value")
-	gnmiutils.CheckTargetValue(ctx, t, targetClient, devicePath, gnmiutils.NoExtensions, tzValue)
+	onosConfigGetReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value from onos-config")
+	simulatorGetReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value from target")
 
 	// Remove the path we added
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, gnmiutils.NoPaths, devicePath, gnmiutils.SyncExtension(t))
+	onosConfigSetReq.DeletePaths = targetPaths
+	onosConfigSetReq.UpdatePaths = nil
+	_, _, err = onosConfigSetReq.Set()
+	assert.NoError(t, err)
 
 	//  Make sure it got removed, both in onos-config and on the target
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, devicePath, gnmiutils.NoExtensions, "", 0,
-		"incorrect value found for path /system/clock/config/timezone-name after delete")
-	gnmiutils.CheckTargetValueDeleted(ctx, t, targetClient, devicePath, gnmiutils.NoExtensions)
+	onosConfigGetReq.CheckValue(t, "", 0, "incorrect value from onos-config for path /system/clock/config/timezone-name after delete")
+	// Currently, the path is left behind so this check does not work
+	//onosConfigGetReq.CheckValueDeleted(t)
+	simulatorGetReq.CheckValueDeleted(t)
 }
