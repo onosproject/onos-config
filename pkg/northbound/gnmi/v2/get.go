@@ -132,7 +132,7 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 			}
 		}
 
-		updates, err := s.getUpdate(ctx, targets[targetID], prefix, nil, req.GetEncoding(), groups)
+		updates, err := s.getUpdate(ctx, targets[targetID], prefix, &pathInfo{}, req.GetEncoding(), groups)
 		if err != nil {
 			return nil, errors.Status(err).Err()
 		}
@@ -257,7 +257,6 @@ func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, tar
 		return err
 	}
 	targetInfo.configuration = targetConfig
-
 	targets[targetID] = targetInfo
 	return nil
 }
