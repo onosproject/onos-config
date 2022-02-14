@@ -84,6 +84,14 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
-	_, _, err = gnmiutils.GetGNMIValue(ctx, target1GnmiClient, targetPathsForGet, gnmiutils.SyncExtension(t), gbp.Encoding_PROTO)
+	var onosConfigGetReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     target1GnmiClient,
+		Paths:      targetPathsForGet,
+		Encoding:   gbp.Encoding_PROTO,
+		DataType:   gbp.GetRequest_CONFIG,
+		Extensions: gnmiutils.SyncExtension(t),
+	}
+	_, _, err = onosConfigGetReq.Get()
 	assert.Error(t, err)
 }

@@ -235,7 +235,14 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 				}
 
 				// Check that the value can be read via get
-				values, _, err := gnmiutils.GetGNMIValue(ctx, gnmiClient, targetPath, gnmiutils.NoExtensions, gpb.Encoding_PROTO)
+				var onosConfigGetReq = &gnmiutils.GetRequest{
+					Ctx:      ctx,
+					Client:   gnmiClient,
+					Paths:    targetPath,
+					Encoding: gpb.Encoding_PROTO,
+					DataType: gpb.GetRequest_CONFIG,
+				}
+				values, _, err := onosConfigGetReq.Get()
 				assert.NoError(t, err)
 				value := ""
 				if len(values) != 0 {

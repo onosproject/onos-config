@@ -27,6 +27,14 @@ func (s *BenchmarkSuite) BenchmarkGet(b *benchmark.Benchmark) error {
 	devicePath := gnmiutils.GetTargetPath(s.simulator.Name(), "/system/config/motd-banner")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, _, err := gnmiutils.GetGNMIValue(ctx, s.client, devicePath, gnmiutils.NoExtensions, gbp.Encoding_PROTO)
+
+	var onosConfigGetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   s.client,
+		Paths:    devicePath,
+		Encoding: gbp.Encoding_PROTO,
+		DataType: gbp.GetRequest_CONFIG,
+	}
+	_, _, err := onosConfigGetReq.Get()
 	return err
 }

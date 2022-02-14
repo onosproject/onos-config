@@ -290,7 +290,7 @@ func extractSetTransactionID(response *gpb.SetResponse) (configapi.TransactionID
 }
 
 // GetGNMIValue generates a GET request on the given client for a Path on a target
-func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension,
+func XXXGetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension,
 	encoding gpb.Encoding) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
 	protoString := ""
 	for _, targetPath := range paths {
@@ -355,7 +355,7 @@ func GetTargetPathsWithValues(targets []string, paths []string, values []string)
 
 // CheckTargetValue makes sure a value has been assigned properly to a target path by querying GNMI
 func CheckTargetValue(ctx context.Context, t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValue string) {
-	targetValues, extensions, err := GetGNMIValue(ctx, targetGnmiClient, targetPaths, extensions, gpb.Encoding_JSON)
+	targetValues, extensions, err := XXXGetGNMIValue(ctx, targetGnmiClient, targetPaths, extensions, gpb.Encoding_JSON)
 	if err == nil {
 		assert.NoError(t, err, "GNMI get operation to target returned an error")
 		assert.Equal(t, expectedValue, targetValues[0].PathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
@@ -367,7 +367,7 @@ func CheckTargetValue(ctx context.Context, t *testing.T, targetGnmiClient gnmicl
 
 // CheckTargetValueDeleted makes sure target path is missing when queried via GNMI
 func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) {
-	_, _, err := GetGNMIValue(ctx, targetGnmiClient, targetPaths, extensions, gpb.Encoding_JSON)
+	_, _, err := XXXGetGNMIValue(ctx, targetGnmiClient, targetPaths, extensions, gpb.Encoding_JSON)
 	if err == nil {
 		assert.Fail(t, "Path not deleted", targetPaths)
 	} else if !strings.Contains(err.Error(), "NotFound") {
@@ -378,7 +378,7 @@ func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient
 // CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
 func CheckGNMIValue(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValue string, expectedExtensions int, failMessage string) {
 	t.Helper()
-	value, extensions, err := GetGNMIValue(ctx, gnmiClient, paths, extensions, gpb.Encoding_PROTO)
+	value, extensions, err := XXXGetGNMIValue(ctx, gnmiClient, paths, extensions, gpb.Encoding_PROTO)
 	assert.NoError(t, err, "Get operation returned an unexpected error")
 	assert.Equal(t, expectedExtensions, len(extensions))
 	assert.Equal(t, expectedValue, value[0].PathDataValue, "%s: %s", failMessage, value)
@@ -387,7 +387,7 @@ func CheckGNMIValue(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Imp
 // CheckGNMIValues makes sure a list of values has been assigned properly by querying the onos-config northbound API
 func CheckGNMIValues(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValues []string, expectedExtensions int, failMessage string) {
 	t.Helper()
-	value, extensions, err := GetGNMIValue(ctx, gnmiClient, paths, extensions, gpb.Encoding_PROTO)
+	value, extensions, err := XXXGetGNMIValue(ctx, gnmiClient, paths, extensions, gpb.Encoding_PROTO)
 	assert.NoError(t, err, "Get operation returned unexpected error")
 	assert.Equal(t, expectedExtensions, len(extensions))
 	for index, expectedValue := range expectedValues {

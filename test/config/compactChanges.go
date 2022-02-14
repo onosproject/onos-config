@@ -179,11 +179,16 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	_, _ = setReq.SetOrFail(t)
 
 	// Now check every value for both sim1 and sim2
-	expectedValues, _, err := gnmiutils.GetGNMIValue(ctx, gnmiClient,
-		[]proto.TargetPath{
+	var onosConfigGetReq = &gnmiutils.GetRequest{
+		Ctx:    ctx,
+		Client: gnmiClient,
+		Paths: []proto.TargetPath{
 			sim1Path4[0], sim1Path2[0], sim1Path3[0], sim1Path5[0],
-			sim2Path1[0], sim2Path2[0], sim2Path3[0], sim2Path4[0],
-		}, gnmiutils.NoExtensions, gpb.Encoding_PROTO)
+			sim2Path1[0], sim2Path2[0], sim2Path3[0], sim2Path4[0]},
+		Encoding: gpb.Encoding_PROTO,
+		DataType: gpb.GetRequest_CONFIG,
+	}
+	expectedValues, _, err := onosConfigGetReq.Get()
 	assert.NoError(t, err)
 	for _, expectedValue := range expectedValues {
 		switch expectedValue.TargetName + "," + expectedValue.Path {

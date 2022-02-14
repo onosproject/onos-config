@@ -102,7 +102,7 @@ func (req *GetRequest) CheckValue(t *testing.T, expectedValue string, expectedEx
 
 // CheckValueDeleted makes sure that the specified paths have been removed
 func (req *GetRequest) CheckValueDeleted(t *testing.T) {
-	_, _, err := GetGNMIValue(req.Ctx, req.Client, req.Paths, req.Extensions, protognmi.Encoding_JSON)
+	_, _, err := req.Get()
 	if err == nil {
 		assert.Fail(t, "Path not deleted", req.Paths)
 	} else if !strings.Contains(err.Error(), "NotFound") {

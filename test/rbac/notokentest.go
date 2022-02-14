@@ -15,7 +15,6 @@
 package rbac
 
 import (
-	"context"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -42,7 +41,14 @@ func (s *TestSuite) TestNoToken(t *testing.T) {
 
 	// Try to fetch a value from the GNMI client
 	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
-	_, _, err := gnmiutils.GetGNMIValue(context.Background(), gnmiClient, devicePath, gnmiutils.NoExtensions, gpb.Encoding_PROTO)
+	var onosConfigGetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   gnmiClient,
+		Paths:    devicePath,
+		Encoding: gpb.Encoding_PROTO,
+		DataType: gpb.GetRequest_CONFIG,
+	}
+	_, _, err := onosConfigGetReq.Get()
 
 	// An error indicating an unauthenticated request is expected
 	assert.Error(t, err)
