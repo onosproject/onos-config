@@ -41,36 +41,43 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 	targetClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
 
-	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	// Get the GNMI path
+	targetPaths := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 
-	// Set a value using gNMI client
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, devicePath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
-
-	// Check that the value was set correctly, both in onos-config and on the target
+	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   gnmiClient,
-		Paths:    devicePath,
+		Paths:    targetPaths,
 		Encoding: protognmi.Encoding_PROTO,
+		DataType: protognmi.GetRequest_CONFIG,
 	}
 	var simulatorGetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetClient,
-		Paths:    devicePath,
+		Paths:    targetPaths,
 		Encoding: protognmi.Encoding_JSON,
 	}
+	var onosConfigSetReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		UpdatePaths: targetPaths,
+		Extensions:  gnmiutils.SyncExtension(t),
+		Encoding:    protognmi.Encoding_PROTO,
+	}
+
+	// Set a new value for the time zone using onos-config
+	_, _, err := onosConfigSetReq.Set()
+	assert.NoError(t, err)
+
+	// Check that the value was set correctly, both in onos-config and on the target
 	onosConfigGetReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value from onos-config")
 	simulatorGetReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value from target")
 
 	// Remove the path we added
-	var onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
-		Client:      gnmiClient,
-		DeletePaths: devicePath,
-		Extensions:  gnmiutils.SyncExtension(t),
-		Encoding:    protognmi.Encoding_PROTO,
-	}
-	_, _, err := onosConfigSetReq.Set()
+	onosConfigSetReq.DeletePaths = targetPaths
+	onosConfigSetReq.UpdatePaths = nil
+	_, _, err = onosConfigSetReq.Set()
 	assert.NoError(t, err)
 
 	//  Make sure it got removed, both in onos-config and on the target

@@ -38,6 +38,7 @@ type GetRequest struct {
 	Paths      []protoutils.TargetPath
 	Extensions []*gnmi_ext.Extension
 	Encoding   protognmi.Encoding
+	DataType   protognmi.GetRequest_DataType
 }
 
 // Get performs a Get operation
