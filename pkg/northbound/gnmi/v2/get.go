@@ -225,12 +225,10 @@ func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi
 
 		conn, err := s.conns.GetByTarget(ctx, topoapi.ID(targetID))
 		if err != nil {
-			log.Warn("Test here 0", err)
 			return nil, errors.Status(err).Err()
 		}
 		resp, err := conn.Get(ctx, roGetReq)
 		if err != nil {
-			log.Warn("Test here 1", err)
 			return nil, errors.Status(err).Err()
 		}
 		notifications = append(notifications, resp.Notification...)
@@ -255,13 +253,12 @@ func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, tar
 		plugin:        modelPlugin,
 	}
 
-	if !pathInfo.readOnly {
-		targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID))
-		if err != nil {
-			return err
-		}
-		targetInfo.configuration = targetConfig
+	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID))
+	if err != nil {
+		return err
 	}
+	targetInfo.configuration = targetConfig
+
 	targets[targetID] = targetInfo
 	return nil
 }
