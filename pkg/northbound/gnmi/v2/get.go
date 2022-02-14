@@ -83,6 +83,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 }
 
 func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, groups []string, transactionStrategy configapi.TransactionStrategy) (*gnmi.GetResponse, error) {
+	log.Debugf("Processing get request %+v", req)
 	notifications := make([]*gnmi.Notification, 0)
 	prefix := req.GetPrefix()
 	targets := make(map[configapi.TargetID]*targetInfo)
@@ -185,10 +186,11 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 		wg.Wait()
 	}
 
-	response := gnmi.GetResponse{
+	response := &gnmi.GetResponse{
 		Notification: notifications,
 	}
-	return &response, nil
+	log.Debugf("Returning Get response for request: %+v", response, req)
+	return response, nil
 }
 
 func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
