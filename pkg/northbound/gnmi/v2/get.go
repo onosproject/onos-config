@@ -74,15 +74,11 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		return resp, nil
 	}
 
-	if req.Type == gnmi.GetRequest_ALL {
-		return nil, errors.NewNotSupported("request data type %s not supported", gnmi.GetRequest_ALL.String())
-	}
-
-	return s.processConfigRequest(ctx, req, groups, transactionStrategy)
+	return s.processRequest(ctx, req, groups, transactionStrategy)
 
 }
 
-func (s *Server) processConfigRequest(ctx context.Context, req *gnmi.GetRequest, groups []string, transactionStrategy configapi.TransactionStrategy) (*gnmi.GetResponse, error) {
+func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, groups []string, transactionStrategy configapi.TransactionStrategy) (*gnmi.GetResponse, error) {
 	notifications := make([]*gnmi.Notification, 0)
 	prefix := req.GetPrefix()
 	targets := make(map[configapi.TargetID]*targetInfo)
