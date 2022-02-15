@@ -71,7 +71,13 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 			Encoding:   gbp.Encoding_PROTO,
 		}
 		getConfigReq.CheckValue(t, msValue, 0, "Query after set returned the wrong value")
-		gnmiutils.CheckTargetValue(ctx, t, targetClient, targetPath, gnmiutils.NoExtensions, msValue)
+		var getTargetReq = &gnmiutils.GetRequest{
+			Ctx:      ctx,
+			Client:   targetClient,
+			Encoding: gbp.Encoding_JSON,
+			Paths:    targetPath,
+		}
+		getTargetReq.CheckValue(t, msValue, 0, "get from target incorrect")
 
 		// Remove the path we added
 		setReq.UpdatePaths = nil

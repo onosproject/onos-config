@@ -76,7 +76,13 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue)
+	var getTargetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   targetGnmiClient,
+		Encoding: protognmi.Encoding_JSON,
+		Paths:    targetPath,
+	}
+	getTargetReq.CheckValue(t, restartTzValue, 0, "get from target incorrect")
 }
 
 // TestSetOperationAfterNodeRestart tests a Set operation after restarting the onos-config node
@@ -133,8 +139,16 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 
 	// Check that the values are set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, tzPath, gnmiutils.NoExtensions, restartTzValue)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, loginBannerPath, gnmiutils.NoExtensions, restartLoginBannerValue)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, motdBannerPath, gnmiutils.NoExtensions, restartMotdBannerValue)
+	var getTargetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   targetGnmiClient,
+		Encoding: protognmi.Encoding_JSON,
+	}
+	getTargetReq.Paths = tzPath
+	getTargetReq.CheckValue(t, restartTzValue, 0, "Query TZ on target after set returned the wrong value")
+	getTargetReq.Paths = loginBannerPath
+	getTargetReq.CheckValue(t, restartLoginBannerValue, 0, "Query login banner after set returned the wrong value")
+	getTargetReq.Paths = motdBannerPath
+	getTargetReq.CheckValue(t, restartMotdBannerValue, 0, "Query MOTD banner after set returned the wrong value")
 
 }

@@ -353,18 +353,6 @@ func GetTargetPathsWithValues(targets []string, paths []string, values []string)
 	return targetPaths
 }
 
-// CheckTargetValue makes sure a value has been assigned properly to a target path by querying GNMI
-func CheckTargetValue(ctx context.Context, t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValue string) {
-	targetValues, extensions, err := XXXGetGNMIValue(ctx, targetGnmiClient, targetPaths, extensions, gpb.Encoding_JSON)
-	if err == nil {
-		assert.NoError(t, err, "GNMI get operation to target returned an error")
-		assert.Equal(t, expectedValue, targetValues[0].PathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
-		assert.Equal(t, 0, len(extensions))
-	} else {
-		assert.Fail(t, "Failed to query target: %v", err)
-	}
-}
-
 // CheckTargetValueDeleted makes sure target path is missing when queried via GNMI
 func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) {
 	_, _, err := XXXGetGNMIValue(ctx, targetGnmiClient, targetPaths, extensions, gpb.Encoding_JSON)

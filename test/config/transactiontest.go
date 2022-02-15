@@ -94,10 +94,24 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
 	target2GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target2)
 
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], gnmiutils.NoExtensions, value1)
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[1:2], gnmiutils.NoExtensions, value2)
-	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[2:3], gnmiutils.NoExtensions, value1)
-	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[3:4], gnmiutils.NoExtensions, value2)
+	var target1GetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   target1GnmiClient,
+		Encoding: gbp.Encoding_JSON,
+	}
+	var target2GetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   target2GnmiClient,
+		Encoding: gbp.Encoding_JSON,
+	}
+	target1GetReq.Paths = targetPathsForGet[0:1]
+	target1GetReq.CheckValue(t, value1, 0, "value is wrong on target")
+	target1GetReq.Paths = targetPathsForGet[1:2]
+	target1GetReq.CheckValue(t, value2, 0, "value is wrong on target")
+	target2GetReq.Paths = targetPathsForGet[2:3]
+	target2GetReq.CheckValue(t, value1, 0, "value is wrong on target")
+	target2GetReq.Paths = targetPathsForGet[3:4]
+	target2GetReq.CheckValue(t, value2, 0, "value is wrong on target")
 
 	// Now rollback the change
 	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
@@ -113,8 +127,12 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
 
 	// Check that the values were rolled back on the targets
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], gnmiutils.NoExtensions, initValue1)
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[1:2], gnmiutils.NoExtensions, initValue2)
-	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[2:3], gnmiutils.NoExtensions, initValue1)
-	gnmiutils.CheckTargetValue(ctx, t, target2GnmiClient, targetPathsForGet[3:4], gnmiutils.NoExtensions, initValue2)
+	target1GetReq.Paths = targetPathsForGet[0:1]
+	target1GetReq.CheckValue(t, initValue1, 0, "value is wrong on target")
+	target1GetReq.Paths = targetPathsForGet[1:2]
+	target1GetReq.CheckValue(t, initValue2, 0, "value is wrong on target")
+	target2GetReq.Paths = targetPathsForGet[2:3]
+	target2GetReq.CheckValue(t, initValue1, 0, "value is wrong on target")
+	target2GetReq.Paths = targetPathsForGet[3:4]
+	target2GetReq.CheckValue(t, initValue2, 0, "value is wrong on target")
 }

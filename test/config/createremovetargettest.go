@@ -69,7 +69,13 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 
 	// interrogate the target to check that the value was set properly
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, createRemoveTargetModValue1)
+	var getTargetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   targetGnmiClient,
+		Encoding: protognmi.Encoding_JSON,
+		Paths:    targetPath,
+	}
+	getTargetReq.CheckValue(t, createRemoveTargetModValue1, 0, "value 1 wrong on target")
 
 	//  Shut down the simulator
 	gnmiutils.DeleteSimulator(t, simulator)
@@ -95,7 +101,13 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 
 	// interrogate the target to check that the value was set properly
 	targetGnmiClient2 := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient2, targetPath, gnmiutils.NoExtensions, createRemoveTargetModValue2)
-	gnmiutils.DeleteSimulator(t, simulator)
+	getTargetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   targetGnmiClient2,
+		Encoding: protognmi.Encoding_JSON,
+		Paths:    targetPath,
+	}
+	getTargetReq.CheckValue(t, createRemoveTargetModValue2, 0, "value 1 wrong on target")
 
+	gnmiutils.DeleteSimulator(t, simulator)
 }

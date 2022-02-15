@@ -73,7 +73,13 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 
 	// Check that the values are set on the targets
 	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
-	gnmiutils.CheckTargetValue(ctx, t, target1GnmiClient, targetPathsForGet[0:1], gnmiutils.NoExtensions, newValue)
+	var getTargetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   target1GnmiClient,
+		Encoding: gbp.Encoding_JSON,
+		Paths:    targetPathsForGet[0:1],
+	}
+	getTargetReq.CheckValue(t, newValue, 0, "value not set on target")
 
 	// Now rollback the change
 	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
