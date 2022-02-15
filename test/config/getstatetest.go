@@ -37,7 +37,7 @@ func (s *TestSuite) TestGetState(t *testing.T) {
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 
 	// Get the GNMI path
 	targetPaths := gnmiutils.GetTargetPathWithValue(simulator.Name(), statePath, stateValue, proto.StringVal)

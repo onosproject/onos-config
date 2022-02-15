@@ -94,14 +94,14 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 			targetID = configapi.TargetID(prefix.Target)
 		}
 		if targetID == "" {
-			return nil, errors.Status(errors.NewInvalid("has no target")).Err()
+			return nil, errors.NewInvalid("has no target")
 		}
 
 		if _, ok := targets[targetID]; !ok {
 			err := s.addTarget(ctx, targetID, targets)
 			if err != nil {
 				log.Warn(err)
-				return nil, errors.Status(err).Err()
+				return nil, err
 
 			}
 		}
@@ -121,18 +121,18 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 	if len(req.GetPath()) == 0 && prefix != nil {
 		targetID := configapi.TargetID(prefix.Target)
 		if targetID == "" {
-			return nil, errors.Status(errors.NewInvalid("has no target")).Err()
+			return nil, errors.NewInvalid("has no target")
 		}
 		if _, ok := targets[targetID]; !ok {
 			err := s.addTarget(ctx, targetID, targets)
 			if err != nil {
-				return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
+				return nil, errors.NewInvalid(err.Error())
 			}
 		}
 
 		updates, err := s.getUpdate(ctx, targets[targetID], prefix, &pathInfo{}, req.GetEncoding(), groups)
 		if err != nil {
-			return nil, errors.Status(err).Err()
+			return nil, err
 		}
 		notification := &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
@@ -146,7 +146,7 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 		if targetInfo, ok := targets[pathInfo.targetID]; ok {
 			updates, err := s.getUpdate(ctx, targetInfo, prefix, pathInfo, req.GetEncoding(), groups)
 			if err != nil {
-				return nil, errors.Status(err).Err()
+				return nil, err
 			}
 			notification := &gnmi.Notification{
 				Timestamp: time.Now().Unix(),
@@ -166,7 +166,7 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 				ch := make(chan configapi.ConfigurationEvent)
 				err := s.configurations.Watch(ctx, ch, configuration.WithConfigurationID(configuration.NewID(target.targetID)), configuration.WithReplay())
 				if err != nil {
-					return nil, errors.Status(err).Err()
+					return nil, err
 				}
 				wg.Add(1)
 				go func(id configapi.ConfigurationID) {
@@ -199,7 +199,7 @@ func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi
 			targetID = configapi.TargetID(prefix.Target)
 		}
 		if targetID == "" {
-			return nil, errors.Status(errors.NewInvalid("has no target")).Err()
+			return nil, errors.NewInvalid("has no target")
 		}
 		if pathList, ok := paths[targetID]; ok {
 			pathList = append(pathList, path)
@@ -223,13 +223,13 @@ func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi
 		conn, err := s.conns.GetByTarget(ctx, topoapi.ID(targetID))
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return nil, errors.Status(errors.NewUnavailable(err.Error())).Err()
+				return nil, errors.NewUnavailable(err.Error())
 			}
-			return nil, errors.Status(err).Err()
+			return nil, err
 		}
 		resp, err := conn.Get(ctx, roGetReq)
 		if err != nil {
-			return nil, errors.Status(err).Err()
+			return nil, err
 		}
 		notifications = append(notifications, resp.Notification...)
 	}
