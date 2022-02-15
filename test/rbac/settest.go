@@ -95,7 +95,13 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 				}
 
 				// Check that the value was set correctly
-				gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, tzValue, 0, "Query after set returned the wrong value")
+				var getConfigReq = &gnmiutils.GetRequest{
+					Ctx:      ctx,
+					Client:   gnmiClient,
+					Paths:    targetPath,
+					Encoding: gbp.Encoding_PROTO,
+				}
+				getConfigReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value")
 
 				// Remove the path we added
 				setReq.UpdatePaths = nil

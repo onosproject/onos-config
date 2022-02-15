@@ -289,7 +289,7 @@ func extractSetTransactionID(response *gpb.SetResponse) (configapi.TransactionID
 	return transactionInfo.ID, transactionInfo.Index, nil
 }
 
-// GetGNMIValue generates a GET request on the given client for a Path on a target
+// XXXGetGNMIValue generates a GET request on the given client for a Path on a target
 func XXXGetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension,
 	encoding gpb.Encoding) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
 	protoString := ""
@@ -375,8 +375,8 @@ func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient
 	}
 }
 
-// CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValue(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValue string, expectedExtensions int, failMessage string) {
+// XXXCheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
+func XXXCheckGNMIValue(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValue string, expectedExtensions int, failMessage string) {
 	t.Helper()
 	value, extensions, err := XXXGetGNMIValue(ctx, gnmiClient, paths, extensions, gpb.Encoding_PROTO)
 	assert.NoError(t, err, "Get operation returned an unexpected error")

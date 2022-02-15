@@ -64,11 +64,19 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	setReq.UpdatePaths = setPath
 	setReq.SetOrFail(t)
 
+	var getConfigReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   gnmiClient,
+		Encoding: gbp.Encoding_PROTO,
+	}
+
 	// Check that the name value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, setNamePath, gnmiutils.NoExtensions, newRootName, 0, "Query name after set returned the wrong value")
+	getConfigReq.Paths = setNamePath
+	getConfigReq.CheckValue(t, newRootName, 0, "Query name after set returned the wrong value")
 
 	// Check that the enabled value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, getPath, gnmiutils.NoExtensions, "false", 0, "Query enabled after set returned the wrong value")
+	getConfigReq.Paths = getPath
+	getConfigReq.CheckValue(t, "false", 0, "Query enabled after set returned the wrong value")
 
 	// Remove the root path we added
 	setReq.UpdatePaths = nil
@@ -76,8 +84,10 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	setReq.SetOrFail(t)
 
 	//  Make sure child got removed
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, setNamePath, gnmiutils.NoExtensions, newRootName, 0, "New child was not removed")
+	getConfigReq.Paths = setNamePath
+	getConfigReq.CheckValue(t, newRootName, 0, "New child was not removed")
 
 	//  Make sure new root got removed
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, getPath, gnmiutils.NoExtensions, "", 0, "New root was not removed")
+	getConfigReq.Paths = getPath
+	getConfigReq.CheckValue(t, "", 0, "New root was not removed")
 }

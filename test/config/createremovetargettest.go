@@ -58,7 +58,14 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	setReq.SetOrFail(t)
 
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, c, targetPath, gnmiutils.NoExtensions, createRemoveTargetModValue1, 0, "Query after set returned the wrong value")
+	var getReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     c,
+		Paths:      targetPath,
+		Extensions: gnmiutils.SyncExtension(t),
+		Encoding:   protognmi.Encoding_PROTO,
+	}
+	getReq.CheckValue(t, createRemoveTargetModValue1, 0, "Query after set returned the wrong value")
 
 	// interrogate the target to check that the value was set properly
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
@@ -84,7 +91,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	ready = gnmiutils.WaitForTargetAvailable(ctx, t, createRemoveTargetModTargetName, 2*time.Minute)
 	assert.True(t, ready)
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, c, targetPath, gnmiutils.SyncExtension(t), createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
+	getReq.CheckValue(t, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
 
 	// interrogate the target to check that the value was set properly
 	targetGnmiClient2 := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)

@@ -58,14 +58,21 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	setReq.SetOrFail(t)
 
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after set returned the wrong value")
+	var getReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Paths:      targetPath,
+		Extensions: gnmiutils.SyncExtension(t),
+		Encoding:   protognmi.Encoding_PROTO,
+	}
+	getReq.CheckValue(t, restartTzValue, 0, "Query after set returned the wrong value")
 
 	// Restart onos-config
 	configPod := hautils.FindPodWithPrefix(t, "onos-config")
 	hautils.CrashPodOrFail(t, configPod)
 
 	// Check that the value was set correctly in the new onos-config instance
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after restart returned the wrong value")
+	getReq.CheckValue(t, restartTzValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
@@ -111,9 +118,18 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	setReq.SetOrFail(t)
 
 	// Check that the values were set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, tzPath, gnmiutils.SyncExtension(t), restartTzValue, 0, "Query TZ after set returned the wrong value")
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, loginBannerPath, gnmiutils.SyncExtension(t), restartLoginBannerValue, 0, "Query login banner after set returned the wrong value")
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, motdBannerPath, gnmiutils.SyncExtension(t), restartMotdBannerValue, 0, "Query MOTD banner after set returned the wrong value")
+	var getConfigReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Extensions: gnmiutils.SyncExtension(t),
+		Encoding:   protognmi.Encoding_PROTO,
+	}
+	getConfigReq.Paths = tzPath
+	getConfigReq.CheckValue(t, restartTzValue, 0, "Query TZ after set returned the wrong value")
+	getConfigReq.Paths = loginBannerPath
+	getConfigReq.CheckValue(t, restartLoginBannerValue, 0, "Query login banner after set returned the wrong value")
+	getConfigReq.Paths = motdBannerPath
+	getConfigReq.CheckValue(t, restartMotdBannerValue, 0, "Query MOTD banner after set returned the wrong value")
 
 	// Check that the values are set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
