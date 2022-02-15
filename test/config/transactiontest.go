@@ -47,26 +47,26 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
 
-	// Get the configured targets from the environment.
+	// Create the first target simulator
 	target1 := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, target1)
 
-	// Wait for config to connect to the targets
+	// Wait for config to connect to the first simulator
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target1.Name()), time.Minute)
 
+	// Create the second target simulator
 	target2 := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, target2)
 
-	// Wait for config to connect to the targets
+	// Wait for config to connect to the second simulator
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target2.Name()), time.Minute)
 
-	targets := make([]string, 2)
-	targets[0] = target1.Name()
-	targets[1] = target2.Name()
+	// Set up paths for the two targets
+	targets := []string{target1.Name(), target2.Name()}
+	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
-	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Set initial values
 	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, paths, initialValues)
@@ -79,7 +79,20 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 		UpdatePaths: targetPathsForInit,
 	}
 	setReq.SetOrFail(t)
-	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, initialValues, 0, "Query after initial set returned the wrong value")
+
+	var getReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Encoding:   gbp.Encoding_PROTO,
+		Extensions: gnmiutils.SyncExtension(t),
+	}
+	targetPath1 := gnmiutils.GetTargetPath(target1.Name(), path1)
+	targetPath2 := gnmiutils.GetTargetPath(target2.Name(), path2)
+
+	getReq.Paths = targetPath1
+	getReq.CheckValue(t, initValue1, 0, "value1 incorrect")
+	getReq.Paths = targetPath2
+	getReq.CheckValue(t, initValue2, 0, "value2 incorrect")
 
 	// Create a change that can be rolled back
 	targetPathsForSet := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
@@ -87,8 +100,10 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	_, transactionIndex := setReq.SetOrFail(t)
 
 	// Check that the values were set correctly
-	expectedValues := []string{value1, value2}
-	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.SyncExtension(t), expectedValues, 0, "Query after set returned the wrong value")
+	getReq.Paths = targetPath1
+	getReq.CheckValue(t, value1, 0, "value1 incorrect")
+	getReq.Paths = targetPath2
+	getReq.CheckValue(t, value2, 0, "value2 incorrect")
 
 	// Check that the values are set on the targets
 	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
@@ -123,8 +138,10 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 
 	// Check that the values were really rolled back in onos-config
-	expectedValuesAfterRollback := []string{initValue1, initValue2}
-	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
+	getReq.Paths = targetPath1
+	getReq.CheckValue(t, initValue1, 0, "value1 incorrect")
+	getReq.Paths = targetPath2
+	getReq.CheckValue(t, initValue2, 0, "value2 incorrect")
 
 	// Check that the values were rolled back on the targets
 	target1GetReq.Paths = targetPathsForGet[0:1]

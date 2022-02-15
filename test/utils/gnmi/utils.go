@@ -30,16 +30,12 @@ import (
 
 	"github.com/onosproject/onos-test/pkg/onostest"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/kubernetes"
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/config/v2"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
-	gnmiclient "github.com/openconfig/gnmi/client"
-	gclient "github.com/openconfig/gnmi/client/gnmi"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -60,21 +56,6 @@ const (
 func MakeContext() (context.Context, context.CancelFunc) {
 	ctx := context.Background()
 	return context.WithTimeout(ctx, defaultTestTimeout)
-}
-
-// GetSimulatorTarget queries topo to find the topo object for a simulator target
-func GetSimulatorTarget(ctx context.Context, simulator *helm.HelmRelease) (*topo.Object, error) {
-	client, err := NewTopoClient()
-	if err != nil {
-		return nil, err
-	}
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-	obj, err := client.Get(ctx, topo.ID(simulator.Name()))
-	if err != nil {
-		return nil, err
-	}
-	return obj, nil
 }
 
 // NewSimulatorTargetEntity creates a topo entity for a device simulator target
@@ -236,12 +217,6 @@ func WaitForRollback(ctx context.Context, t *testing.T, transactionIndex v2.Inde
 	}
 }
 
-// NoPaths can be used on a request that does not need path values
-var NoPaths = make([]protoutils.TargetPath, 0)
-
-// NoExtensions can be used on a request that does not need extension values
-var NoExtensions = make([]*gnmi_ext.Extension, 0)
-
 // SyncExtension returns list of extensions with just the transaction mode extension set to sync and atomic.
 func SyncExtension(t *testing.T) []*gnmi_ext.Extension {
 	return []*gnmi_ext.Extension{TransactionStrategyExtension(t, configapi.TransactionStrategy_SYNCHRONOUS, 0)}
@@ -265,49 +240,6 @@ func TransactionStrategyExtension(t *testing.T,
 			},
 		},
 	}
-}
-
-func extractSetTransactionID(response *gpb.SetResponse) (configapi.TransactionID, v2.Index, error) {
-	var transactionInfo *configapi.TransactionInfo
-	extensionsSet := response.Extension
-	for _, extension := range extensionsSet {
-		if ext, ok := extension.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
-			ext.RegisteredExt.Id == configapi.TransactionInfoExtensionID {
-			bytes := ext.RegisteredExt.Msg
-			transactionInfo = &configapi.TransactionInfo{}
-			err := proto.Unmarshal(bytes, transactionInfo)
-			if err != nil {
-				return "", 0, err
-			}
-		}
-	}
-
-	if transactionInfo == nil {
-		return "", 0, errors.NewNotFound("transaction ID extension not found")
-	}
-
-	return transactionInfo.ID, transactionInfo.Index, nil
-}
-
-// XXXGetGNMIValue generates a GET request on the given client for a Path on a target
-func XXXGetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension,
-	encoding gpb.Encoding) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
-	protoString := ""
-	for _, targetPath := range paths {
-		protoString = protoString + MakeProtoPath(targetPath.TargetName, targetPath.Path)
-	}
-	getTZRequest := &gpb.GetRequest{}
-	if err := proto.UnmarshalText(protoString, getTZRequest); err != nil {
-		fmt.Printf("unable to parse gnmi.GetRequest from %q : %v\n", protoString, err)
-		return nil, nil, err
-	}
-	getTZRequest.Encoding = encoding
-	getTZRequest.Extension = extensions
-	response, err := c.(*gclient.Client).Get(ctx, getTZRequest)
-	if err != nil || response == nil {
-		return nil, nil, err
-	}
-	return convertGetResults(response)
 }
 
 // GetTargetPath creates a target path
@@ -351,17 +283,6 @@ func GetTargetPathsWithValues(targets []string, paths []string, values []string)
 		}
 	}
 	return targetPaths
-}
-
-// CheckGNMIValues makes sure a list of values has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValues(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValues []string, expectedExtensions int, failMessage string) {
-	t.Helper()
-	value, extensions, err := XXXGetGNMIValue(ctx, gnmiClient, paths, extensions, gpb.Encoding_PROTO)
-	assert.NoError(t, err, "Get operation returned unexpected error")
-	assert.Equal(t, expectedExtensions, len(extensions))
-	for index, expectedValue := range expectedValues {
-		assert.Equal(t, expectedValue, value[index].PathDataValue, "%s: %s", failMessage, value)
-	}
 }
 
 // MakeProtoPath returns a Path: element for a given target and Path

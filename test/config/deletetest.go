@@ -16,6 +16,7 @@ package config
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"testing"
 	"time"
 
@@ -34,19 +35,12 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 		newPath  = "/system/config/login-banner"
 	)
 
-	var (
-		newPaths  = []string{newPath}
-		newValues = []string{newValue}
-	)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
 
-	// Get the configured targets from the environment.
+	// Get the configured target from the environment.
 	target1 := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, target1)
-	targets := make([]string, 1)
-	targets[0] = target1.Name()
 
 	// Wait for config to connect to the target
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target1.Name()), 10*time.Second)
@@ -55,29 +49,32 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Set values
-	var targetPathsForSet = gnmiutils.GetTargetPathsWithValues(targets, newPaths, newValues)
+	var targetPath = gnmiutils.GetTargetPathWithValue(target1.Name(), newPath, newValue, proto.StringVal)
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		Extensions:  gnmiutils.SyncExtension(t),
 		Encoding:    gbp.Encoding_PROTO,
-		UpdatePaths: targetPathsForSet,
+		UpdatePaths: targetPath,
 	}
 	_, transactionIndex := setReq.SetOrFail(t)
 
-	targetPathsForGet := gnmiutils.GetTargetPaths(targets, newPaths)
-
 	// Check that the values were set correctly
-	expectedValues := []string{newValue}
-	gnmiutils.CheckGNMIValues(ctx, t, gnmiClient, targetPathsForGet, gnmiutils.NoExtensions, expectedValues, 0, "Query after set returned the wrong value")
+	var getConfigReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   gnmiClient,
+		Encoding: gbp.Encoding_PROTO,
+		Paths:    targetPath,
+	}
+	getConfigReq.CheckValue(t, newValue, 0, "Query after set returned the wrong value")
 
-	// Check that the values are set on the targets
+	// Check that the values are set on the target
 	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   target1GnmiClient,
 		Encoding: gbp.Encoding_JSON,
-		Paths:    targetPathsForGet[0:1],
+		Paths:    targetPath,
 	}
 	getTargetReq.CheckValue(t, newValue, 0, "value not set on target")
 
@@ -90,14 +87,6 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
-	var onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:        ctx,
-		Client:     target1GnmiClient,
-		Paths:      targetPathsForGet,
-		Encoding:   gbp.Encoding_PROTO,
-		DataType:   gbp.GetRequest_CONFIG,
-		Extensions: gnmiutils.SyncExtension(t),
-	}
-	_, _, err = onosConfigGetReq.Get()
+	_, _, err = getTargetReq.Get()
 	assert.Error(t, err)
 }

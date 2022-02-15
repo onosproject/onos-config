@@ -26,6 +26,7 @@ import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	gnmiclient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	protognmi "github.com/openconfig/gnmi/proto/gnmi"
@@ -68,6 +69,29 @@ func convertGetResults(response *protognmi.GetResponse) ([]protoutils.TargetPath
 	}
 
 	return result, response.Extension, nil
+}
+
+// extractSetTransactionInfo returns the transaction ID and Index from a set operation response
+func extractSetTransactionInfo(response *protognmi.SetResponse) (configapi.TransactionID, v2.Index, error) {
+	var transactionInfo *configapi.TransactionInfo
+	extensionsSet := response.Extension
+	for _, extension := range extensionsSet {
+		if ext, ok := extension.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
+			ext.RegisteredExt.Id == configapi.TransactionInfoExtensionID {
+			bytes := ext.RegisteredExt.Msg
+			transactionInfo = &configapi.TransactionInfo{}
+			err := proto.Unmarshal(bytes, transactionInfo)
+			if err != nil {
+				return "", 0, err
+			}
+		}
+	}
+
+	if transactionInfo == nil {
+		return "", 0, errors.NewNotFound("transaction ID extension not found")
+	}
+
+	return transactionInfo.ID, transactionInfo.Index, nil
 }
 
 // Get performs a Get operation
@@ -141,7 +165,7 @@ func (req *SetRequest) Set() (configapi.TransactionID, v2.Index, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	id, index, err := extractSetTransactionID(setResult)
+	id, index, err := extractSetTransactionInfo(setResult)
 	return id, index, err
 }
 
