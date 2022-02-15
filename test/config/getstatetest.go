@@ -52,6 +52,6 @@ func (s *TestSuite) TestGetState(t *testing.T) {
 	}
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValue(t, stateValue, 0, "Query after set returned the wrong value from onos-config")
+	onosConfigGetReq.CheckValue(t, stateValue)
 
 }
