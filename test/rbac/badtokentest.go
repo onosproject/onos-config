@@ -16,7 +16,7 @@ package rbac
 
 import (
 	"context"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -115,7 +115,14 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 				gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 				// Try to fetch a value from the GNMI client
-				_, _, err = gnmiutils.GetGNMIValue(ctx, gnmiClient, devicePath, gnmiutils.NoExtensions, gpb.Encoding_PROTO)
+				var onosConfigGetReq = &gnmiutils.GetRequest{
+					Ctx:      ctx,
+					Client:   gnmiClient,
+					Paths:    devicePath,
+					Encoding: gnmiapi.Encoding_PROTO,
+					DataType: gnmiapi.GetRequest_CONFIG,
+				}
+				_, err = onosConfigGetReq.Get()
 
 				if testCase.expectedGetError != "" {
 					// An error is expected

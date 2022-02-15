@@ -15,6 +15,7 @@
 package config
 
 import (
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -46,21 +47,42 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
 
 	// Set a value using onos-config
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		UpdatePaths: targetPath,
+		Extensions:  gnmiutils.SyncExtension(t),
+		Encoding:    gnmiapi.Encoding_PROTO,
+	}
+	setReq.SetOrFail(t)
 
 	// Check that the value was set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after set returned the wrong value")
+	var getReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Paths:      targetPath,
+		Extensions: gnmiutils.SyncExtension(t),
+		Encoding:   gnmiapi.Encoding_PROTO,
+	}
+	getReq.CheckValue(t, restartTzValue)
 
 	// Restart onos-config
 	configPod := hautils.FindPodWithPrefix(t, "onos-config")
 	hautils.CrashPodOrFail(t, configPod)
 
 	// Check that the value was set correctly in the new onos-config instance
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue, 0, "Query after restart returned the wrong value")
+	getReq.CheckValue(t, restartTzValue)
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, restartTzValue)
+	var getTargetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   targetGnmiClient,
+		Encoding: gnmiapi.Encoding_JSON,
+		Paths:    targetPath,
+	}
+	getTargetReq.CheckValue(t, restartTzValue)
 }
 
 // TestSetOperationAfterNodeRestart tests a Set operation after restarting the onos-config node
@@ -90,18 +112,43 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	hautils.CrashPodOrFail(t, configPod)
 
 	// Set values using onos-config
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, tzPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, bannerPaths, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Extensions: gnmiutils.SyncExtension(t),
+		Encoding:   gnmiapi.Encoding_PROTO,
+	}
+	setReq.UpdatePaths = tzPath
+	setReq.SetOrFail(t)
+	setReq.UpdatePaths = bannerPaths
+	setReq.SetOrFail(t)
 
 	// Check that the values were set correctly
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, tzPath, gnmiutils.SyncExtension(t), restartTzValue, 0, "Query TZ after set returned the wrong value")
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, loginBannerPath, gnmiutils.SyncExtension(t), restartLoginBannerValue, 0, "Query login banner after set returned the wrong value")
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, motdBannerPath, gnmiutils.SyncExtension(t), restartMotdBannerValue, 0, "Query MOTD banner after set returned the wrong value")
+	var getConfigReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Extensions: gnmiutils.SyncExtension(t),
+		Encoding:   gnmiapi.Encoding_PROTO,
+	}
+	getConfigReq.Paths = tzPath
+	getConfigReq.CheckValue(t, restartTzValue)
+	getConfigReq.Paths = loginBannerPath
+	getConfigReq.CheckValue(t, restartLoginBannerValue)
+	getConfigReq.Paths = motdBannerPath
+	getConfigReq.CheckValue(t, restartMotdBannerValue)
 
 	// Check that the values are set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, tzPath, gnmiutils.NoExtensions, restartTzValue)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, loginBannerPath, gnmiutils.NoExtensions, restartLoginBannerValue)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, motdBannerPath, gnmiutils.NoExtensions, restartMotdBannerValue)
+	var getTargetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   targetGnmiClient,
+		Encoding: gnmiapi.Encoding_JSON,
+	}
+	getTargetReq.Paths = tzPath
+	getTargetReq.CheckValue(t, restartTzValue)
+	getTargetReq.Paths = loginBannerPath
+	getTargetReq.CheckValue(t, restartLoginBannerValue)
+	getTargetReq.Paths = motdBannerPath
+	getTargetReq.CheckValue(t, restartMotdBannerValue)
 
 }

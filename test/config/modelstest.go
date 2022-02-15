@@ -15,6 +15,7 @@
 package config
 
 import (
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -69,7 +70,14 @@ func (s *TestSuite) TestModels(t *testing.T) {
 				t.Logf("testing %q", description)
 
 				setResult := gnmiutils.GetTargetPathWithValue(simulator.Name(), path, value, valueType)
-				msg, _, err := gnmiutils.SetGNMIValue(ctx, gnmiClient, setResult, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+				var setReq = &gnmiutils.SetRequest{
+					Ctx:         ctx,
+					Client:      gnmiClient,
+					Extensions:  gnmiutils.SyncExtension(t),
+					Encoding:    gnmiapi.Encoding_PROTO,
+					UpdatePaths: setResult,
+				}
+				msg, _, err := setReq.Set()
 				assert.NotNil(t, err, "Set operation for %s does not generate an error", description)
 				assert.Contains(t, status.Convert(err).Message(), expectedError,
 					"set operation for %s generates wrong error %s", description, msg)

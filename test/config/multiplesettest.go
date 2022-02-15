@@ -18,6 +18,7 @@ import (
 	"github.com/Pallinder/go-randomdata"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -50,18 +51,41 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 
 		// Set a value using gNMI client
 		targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, msValue, proto.StringVal)
-		transactionID, transactionIndex := gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
-		assert.NotNil(t, transactionID, transactionIndex)
+		var setReq = &gnmiutils.SetRequest{
+			Ctx:         ctx,
+			Client:      gnmiClient,
+			Extensions:  gnmiutils.SyncExtension(t),
+			Encoding:    gnmiapi.Encoding_PROTO,
+			UpdatePaths: targetPath,
+		}
+		transactionID, transactionIndex := setReq.SetOrFail(t)
+		assert.NotNil(t, transactionID)
+		assert.NotNil(t, transactionIndex)
 
 		// Check that the value was set correctly, both in onos-config and the target
-		gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, msValue, 0, "Query after set returned the wrong value")
-		gnmiutils.CheckTargetValue(ctx, t, targetClient, targetPath, gnmiutils.NoExtensions, msValue)
+		var getConfigReq = &gnmiutils.GetRequest{
+			Ctx:        ctx,
+			Client:     gnmiClient,
+			Paths:      targetPath,
+			Extensions: gnmiutils.SyncExtension(t),
+			Encoding:   gnmiapi.Encoding_PROTO,
+		}
+		getConfigReq.CheckValue(t, msValue)
+		var getTargetReq = &gnmiutils.GetRequest{
+			Ctx:      ctx,
+			Client:   targetClient,
+			Encoding: gnmiapi.Encoding_JSON,
+			Paths:    targetPath,
+		}
+		getTargetReq.CheckValue(t, msValue)
 
 		// Remove the path we added
-		gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, gnmiutils.NoPaths, targetPath, gnmiutils.SyncExtension(t))
+		setReq.UpdatePaths = nil
+		setReq.DeletePaths = targetPath
+		setReq.SetOrFail(t)
 
 		//  Make sure it got removed, both from onos-config and the target
-		gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
-		gnmiutils.CheckTargetValueDeleted(ctx, t, targetClient, targetPath, gnmiutils.NoExtensions)
+		getConfigReq.CheckValue(t, "")
+		getTargetReq.CheckValueDeleted(t)
 	}
 }

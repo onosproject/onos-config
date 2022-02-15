@@ -19,7 +19,7 @@ import (
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-config/test/utils/rbac"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -61,14 +61,21 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 		setNamePath := []proto.TargetPath{
 			{TargetName: target, Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 		}
-		gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+		var setReq = &gnmiutils.SetRequest{
+			Ctx:         ctx,
+			Client:      gnmiClient,
+			Encoding:    gnmiapi.Encoding_PROTO,
+			UpdatePaths: setNamePath,
+		}
+		setReq.SetOrFail(t)
 
 		// Set initial values for Enabled and Description using gNMI client
 		setInitialValuesPath := []proto.TargetPath{
 			{TargetName: target, Path: enabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
 			{TargetName: target, Path: descriptionPath, PathDataValue: descriptionLeafValue, PathDataType: proto.StringVal},
 		}
-		gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, setInitialValuesPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+		setReq.UpdatePaths = setInitialValuesPath
+		setReq.SetOrFail(t)
 	}
 }
 
@@ -228,7 +235,14 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 				}
 
 				// Check that the value can be read via get
-				values, _, err := gnmiutils.GetGNMIValue(ctx, gnmiClient, targetPath, gnmiutils.NoExtensions, gpb.Encoding_PROTO)
+				var onosConfigGetReq = &gnmiutils.GetRequest{
+					Ctx:      ctx,
+					Client:   gnmiClient,
+					Paths:    targetPath,
+					Encoding: gnmiapi.Encoding_PROTO,
+					DataType: gnmiapi.GetRequest_CONFIG,
+				}
+				values, err := onosConfigGetReq.Get()
 				assert.NoError(t, err)
 				value := ""
 				if len(values) != 0 {

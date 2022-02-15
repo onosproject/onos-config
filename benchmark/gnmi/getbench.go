@@ -18,7 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/helmit/pkg/benchmark"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"time"
 )
 
@@ -27,6 +27,13 @@ func (s *BenchmarkSuite) BenchmarkGet(b *benchmark.Benchmark) error {
 	devicePath := gnmiutils.GetTargetPath(s.simulator.Name(), "/system/config/motd-banner")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, _, err := gnmiutils.GetGNMIValue(ctx, s.client, devicePath, gnmiutils.NoExtensions, gbp.Encoding_PROTO)
+
+	var onosConfigGetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   s.client,
+		Paths:    devicePath,
+		Encoding: gnmiapi.Encoding_PROTO,
+	}
+	_, err := onosConfigGetReq.Get()
 	return err
 }

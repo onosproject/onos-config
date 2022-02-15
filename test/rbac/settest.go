@@ -17,6 +17,7 @@ package rbac
 import (
 	"context"
 	"github.com/onosproject/onos-config/test/utils/rbac"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -81,17 +82,31 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 				assert.NotNil(t, targetPath)
 
 				// Set a value using gNMI client
-				_, _, err = gnmiutils.SetGNMIValue(ctx, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+				var setReq = &gnmiutils.SetRequest{
+					Ctx:         ctx,
+					Client:      gnmiClient,
+					Encoding:    gnmiapi.Encoding_PROTO,
+					UpdatePaths: targetPath,
+				}
+				_, _, err = setReq.Set()
 				if testCase.expectedError != "" {
 					assert.Contains(t, err.Error(), testCase.expectedError)
 					return
 				}
 
 				// Check that the value was set correctly
-				gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.NoExtensions, tzValue, 0, "Query after set returned the wrong value")
+				var getConfigReq = &gnmiutils.GetRequest{
+					Ctx:      ctx,
+					Client:   gnmiClient,
+					Paths:    targetPath,
+					Encoding: gnmiapi.Encoding_PROTO,
+				}
+				getConfigReq.CheckValue(t, tzValue)
 
 				// Remove the path we added
-				gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, gnmiutils.NoPaths, targetPath, gnmiutils.NoExtensions)
+				setReq.UpdatePaths = nil
+				setReq.DeletePaths = targetPath
+				setReq.SetOrFail(t)
 			},
 		)
 	}

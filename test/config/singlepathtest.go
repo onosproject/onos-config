@@ -15,10 +15,8 @@
 package config
 
 import (
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
-
-	protognmi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -50,38 +48,36 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 		Ctx:      ctx,
 		Client:   gnmiClient,
 		Paths:    targetPaths,
-		Encoding: protognmi.Encoding_PROTO,
+		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	var simulatorGetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetClient,
 		Paths:    targetPaths,
-		Encoding: protognmi.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 	}
 	var onosConfigSetReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPaths,
 		Extensions:  gnmiutils.SyncExtension(t),
-		Encoding:    protognmi.Encoding_PROTO,
+		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	_, _, err := onosConfigSetReq.Set()
-	assert.NoError(t, err)
+	onosConfigSetReq.SetOrFail(t)
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value from onos-config")
-	simulatorGetReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value from target")
+	onosConfigGetReq.CheckValue(t, tzValue)
+	simulatorGetReq.CheckValue(t, tzValue)
 
 	// Remove the path we added
 	onosConfigSetReq.DeletePaths = targetPaths
 	onosConfigSetReq.UpdatePaths = nil
-	_, _, err = onosConfigSetReq.Set()
-	assert.NoError(t, err)
+	onosConfigSetReq.SetOrFail(t)
 
 	//  Make sure it got removed, both in onos-config and on the target
-	onosConfigGetReq.CheckValue(t, "", 0, "incorrect value from onos-config for path /system/clock/config/timezone-name after delete")
+	onosConfigGetReq.CheckValue(t, "")
 	// Currently, the path is left behind so this check does not work
 	//onosConfigGetReq.CheckValueDeleted(t)
 	simulatorGetReq.CheckValueDeleted(t)

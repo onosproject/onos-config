@@ -19,7 +19,7 @@ import (
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	protognmi "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 const (
@@ -47,11 +47,11 @@ func (s *TestSuite) TestGetState(t *testing.T) {
 		Ctx:      ctx,
 		Client:   gnmiClient,
 		Paths:    targetPaths,
-		Encoding: protognmi.Encoding_JSON,
-		DataType: protognmi.GetRequest_STATE,
+		Encoding: gnmiapi.Encoding_JSON,
+		DataType: gnmiapi.GetRequest_STATE,
 	}
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValue(t, stateValue, 0, "Query after set returned the wrong value from onos-config")
+	onosConfigGetReq.CheckValue(t, stateValue)
 
 }

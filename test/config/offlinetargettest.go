@@ -17,6 +17,7 @@ package config
 
 import (
 	"context"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
@@ -47,7 +48,13 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
-	gnmiutils.SetGNMIValueOrFail(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		Encoding:    gnmiapi.Encoding_PROTO,
+		UpdatePaths: targetPath,
+	}
+	setReq.SetOrFail(t)
 
 	// Install and start target simulator
 	simulator := gnmiutils.CreateSimulatorWithName(ctx, t, offlineTargetName, false)
@@ -55,11 +62,24 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 
 	// Wait for config to connect to the target
 	gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), time.Minute)
-	gnmiutils.CheckGNMIValue(ctx, t, gnmiClient, targetPath, gnmiutils.SyncExtension(t), modValue, 0, "Query after set returned the wrong value")
+	var getConfigReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Paths:      targetPath,
+		Extensions: gnmiutils.SyncExtension(t),
+		Encoding:   gnmiapi.Encoding_PROTO,
+	}
+	getConfigReq.CheckValue(t, modValue)
 
 	// Check that the value was set properly on the target, wait for configuration gets completed
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
-	gnmiutils.CheckTargetValue(ctx, t, targetGnmiClient, targetPath, gnmiutils.NoExtensions, modValue)
+	var getTargetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   targetGnmiClient,
+		Encoding: gnmiapi.Encoding_JSON,
+		Paths:    targetPath,
+	}
+	getTargetReq.CheckValue(t, modValue)
 }
 
 func createOfflineTarget(t *testing.T, targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {
