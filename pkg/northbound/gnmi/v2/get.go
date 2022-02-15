@@ -222,7 +222,7 @@ func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi
 
 		conn, err := s.conns.GetByTarget(ctx, topoapi.ID(targetID))
 		if err != nil {
-			return nil, errors.Status(err).Err()
+			return nil, errors.Status(errors.NewUnavailable(err.Error())).Err()
 		}
 		resp, err := conn.Get(ctx, roGetReq)
 		if err != nil {
