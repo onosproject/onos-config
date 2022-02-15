@@ -87,6 +87,6 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
-	_, _, err = getTargetReq.Get()
+	_, err = getTargetReq.Get()
 	assert.Error(t, err)
 }

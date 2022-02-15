@@ -45,7 +45,7 @@ type GetRequest struct {
 }
 
 // convertGetResults extracts path/value pairs from a GNMI get response
-func convertGetResults(response *protognmi.GetResponse) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
+func convertGetResults(response *protognmi.GetResponse) ([]protoutils.TargetPath, error) {
 	entryCount := len(response.Notification)
 	result := make([]protoutils.TargetPath, entryCount)
 
@@ -68,7 +68,7 @@ func convertGetResults(response *protognmi.GetResponse) ([]protoutils.TargetPath
 		}
 	}
 
-	return result, response.Extension, nil
+	return result, nil
 }
 
 // extractSetTransactionInfo returns the transaction ID and Index from a set operation response
@@ -95,7 +95,7 @@ func extractSetTransactionInfo(response *protognmi.SetResponse) (configapi.Trans
 }
 
 // Get performs a Get operation
-func (req *GetRequest) Get() ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
+func (req *GetRequest) Get() ([]protoutils.TargetPath, error) {
 	protoString := ""
 	for _, targetPath := range req.Paths {
 		protoString = protoString + MakeProtoPath(targetPath.TargetName, targetPath.Path)
@@ -103,14 +103,14 @@ func (req *GetRequest) Get() ([]protoutils.TargetPath, []*gnmi_ext.Extension, er
 	gnmiGetRequest := &protognmi.GetRequest{}
 	if err := proto.UnmarshalText(protoString, gnmiGetRequest); err != nil {
 		fmt.Printf("unable to parse gnmi.GetRequest from %q : %v\n", protoString, err)
-		return nil, nil, err
+		return nil, err
 	}
 	gnmiGetRequest.Encoding = req.Encoding
 	gnmiGetRequest.Extension = req.Extensions
 	gnmiGetRequest.Type = req.DataType
 	response, err := req.Client.(*gclient.Client).Get(req.Ctx, gnmiGetRequest)
 	if err != nil || response == nil {
-		return nil, nil, err
+		return nil, err
 	}
 	return convertGetResults(response)
 }
@@ -118,14 +118,14 @@ func (req *GetRequest) Get() ([]protoutils.TargetPath, []*gnmi_ext.Extension, er
 // CheckValue checks that the correct value is read back via a gnmi get request
 func (req *GetRequest) CheckValue(t *testing.T, expectedValue string) {
 	t.Helper()
-	value, _, err := req.Get()
+	value, err := req.Get()
 	assert.NoError(t, err, "Get operation returned an unexpected error")
 	assert.Equal(t, expectedValue, value[0].PathDataValue, "Checked vlue is incorrect: %s", value)
 }
 
 // CheckValueDeleted makes sure that the specified paths have been removed
 func (req *GetRequest) CheckValueDeleted(t *testing.T) {
-	_, _, err := req.Get()
+	_, err := req.Get()
 	if err == nil {
 		assert.Fail(t, "Path not deleted", req.Paths)
 	} else if !strings.Contains(err.Error(), "NotFound") {

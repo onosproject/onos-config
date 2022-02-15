@@ -188,7 +188,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 		Encoding: gpb.Encoding_PROTO,
 		DataType: gpb.GetRequest_CONFIG,
 	}
-	expectedValues, _, err := onosConfigGetReq.Get()
+	expectedValues, err := onosConfigGetReq.Get()
 	assert.NoError(t, err)
 	for _, expectedValue := range expectedValues {
 		switch expectedValue.TargetName + "," + expectedValue.Path {

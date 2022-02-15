@@ -122,7 +122,7 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 					Encoding: gpb.Encoding_PROTO,
 					DataType: gpb.GetRequest_CONFIG,
 				}
-				_, _, err = onosConfigGetReq.Get()
+				_, err = onosConfigGetReq.Get()
 
 				if testCase.expectedGetError != "" {
 					// An error is expected

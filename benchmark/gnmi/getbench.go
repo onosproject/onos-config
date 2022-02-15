@@ -35,6 +35,6 @@ func (s *BenchmarkSuite) BenchmarkGet(b *benchmark.Benchmark) error {
 		Encoding: gbp.Encoding_PROTO,
 		DataType: gbp.GetRequest_CONFIG,
 	}
-	_, _, err := onosConfigGetReq.Get()
+	_, err := onosConfigGetReq.Get()
 	return err
 }

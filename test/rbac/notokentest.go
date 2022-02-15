@@ -48,7 +48,7 @@ func (s *TestSuite) TestNoToken(t *testing.T) {
 		Encoding: gpb.Encoding_PROTO,
 		DataType: gpb.GetRequest_CONFIG,
 	}
-	_, _, err := onosConfigGetReq.Get()
+	_, err := onosConfigGetReq.Get()
 
 	// An error indicating an unauthenticated request is expected
 	assert.Error(t, err)

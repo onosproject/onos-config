@@ -242,7 +242,7 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 					Encoding: gpb.Encoding_PROTO,
 					DataType: gpb.GetRequest_CONFIG,
 				}
-				values, _, err := onosConfigGetReq.Get()
+				values, err := onosConfigGetReq.Get()
 				assert.NoError(t, err)
 				value := ""
 				if len(values) != 0 {
