@@ -68,14 +68,18 @@ type Server struct {
 	pluginRegistry      pluginregistry.PluginRegistry
 }
 
-// ListRegisteredModels lists the registered models..
-func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.ConfigAdminService_ListRegisteredModelsServer) error {
-	if stream.Context() != nil {
-		if md := metautils.ExtractIncoming(stream.Context()); md != nil && md.Get("name") != "" {
-			log.Infof("admin ListSnapshots() called by '%s (%s)'. Groups [%v]. Token %s",
+func logContext(ctx context.Context, name string) {
+	if ctx != nil {
+		if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
+			log.Infof("admin %s called by '%s (%s)'. Groups [%v]. Token %s", name,
 				md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
 		}
 	}
+}
+
+// ListRegisteredModels lists the registered models..
+func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.ConfigAdminService_ListRegisteredModelsServer) error {
+	logContext(stream.Context(), "ListRegisteredModels()")
 	log.Infow("ListRegisteredModels called with:",
 		"ModelName", r.ModelName,
 		"ModelVersion", r.ModelVersion,
@@ -110,6 +114,7 @@ func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.Co
 // RollbackTransaction rolls back configuration change transaction with the specified index.
 func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequest) (*admin.RollbackResponse, error) {
 	log.Debugf("Received RollbackRequest %+v", req)
+	logContext(ctx, "RollbackTransaction()")
 	id := configapi.TransactionID(uri.NewURI(uri.WithScheme("uuid"), uri.WithOpaque(uuid.New().String())).String())
 	t := &configapi.Transaction{
 		ID: id,
@@ -179,55 +184,4 @@ func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequ
 		}
 	}
 	return nil, ctx.Err()
-}
-
-// ListSnapshots lists snapshots for all devices
-func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.ConfigAdminService_ListSnapshotsServer) error {
-	return errors.NewNotSupported("not implemented")
-}
-
-// CompactChanges takes a snapshot of all devices
-func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChangesRequest) (*admin.CompactChangesResponse, error) {
-	return nil, errors.NewNotSupported("not implemented")
-}
-
-// UploadRegisterModel uploads and registers a new model plugin.
-// Deprecated: models should only be loaded at startup
-func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegisterModelServer) error {
-	return errors.NewNotSupported("dynamic model registration has been deprecated")
-}
-
-func getErrorFromFailure(failure *configapi.Failure) error {
-	if failure == nil {
-		return errors.NewUnknown("unknown failure occurred")
-	}
-
-	switch failure.Type {
-	case configapi.Failure_UNKNOWN:
-		return errors.NewUnknown(failure.Description)
-	case configapi.Failure_CANCELED:
-		return errors.NewCanceled(failure.Description)
-	case configapi.Failure_NOT_FOUND:
-		return errors.NewNotFound(failure.Description)
-	case configapi.Failure_ALREADY_EXISTS:
-		return errors.NewAlreadyExists(failure.Description)
-	case configapi.Failure_UNAUTHORIZED:
-		return errors.NewUnauthorized(failure.Description)
-	case configapi.Failure_FORBIDDEN:
-		return errors.NewForbidden(failure.Description)
-	case configapi.Failure_CONFLICT:
-		return errors.NewConflict(failure.Description)
-	case configapi.Failure_INVALID:
-		return errors.NewInvalid(failure.Description)
-	case configapi.Failure_UNAVAILABLE:
-		return errors.NewUnavailable(failure.Description)
-	case configapi.Failure_NOT_SUPPORTED:
-		return errors.NewNotSupported(failure.Description)
-	case configapi.Failure_TIMEOUT:
-		return errors.NewTimeout(failure.Description)
-	case configapi.Failure_INTERNAL:
-		return errors.NewInternal(failure.Description)
-	default:
-		return errors.NewUnknown(failure.Description)
-	}
 }
