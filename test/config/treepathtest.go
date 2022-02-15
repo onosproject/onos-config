@@ -17,7 +17,7 @@ package config
 import (
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 )
 
@@ -51,7 +51,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
-		Encoding:    gbp.Encoding_PROTO,
+		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: setNamePath,
 	}
 	setReq.SetOrFail(t)
@@ -67,7 +67,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	var getConfigReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   gnmiClient,
-		Encoding: gbp.Encoding_PROTO,
+		Encoding: gnmiapi.Encoding_PROTO,
 	}
 
 	// Check that the name value was set correctly

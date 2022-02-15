@@ -17,7 +17,7 @@ package config
 
 import (
 	"context"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
@@ -51,7 +51,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
-		Encoding:    gbp.Encoding_PROTO,
+		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: targetPath,
 	}
 	setReq.SetOrFail(t)
@@ -67,7 +67,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 		Client:     gnmiClient,
 		Paths:      targetPath,
 		Extensions: gnmiutils.SyncExtension(t),
-		Encoding:   gbp.Encoding_PROTO,
+		Encoding:   gnmiapi.Encoding_PROTO,
 	}
 	getConfigReq.CheckValue(t, modValue)
 
@@ -76,7 +76,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetGnmiClient,
-		Encoding: gbp.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
 	}
 	getTargetReq.CheckValue(t, modValue)

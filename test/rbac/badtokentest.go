@@ -16,7 +16,7 @@ package rbac
 
 import (
 	"context"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -119,8 +119,8 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 					Ctx:      ctx,
 					Client:   gnmiClient,
 					Paths:    devicePath,
-					Encoding: gpb.Encoding_PROTO,
-					DataType: gpb.GetRequest_CONFIG,
+					Encoding: gnmiapi.Encoding_PROTO,
+					DataType: gnmiapi.GetRequest_CONFIG,
 				}
 				_, err = onosConfigGetReq.Get()
 

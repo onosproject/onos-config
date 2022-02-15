@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/helmit/pkg/benchmark"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"time"
 )
 
@@ -31,7 +31,7 @@ func (s *BenchmarkSuite) BenchmarkSet(b *benchmark.Benchmark) error {
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      s.client,
-		Encoding:    gbp.Encoding_PROTO,
+		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: devicePath,
 	}
 	_, _, err := setReq.Set()

@@ -15,7 +15,7 @@
 package config
 
 import (
-	protognmi "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -53,7 +53,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 		Client:      gnmiClient,
 		UpdatePaths: targetPath,
 		Extensions:  gnmiutils.SyncExtension(t),
-		Encoding:    protognmi.Encoding_PROTO,
+		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 	setReq.SetOrFail(t)
 
@@ -63,7 +63,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 		Client:     gnmiClient,
 		Paths:      targetPath,
 		Extensions: gnmiutils.SyncExtension(t),
-		Encoding:   protognmi.Encoding_PROTO,
+		Encoding:   gnmiapi.Encoding_PROTO,
 	}
 	getReq.CheckValue(t, restartTzValue)
 
@@ -79,7 +79,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetGnmiClient,
-		Encoding: protognmi.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
 	}
 	getTargetReq.CheckValue(t, restartTzValue)
@@ -116,7 +116,7 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 		Ctx:        ctx,
 		Client:     gnmiClient,
 		Extensions: gnmiutils.SyncExtension(t),
-		Encoding:   protognmi.Encoding_PROTO,
+		Encoding:   gnmiapi.Encoding_PROTO,
 	}
 	setReq.UpdatePaths = tzPath
 	setReq.SetOrFail(t)
@@ -128,7 +128,7 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 		Ctx:        ctx,
 		Client:     gnmiClient,
 		Extensions: gnmiutils.SyncExtension(t),
-		Encoding:   protognmi.Encoding_PROTO,
+		Encoding:   gnmiapi.Encoding_PROTO,
 	}
 	getConfigReq.Paths = tzPath
 	getConfigReq.CheckValue(t, restartTzValue)
@@ -142,7 +142,7 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetGnmiClient,
-		Encoding: protognmi.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 	}
 	getTargetReq.Paths = tzPath
 	getTargetReq.CheckValue(t, restartTzValue)

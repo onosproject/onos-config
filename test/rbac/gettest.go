@@ -19,7 +19,7 @@ import (
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-config/test/utils/rbac"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -64,7 +64,7 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 		var setReq = &gnmiutils.SetRequest{
 			Ctx:         ctx,
 			Client:      gnmiClient,
-			Encoding:    gpb.Encoding_PROTO,
+			Encoding:    gnmiapi.Encoding_PROTO,
 			UpdatePaths: setNamePath,
 		}
 		setReq.SetOrFail(t)
@@ -239,8 +239,8 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 					Ctx:      ctx,
 					Client:   gnmiClient,
 					Paths:    targetPath,
-					Encoding: gpb.Encoding_PROTO,
-					DataType: gpb.GetRequest_CONFIG,
+					Encoding: gnmiapi.Encoding_PROTO,
+					DataType: gnmiapi.GetRequest_CONFIG,
 				}
 				values, err := onosConfigGetReq.Get()
 				assert.NoError(t, err)

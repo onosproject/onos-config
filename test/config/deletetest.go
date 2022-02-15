@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-api/go/onos/topo"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -54,7 +54,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		Extensions:  gnmiutils.SyncExtension(t),
-		Encoding:    gbp.Encoding_PROTO,
+		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: targetPath,
 	}
 	_, transactionIndex := setReq.SetOrFail(t)
@@ -63,7 +63,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	var getConfigReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   gnmiClient,
-		Encoding: gbp.Encoding_PROTO,
+		Encoding: gnmiapi.Encoding_PROTO,
 		Paths:    targetPath,
 	}
 	getConfigReq.CheckValue(t, newValue)
@@ -73,7 +73,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   target1GnmiClient,
-		Encoding: gbp.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
 	}
 	getTargetReq.CheckValue(t, newValue)

@@ -18,7 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/helmit/pkg/benchmark"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"time"
 )
 
@@ -32,8 +32,7 @@ func (s *BenchmarkSuite) BenchmarkGet(b *benchmark.Benchmark) error {
 		Ctx:      ctx,
 		Client:   s.client,
 		Paths:    devicePath,
-		Encoding: gbp.Encoding_PROTO,
-		DataType: gbp.GetRequest_CONFIG,
+		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	_, err := onosConfigGetReq.Get()
 	return err

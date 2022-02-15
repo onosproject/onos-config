@@ -15,7 +15,7 @@
 package config
 
 import (
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -74,7 +74,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 					Ctx:         ctx,
 					Client:      gnmiClient,
 					Extensions:  gnmiutils.SyncExtension(t),
-					Encoding:    gbp.Encoding_PROTO,
+					Encoding:    gnmiapi.Encoding_PROTO,
 					UpdatePaths: setResult,
 				}
 				msg, _, err := setReq.Set()

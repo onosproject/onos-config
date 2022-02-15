@@ -17,7 +17,7 @@ package rbac
 import (
 	"context"
 	"github.com/onosproject/onos-config/test/utils/rbac"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -85,7 +85,7 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 				var setReq = &gnmiutils.SetRequest{
 					Ctx:         ctx,
 					Client:      gnmiClient,
-					Encoding:    gbp.Encoding_PROTO,
+					Encoding:    gnmiapi.Encoding_PROTO,
 					UpdatePaths: targetPath,
 				}
 				_, _, err = setReq.Set()
@@ -99,7 +99,7 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 					Ctx:      ctx,
 					Client:   gnmiClient,
 					Paths:    targetPath,
-					Encoding: gbp.Encoding_PROTO,
+					Encoding: gnmiapi.Encoding_PROTO,
 				}
 				getConfigReq.CheckValue(t, tzValue)
 

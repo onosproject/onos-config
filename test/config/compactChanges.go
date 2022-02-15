@@ -24,7 +24,7 @@ import (
 	"github.com/onosproject/onos-api/go/onos/topo"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -75,7 +75,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:      ctx,
 		Client:   gnmiClient,
-		Encoding: gpb.Encoding_PROTO,
+		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	// Set a value using gNMI client
 	sim1Path1 := gnmiutils.GetTargetPathWithValue(simulator1.Name(), tzPath, tzValue, proto.StringVal)
@@ -185,8 +185,8 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 		Paths: []proto.TargetPath{
 			sim1Path4[0], sim1Path2[0], sim1Path3[0], sim1Path5[0],
 			sim2Path1[0], sim2Path2[0], sim2Path3[0], sim2Path4[0]},
-		Encoding: gpb.Encoding_PROTO,
-		DataType: gpb.GetRequest_CONFIG,
+		Encoding: gnmiapi.Encoding_PROTO,
+		DataType: gnmiapi.GetRequest_CONFIG,
 	}
 	expectedValues, err := onosConfigGetReq.Get()
 	assert.NoError(t, err)

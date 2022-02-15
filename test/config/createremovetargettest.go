@@ -16,7 +16,7 @@
 package config
 
 import (
-	protognmi "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
@@ -52,7 +52,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 		Ctx:         ctx,
 		Client:      c,
 		Extensions:  gnmiutils.SyncExtension(t),
-		Encoding:    protognmi.Encoding_PROTO,
+		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: targetPath,
 	}
 	setReq.SetOrFail(t)
@@ -63,7 +63,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 		Client:     c,
 		Paths:      targetPath,
 		Extensions: gnmiutils.SyncExtension(t),
-		Encoding:   protognmi.Encoding_PROTO,
+		Encoding:   gnmiapi.Encoding_PROTO,
 	}
 	getReq.CheckValue(t, createRemoveTargetModValue1)
 
@@ -72,7 +72,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetGnmiClient,
-		Encoding: protognmi.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
 	}
 	getTargetReq.CheckValue(t, createRemoveTargetModValue1)
@@ -104,7 +104,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetGnmiClient2,
-		Encoding: protognmi.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
 	}
 	getTargetReq.CheckValue(t, createRemoveTargetModValue2)

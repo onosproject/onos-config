@@ -18,7 +18,7 @@ import (
 	"github.com/Pallinder/go-randomdata"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -55,7 +55,7 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 			Ctx:         ctx,
 			Client:      gnmiClient,
 			Extensions:  gnmiutils.SyncExtension(t),
-			Encoding:    gbp.Encoding_PROTO,
+			Encoding:    gnmiapi.Encoding_PROTO,
 			UpdatePaths: targetPath,
 		}
 		transactionID, transactionIndex := setReq.SetOrFail(t)
@@ -68,13 +68,13 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 			Client:     gnmiClient,
 			Paths:      targetPath,
 			Extensions: gnmiutils.SyncExtension(t),
-			Encoding:   gbp.Encoding_PROTO,
+			Encoding:   gnmiapi.Encoding_PROTO,
 		}
 		getConfigReq.CheckValue(t, msValue)
 		var getTargetReq = &gnmiutils.GetRequest{
 			Ctx:      ctx,
 			Client:   targetClient,
-			Encoding: gbp.Encoding_JSON,
+			Encoding: gnmiapi.Encoding_JSON,
 			Paths:    targetPath,
 		}
 		getTargetReq.CheckValue(t, msValue)

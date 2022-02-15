@@ -15,7 +15,7 @@
 package config
 
 import (
-	protognmi "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -48,20 +48,20 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 		Ctx:      ctx,
 		Client:   gnmiClient,
 		Paths:    targetPaths,
-		Encoding: protognmi.Encoding_PROTO,
+		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	var simulatorGetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetClient,
 		Paths:    targetPaths,
-		Encoding: protognmi.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 	}
 	var onosConfigSetReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPaths,
 		Extensions:  gnmiutils.SyncExtension(t),
-		Encoding:    protognmi.Encoding_PROTO,
+		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config

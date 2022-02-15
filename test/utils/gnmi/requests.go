@@ -29,7 +29,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	gnmiclient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
-	protognmi "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,12 +40,12 @@ type GetRequest struct {
 	Client     gnmiclient.Impl
 	Paths      []protoutils.TargetPath
 	Extensions []*gnmi_ext.Extension
-	Encoding   protognmi.Encoding
-	DataType   protognmi.GetRequest_DataType
+	Encoding   gnmiapi.Encoding
+	DataType   gnmiapi.GetRequest_DataType
 }
 
 // convertGetResults extracts path/value pairs from a GNMI get response
-func convertGetResults(response *protognmi.GetResponse) ([]protoutils.TargetPath, error) {
+func convertGetResults(response *gnmiapi.GetResponse) ([]protoutils.TargetPath, error) {
 	entryCount := len(response.Notification)
 	result := make([]protoutils.TargetPath, entryCount)
 
@@ -72,7 +72,7 @@ func convertGetResults(response *protognmi.GetResponse) ([]protoutils.TargetPath
 }
 
 // extractSetTransactionInfo returns the transaction ID and Index from a set operation response
-func extractSetTransactionInfo(response *protognmi.SetResponse) (configapi.TransactionID, v2.Index, error) {
+func extractSetTransactionInfo(response *gnmiapi.SetResponse) (configapi.TransactionID, v2.Index, error) {
 	var transactionInfo *configapi.TransactionInfo
 	extensionsSet := response.Extension
 	for _, extension := range extensionsSet {
@@ -100,7 +100,7 @@ func (req *GetRequest) Get() ([]protoutils.TargetPath, error) {
 	for _, targetPath := range req.Paths {
 		protoString = protoString + MakeProtoPath(targetPath.TargetName, targetPath.Path)
 	}
-	gnmiGetRequest := &protognmi.GetRequest{}
+	gnmiGetRequest := &gnmiapi.GetRequest{}
 	if err := proto.UnmarshalText(protoString, gnmiGetRequest); err != nil {
 		fmt.Printf("unable to parse gnmi.GetRequest from %q : %v\n", protoString, err)
 		return nil, err
@@ -140,7 +140,7 @@ type SetRequest struct {
 	UpdatePaths []protoutils.TargetPath
 	DeletePaths []protoutils.TargetPath
 	Extensions  []*gnmi_ext.Extension
-	Encoding    protognmi.Encoding
+	Encoding    gnmiapi.Encoding
 }
 
 // Set performs a Set operation
@@ -153,7 +153,7 @@ func (req *SetRequest) Set() (configapi.TransactionID, v2.Index, error) {
 		protoBuilder.WriteString(protoutils.MakeProtoDeletePath(deletePath.TargetName, deletePath.Path))
 	}
 
-	setGnmiRequest := &protognmi.SetRequest{}
+	setGnmiRequest := &gnmiapi.SetRequest{}
 
 	if err := proto.UnmarshalText(protoBuilder.String(), setGnmiRequest); err != nil {
 		return "", 0, err

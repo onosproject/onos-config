@@ -16,7 +16,7 @@ package config
 
 import (
 	"context"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
@@ -74,7 +74,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
-		Encoding:    gbp.Encoding_PROTO,
+		Encoding:    gnmiapi.Encoding_PROTO,
 		Extensions:  gnmiutils.SyncExtension(t),
 		UpdatePaths: targetPathsForInit,
 	}
@@ -83,7 +83,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	var getReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
-		Encoding:   gbp.Encoding_PROTO,
+		Encoding:   gnmiapi.Encoding_PROTO,
 		Extensions: gnmiutils.SyncExtension(t),
 	}
 	targetPath1 := gnmiutils.GetTargetPath(target1.Name(), path1)
@@ -112,12 +112,12 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	var target1GetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   target1GnmiClient,
-		Encoding: gbp.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 	}
 	var target2GetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   target2GnmiClient,
-		Encoding: gbp.Encoding_JSON,
+		Encoding: gnmiapi.Encoding_JSON,
 	}
 	target1GetReq.Paths = targetPathsForGet[0:1]
 	target1GetReq.CheckValue(t, value1)
