@@ -86,6 +86,6 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 
 		//  Make sure it got removed, both from onos-config and the target
 		getConfigReq.CheckValue(t, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
-		gnmiutils.CheckTargetValueDeleted(ctx, t, targetClient, targetPath, gnmiutils.NoExtensions)
+		getTargetReq.CheckValueDeleted(t)
 	}
 }

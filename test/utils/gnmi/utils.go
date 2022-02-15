@@ -353,25 +353,6 @@ func GetTargetPathsWithValues(targets []string, paths []string, values []string)
 	return targetPaths
 }
 
-// CheckTargetValueDeleted makes sure target path is missing when queried via GNMI
-func CheckTargetValueDeleted(ctx context.Context, t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) {
-	_, _, err := XXXGetGNMIValue(ctx, targetGnmiClient, targetPaths, extensions, gpb.Encoding_JSON)
-	if err == nil {
-		assert.Fail(t, "Path not deleted", targetPaths)
-	} else if !strings.Contains(err.Error(), "NotFound") {
-		assert.Fail(t, "Incorrect error received", err)
-	}
-}
-
-// XXXCheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
-func XXXCheckGNMIValue(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValue string, expectedExtensions int, failMessage string) {
-	t.Helper()
-	value, extensions, err := XXXGetGNMIValue(ctx, gnmiClient, paths, extensions, gpb.Encoding_PROTO)
-	assert.NoError(t, err, "Get operation returned an unexpected error")
-	assert.Equal(t, expectedExtensions, len(extensions))
-	assert.Equal(t, expectedValue, value[0].PathDataValue, "%s: %s", failMessage, value)
-}
-
 // CheckGNMIValues makes sure a list of values has been assigned properly by querying the onos-config northbound API
 func CheckGNMIValues(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.TargetPath, extensions []*gnmi_ext.Extension, expectedValues []string, expectedExtensions int, failMessage string) {
 	t.Helper()
