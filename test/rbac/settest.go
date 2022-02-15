@@ -101,7 +101,7 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 					Paths:    targetPath,
 					Encoding: gbp.Encoding_PROTO,
 				}
-				getConfigReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value")
+				getConfigReq.CheckValue(t, tzValue)
 
 				// Remove the path we added
 				setReq.UpdatePaths = nil

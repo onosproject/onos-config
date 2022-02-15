@@ -61,7 +61,7 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 		Encoding: gbp.Encoding_PROTO,
 	}
 	getConfigReq.Paths = setNamePath
-	getConfigReq.CheckValue(t, udtestNameValue, 0, "Query name after set returned the wrong value")
+	getConfigReq.CheckValue(t, udtestNameValue)
 
 	// Set initial values for Enabled and Description using gNMI client
 	setInitialValuesPath := []proto.TargetPath{
@@ -84,9 +84,9 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 
 	// Check that the Enabled value is set correctly
 	getConfigReq.Paths = updateEnabledPath
-	getConfigReq.CheckValue(t, "false", 0, "Query name after set returned the wrong value")
+	getConfigReq.CheckValue(t, "false")
 
 	//  Make sure Description got removed
 	getConfigReq.Paths = gnmiutils.GetTargetPath(simulator.Name(), udtestDescriptionPath)
-	getConfigReq.CheckValue(t, "", 0, "New child was not removed")
+	getConfigReq.CheckValue(t, "")
 }

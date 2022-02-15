@@ -68,8 +68,8 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	onosConfigSetReq.SetOrFail(t)
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value from onos-config")
-	simulatorGetReq.CheckValue(t, tzValue, 0, "Query after set returned the wrong value from target")
+	onosConfigGetReq.CheckValue(t, tzValue)
+	simulatorGetReq.CheckValue(t, tzValue)
 
 	// Remove the path we added
 	onosConfigSetReq.DeletePaths = targetPaths
@@ -77,7 +77,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	onosConfigSetReq.SetOrFail(t)
 
 	//  Make sure it got removed, both in onos-config and on the target
-	onosConfigGetReq.CheckValue(t, "", 0, "incorrect value from onos-config for path /system/clock/config/timezone-name after delete")
+	onosConfigGetReq.CheckValue(t, "")
 	// Currently, the path is left behind so this check does not work
 	//onosConfigGetReq.CheckValueDeleted(t)
 	simulatorGetReq.CheckValueDeleted(t)

@@ -65,14 +65,14 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 		Extensions: gnmiutils.SyncExtension(t),
 		Encoding:   protognmi.Encoding_PROTO,
 	}
-	getReq.CheckValue(t, restartTzValue, 0, "Query after set returned the wrong value")
+	getReq.CheckValue(t, restartTzValue)
 
 	// Restart onos-config
 	configPod := hautils.FindPodWithPrefix(t, "onos-config")
 	hautils.CrashPodOrFail(t, configPod)
 
 	// Check that the value was set correctly in the new onos-config instance
-	getReq.CheckValue(t, restartTzValue, 0, "Query after set returned the wrong value")
+	getReq.CheckValue(t, restartTzValue)
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
@@ -82,7 +82,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 		Encoding: protognmi.Encoding_JSON,
 		Paths:    targetPath,
 	}
-	getTargetReq.CheckValue(t, restartTzValue, 0, "get from target incorrect")
+	getTargetReq.CheckValue(t, restartTzValue)
 }
 
 // TestSetOperationAfterNodeRestart tests a Set operation after restarting the onos-config node
@@ -131,11 +131,11 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 		Encoding:   protognmi.Encoding_PROTO,
 	}
 	getConfigReq.Paths = tzPath
-	getConfigReq.CheckValue(t, restartTzValue, 0, "Query TZ after set returned the wrong value")
+	getConfigReq.CheckValue(t, restartTzValue)
 	getConfigReq.Paths = loginBannerPath
-	getConfigReq.CheckValue(t, restartLoginBannerValue, 0, "Query login banner after set returned the wrong value")
+	getConfigReq.CheckValue(t, restartLoginBannerValue)
 	getConfigReq.Paths = motdBannerPath
-	getConfigReq.CheckValue(t, restartMotdBannerValue, 0, "Query MOTD banner after set returned the wrong value")
+	getConfigReq.CheckValue(t, restartMotdBannerValue)
 
 	// Check that the values are set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
@@ -145,10 +145,10 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 		Encoding: protognmi.Encoding_JSON,
 	}
 	getTargetReq.Paths = tzPath
-	getTargetReq.CheckValue(t, restartTzValue, 0, "Query TZ on target after set returned the wrong value")
+	getTargetReq.CheckValue(t, restartTzValue)
 	getTargetReq.Paths = loginBannerPath
-	getTargetReq.CheckValue(t, restartLoginBannerValue, 0, "Query login banner after set returned the wrong value")
+	getTargetReq.CheckValue(t, restartLoginBannerValue)
 	getTargetReq.Paths = motdBannerPath
-	getTargetReq.CheckValue(t, restartMotdBannerValue, 0, "Query MOTD banner after set returned the wrong value")
+	getTargetReq.CheckValue(t, restartMotdBannerValue)
 
 }

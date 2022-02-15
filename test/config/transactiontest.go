@@ -90,9 +90,9 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	targetPath2 := gnmiutils.GetTargetPath(target2.Name(), path2)
 
 	getReq.Paths = targetPath1
-	getReq.CheckValue(t, initValue1, 0, "value1 incorrect")
+	getReq.CheckValue(t, initValue1)
 	getReq.Paths = targetPath2
-	getReq.CheckValue(t, initValue2, 0, "value2 incorrect")
+	getReq.CheckValue(t, initValue2)
 
 	// Create a change that can be rolled back
 	targetPathsForSet := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
@@ -101,9 +101,9 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Check that the values were set correctly
 	getReq.Paths = targetPath1
-	getReq.CheckValue(t, value1, 0, "value1 incorrect")
+	getReq.CheckValue(t, value1)
 	getReq.Paths = targetPath2
-	getReq.CheckValue(t, value2, 0, "value2 incorrect")
+	getReq.CheckValue(t, value2)
 
 	// Check that the values are set on the targets
 	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
@@ -120,13 +120,13 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 		Encoding: gbp.Encoding_JSON,
 	}
 	target1GetReq.Paths = targetPathsForGet[0:1]
-	target1GetReq.CheckValue(t, value1, 0, "value is wrong on target")
+	target1GetReq.CheckValue(t, value1)
 	target1GetReq.Paths = targetPathsForGet[1:2]
-	target1GetReq.CheckValue(t, value2, 0, "value is wrong on target")
+	target1GetReq.CheckValue(t, value2)
 	target2GetReq.Paths = targetPathsForGet[2:3]
-	target2GetReq.CheckValue(t, value1, 0, "value is wrong on target")
+	target2GetReq.CheckValue(t, value1)
 	target2GetReq.Paths = targetPathsForGet[3:4]
-	target2GetReq.CheckValue(t, value2, 0, "value is wrong on target")
+	target2GetReq.CheckValue(t, value2)
 
 	// Now rollback the change
 	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
@@ -139,17 +139,17 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Check that the values were really rolled back in onos-config
 	getReq.Paths = targetPath1
-	getReq.CheckValue(t, initValue1, 0, "value1 incorrect")
+	getReq.CheckValue(t, initValue1)
 	getReq.Paths = targetPath2
-	getReq.CheckValue(t, initValue2, 0, "value2 incorrect")
+	getReq.CheckValue(t, initValue2)
 
 	// Check that the values were rolled back on the targets
 	target1GetReq.Paths = targetPathsForGet[0:1]
-	target1GetReq.CheckValue(t, initValue1, 0, "value is wrong on target")
+	target1GetReq.CheckValue(t, initValue1)
 	target1GetReq.Paths = targetPathsForGet[1:2]
-	target1GetReq.CheckValue(t, initValue2, 0, "value is wrong on target")
+	target1GetReq.CheckValue(t, initValue2)
 	target2GetReq.Paths = targetPathsForGet[2:3]
-	target2GetReq.CheckValue(t, initValue1, 0, "value is wrong on target")
+	target2GetReq.CheckValue(t, initValue1)
 	target2GetReq.Paths = targetPathsForGet[3:4]
-	target2GetReq.CheckValue(t, initValue2, 0, "value is wrong on target")
+	target2GetReq.CheckValue(t, initValue2)
 }

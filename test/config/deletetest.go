@@ -66,7 +66,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 		Encoding: gbp.Encoding_PROTO,
 		Paths:    targetPath,
 	}
-	getConfigReq.CheckValue(t, newValue, 0, "Query after set returned the wrong value")
+	getConfigReq.CheckValue(t, newValue)
 
 	// Check that the values are set on the target
 	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
@@ -76,7 +76,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 		Encoding: gbp.Encoding_JSON,
 		Paths:    targetPath,
 	}
-	getTargetReq.CheckValue(t, newValue, 0, "value not set on target")
+	getTargetReq.CheckValue(t, newValue)
 
 	// Now rollback the change
 	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)

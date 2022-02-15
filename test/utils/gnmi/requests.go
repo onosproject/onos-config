@@ -116,12 +116,11 @@ func (req *GetRequest) Get() ([]protoutils.TargetPath, []*gnmi_ext.Extension, er
 }
 
 // CheckValue checks that the correct value is read back via a gnmi get request
-func (req *GetRequest) CheckValue(t *testing.T, expectedValue string, expectedExtensions int, failMessage string) {
+func (req *GetRequest) CheckValue(t *testing.T, expectedValue string) {
 	t.Helper()
-	value, extensions, err := req.Get()
+	value, _, err := req.Get()
 	assert.NoError(t, err, "Get operation returned an unexpected error")
-	assert.Equal(t, expectedExtensions, len(extensions))
-	assert.Equal(t, expectedValue, value[0].PathDataValue, "%s: %s", failMessage, value)
+	assert.Equal(t, expectedValue, value[0].PathDataValue, "Checked vlue is incorrect: %s", value)
 }
 
 // CheckValueDeleted makes sure that the specified paths have been removed

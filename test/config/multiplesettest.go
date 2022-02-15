@@ -70,14 +70,14 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 			Extensions: gnmiutils.SyncExtension(t),
 			Encoding:   gbp.Encoding_PROTO,
 		}
-		getConfigReq.CheckValue(t, msValue, 0, "Query after set returned the wrong value")
+		getConfigReq.CheckValue(t, msValue)
 		var getTargetReq = &gnmiutils.GetRequest{
 			Ctx:      ctx,
 			Client:   targetClient,
 			Encoding: gbp.Encoding_JSON,
 			Paths:    targetPath,
 		}
-		getTargetReq.CheckValue(t, msValue, 0, "get from target incorrect")
+		getTargetReq.CheckValue(t, msValue)
 
 		// Remove the path we added
 		setReq.UpdatePaths = nil
@@ -85,7 +85,7 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 		setReq.SetOrFail(t)
 
 		//  Make sure it got removed, both from onos-config and the target
-		getConfigReq.CheckValue(t, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+		getConfigReq.CheckValue(t, "")
 		getTargetReq.CheckValueDeleted(t)
 	}
 }

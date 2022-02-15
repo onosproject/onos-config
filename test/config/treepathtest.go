@@ -72,11 +72,11 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 
 	// Check that the name value was set correctly
 	getConfigReq.Paths = setNamePath
-	getConfigReq.CheckValue(t, newRootName, 0, "Query name after set returned the wrong value")
+	getConfigReq.CheckValue(t, newRootName)
 
 	// Check that the enabled value was set correctly
 	getConfigReq.Paths = getPath
-	getConfigReq.CheckValue(t, "false", 0, "Query enabled after set returned the wrong value")
+	getConfigReq.CheckValue(t, "false")
 
 	// Remove the root path we added
 	setReq.UpdatePaths = nil
@@ -85,9 +85,9 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 
 	//  Make sure child got removed
 	getConfigReq.Paths = setNamePath
-	getConfigReq.CheckValue(t, newRootName, 0, "New child was not removed")
+	getConfigReq.CheckValue(t, newRootName)
 
 	//  Make sure new root got removed
 	getConfigReq.Paths = getPath
-	getConfigReq.CheckValue(t, "", 0, "New root was not removed")
+	getConfigReq.CheckValue(t, "")
 }
