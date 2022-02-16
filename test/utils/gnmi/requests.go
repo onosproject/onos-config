@@ -46,25 +46,36 @@ type GetRequest struct {
 
 // convertGetResults extracts path/value pairs from a GNMI get response
 func convertGetResults(response *gnmiapi.GetResponse) ([]protoutils.TargetPath, error) {
-	entryCount := len(response.Notification)
-	result := make([]protoutils.TargetPath, entryCount)
+	result := make([]protoutils.TargetPath, 0)
 
-	for index, notification := range response.Notification {
-		value := notification.Update[0].Val
+	for _, notification := range response.Notification {
+		for _, update := range notification.Update {
+			value := update.Val
 
-		result[index].TargetName = notification.Update[0].Path.Target
-		pathString := ""
+			var targetPath protoutils.TargetPath
+			targetPath.TargetName = update.Path.Target
+			pathString := ""
 
-		for _, elem := range notification.Update[0].Path.Elem {
-			pathString = pathString + "/" + elem.Name
-		}
-		result[index].Path = pathString
+			for _, elem := range update.Path.Elem {
+				pathString = pathString + "/" + elem.Name
+				if len(elem.GetKey()) != 0 {
+					pathString = pathString + "["
+					for key, value := range elem.GetKey() {
+						pathString = pathString + key + "=" + value
+					}
+					pathString = pathString + "]"
+				}
+			}
+			targetPath.Path = pathString
 
-		result[index].PathDataType = "string_val"
-		if value != nil {
-			result[index].PathDataValue = utils.StrVal(value)
-		} else {
-			result[index].PathDataValue = ""
+			targetPath.PathDataType = "string_val"
+			if value != nil {
+				targetPath.PathDataValue = utils.StrVal(value)
+			} else {
+				targetPath.PathDataValue = ""
+			}
+			result = append(result, targetPath)
+
 		}
 	}
 
