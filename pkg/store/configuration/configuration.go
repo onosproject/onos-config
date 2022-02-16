@@ -16,7 +16,10 @@ package configuration
 
 import (
 	"context"
+	"sync"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 
@@ -70,13 +73,27 @@ func NewAtomixStore(client atomix.Client) (Store, error) {
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return &configurationStore{
+	configStore := &configurationStore{
 		configurations: configurations,
-	}, nil
+		watchers:       newWatchers(),
+		cache:          make(map[configapi.ConfigurationID]configapi.Configuration),
+	}
+
+	eventCh := make(chan _map.Event)
+	if err := configurations.Watch(context.Background(), eventCh, _map.WithReplay()); err != nil {
+		return nil, errors.FromAtomix(err)
+	}
+
+	go configStore.watchConfigurationEvent(eventCh)
+	return configStore, nil
 }
 
 type configurationStore struct {
 	configurations _map.Map
+	watchers       *watchers
+	cache          map[configapi.ConfigurationID]configapi.Configuration
+	watchersMu     sync.RWMutex
+	cacheMu        sync.RWMutex
 }
 
 // WatchOption is a configuration option for Watch calls
@@ -258,40 +275,97 @@ func (s *configurationStore) List(ctx context.Context) ([]*configapi.Configurati
 
 func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.ConfigurationEvent, opts ...WatchOption) error {
 	watchOpts := make([]_map.WatchOption, 0)
+	watcher := watcher{}
 	for _, opt := range opts {
+		switch e := opt.(type) {
+		case watchReplayOption:
+			watcher.replay = true
+		case watchIDOption:
+			watcher.watchID = e.id
+		}
 		watchOpts = opt.apply(watchOpts)
 	}
+	eventCh := make(chan configapi.ConfigurationEvent)
+	watcher.eventCh = eventCh
+	watcherID := uuid.New()
+	err := s.watchers.add(watcherID, watcher)
+	if err != nil {
+		return err
+	}
+	var configurations []configapi.Configuration
+	if watcher.replay {
+		s.cacheMu.RLock()
+		configurations = make([]configapi.Configuration, 0, len(s.cache))
+		for _, configuration := range s.cache {
+			configurations = append(configurations, configuration)
 
-	mapCh := make(chan _map.Event)
-	if err := s.configurations.Watch(ctx, mapCh, watchOpts...); err != nil {
-		return errors.FromAtomix(err)
+		}
+		s.cacheMu.RUnlock()
+
 	}
 
 	go func() {
 		defer close(ch)
-		for event := range mapCh {
-			if configuration, err := decodeConfiguration(event.Entry); err == nil {
-				var eventType configapi.ConfigurationEvent_EventType
-				switch event.Type {
-				case _map.EventReplay:
-					eventType = configapi.ConfigurationEvent_REPLAYED
-				case _map.EventInsert:
-					eventType = configapi.ConfigurationEvent_CREATED
-				case _map.EventRemove:
-					eventType = configapi.ConfigurationEvent_DELETED
-				case _map.EventUpdate:
-					eventType = configapi.ConfigurationEvent_UPDATED
-				default:
-					eventType = configapi.ConfigurationEvent_UPDATED
-				}
-				ch <- configapi.ConfigurationEvent{
-					Type:          eventType,
-					Configuration: *configuration,
-				}
+		for _, configuration := range configurations {
+			ch <- configapi.ConfigurationEvent{
+				Type:          configapi.ConfigurationEvent_REPLAYED,
+				Configuration: configuration,
 			}
 		}
+
+		for event := range eventCh {
+			ch <- event
+		}
 	}()
+
+	go func() {
+		<-ctx.Done()
+		err := s.watchers.remove(watcherID)
+		if err != nil {
+			return
+		}
+		close(ch)
+	}()
+
 	return nil
+}
+
+func (s *configurationStore) watchConfigurationEvent(eventCh chan _map.Event) {
+	log.Debugf("Starting watching configuration changes")
+	for event := range eventCh {
+		configuration, err := decodeConfiguration(event.Entry)
+		if err != nil {
+			continue
+		}
+		var eventType configapi.ConfigurationEvent_EventType
+		switch event.Type {
+		case _map.EventReplay:
+			eventType = configapi.ConfigurationEvent_REPLAYED
+			s.cacheMu.Lock()
+			s.cache[configuration.ID] = *configuration
+			s.cacheMu.Unlock()
+		case _map.EventInsert:
+			eventType = configapi.ConfigurationEvent_CREATED
+			s.cacheMu.Lock()
+			s.cache[configuration.ID] = *configuration
+			s.cacheMu.Unlock()
+		case _map.EventUpdate:
+			eventType = configapi.ConfigurationEvent_UPDATED
+			s.cacheMu.Lock()
+			s.cache[configuration.ID] = *configuration
+			s.cacheMu.Unlock()
+		case _map.EventRemove:
+			eventType = configapi.ConfigurationEvent_DELETED
+			s.cacheMu.Lock()
+			delete(s.cache, configapi.ConfigurationID(event.Entry.Key))
+			s.cacheMu.Unlock()
+		}
+		configEvent := configapi.ConfigurationEvent{
+			Type:          eventType,
+			Configuration: *configuration,
+		}
+		s.watchers.sendAll(configEvent)
+	}
 }
 
 func (s *configurationStore) Close(ctx context.Context) error {
