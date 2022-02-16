@@ -89,6 +89,11 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 	// Get configuration for each target and forms targets info map
 	// and process paths in the request and forms a map of paths info
 	for _, path := range req.GetPath() {
+		// If path or prefix target specifies wildcard "*", return response with all configurable targets in the system
+		if path.Target == "*" || (prefix != nil && prefix.Target == "*") {
+			return s.reportAllTargets(ctx, req.Encoding)
+		}
+
 		targetID := configapi.TargetID(path.Target)
 		if targetID == "" && prefix != nil {
 			targetID = configapi.TargetID(prefix.Target)
@@ -343,4 +348,48 @@ func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo *targetInfo, co
 		return nil, err
 	}
 	return modelPlugin.GetPathValues(ctx, "", []byte(bodyText))
+}
+
+func (s *Server) reportAllTargets(ctx context.Context, encoding gnmi.Encoding) (*gnmi.GetResponse, error) {
+	// Get list of configurable entities from the topo store
+	targetEntities, err := s.topo.List(ctx, &topoapi.Filters{
+		ObjectTypes: []topoapi.Object_Type{topoapi.Object_ENTITY},
+		WithAspects: []string{"onos.topo.Configurable"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Distill the list of configurable entities into their corresponding target IDs
+	targets := make([]string, 0, len(targetEntities))
+	for _, targetEntity := range targetEntities {
+		targets = append(targets, string(targetEntity.ID))
+	}
+
+	// Produce an appropriately encoded path value with all target IDs
+	var allDevicesPathElem = make([]*gnmi.PathElem, 0)
+	allDevicesPathElem = append(allDevicesPathElem, &gnmi.PathElem{Name: "all-targets"})
+	allDevicesPath := gnmi.Path{Elem: allDevicesPathElem, Target: "*"}
+	var typedVal gnmi.TypedValue
+	switch encoding {
+	case gnmi.Encoding_JSON, gnmi.Encoding_JSON_IETF:
+		typedVal = gnmi.TypedValue{
+			Value: &gnmi.TypedValue_JsonVal{
+				JsonVal: []byte(fmt.Sprintf("{\"targets\": [\"%s\"]}", strings.Join(targets, "\",\""))),
+			},
+		}
+	case gnmi.Encoding_PROTO:
+		targetIDs := make([]*gnmi.TypedValue, 0)
+		for _, target := range targets {
+			targetIDs = append(targetIDs, &gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: target}})
+		}
+		typedVal = gnmi.TypedValue{
+			Value: &gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: targetIDs}}}
+	default:
+		return nil, fmt.Errorf("get targets - unhandled encoding format %v", encoding)
+	}
+
+	// Return the get response with the notification containing all target IDs
+	notification := &gnmi.Notification{Timestamp: 0, Update: []*gnmi.Update{{Path: &allDevicesPath, Val: &typedVal}}}
+	return &gnmi.GetResponse{Notification: []*gnmi.Notification{notification}}, nil
 }
