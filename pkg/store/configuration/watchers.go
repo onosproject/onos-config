@@ -54,11 +54,10 @@ func (ws *watchers) sendAll(event configapi.ConfigurationEvent) {
 }
 
 // add adds a watcher
-func (ws *watchers) add(id uuid.UUID, watcher watcher) error {
+func (ws *watchers) add(id uuid.UUID, watcher watcher) {
 	ws.rm.Lock()
 	ws.watchers[id] = watcher
 	ws.rm.Unlock()
-	return nil
 
 }
 

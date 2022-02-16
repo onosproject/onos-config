@@ -282,13 +282,12 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 			watcher.watchID = e.id
 		}
 	}
+	if watcher.replay {
+	}
 
 	watcher.eventCh = ch
 	watcherID := uuid.New()
-	err := s.watchers.add(watcherID, watcher)
-	if err != nil {
-		return err
-	}
+	s.watchers.add(watcherID, watcher)
 
 	go func() {
 		<-ctx.Done()
