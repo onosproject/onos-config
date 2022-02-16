@@ -368,7 +368,7 @@ func (s *Server) reportAllTargets(ctx context.Context, encoding gnmi.Encoding) (
 
 	// Produce an appropriately encoded path value with all target IDs
 	var allDevicesPathElem = make([]*gnmi.PathElem, 0)
-	allDevicesPathElem = append(allDevicesPathElem, &gnmi.PathElem{Name: "all-devices"})
+	allDevicesPathElem = append(allDevicesPathElem, &gnmi.PathElem{Name: "all-targets"})
 	allDevicesPath := gnmi.Path{Elem: allDevicesPathElem, Target: "*"}
 	var typedVal gnmi.TypedValue
 	switch encoding {
