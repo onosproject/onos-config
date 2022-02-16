@@ -45,7 +45,7 @@ func (s *TestSuite) TestDeletePathLeaf(t *testing.T) {
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
 
-	// Crete  simulated target
+	// Create simulated target
 	target := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, target)
 
