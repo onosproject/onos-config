@@ -92,7 +92,6 @@ type configurationStore struct {
 	configurations _map.Map
 	watchers       *watchers
 	cache          map[configapi.ConfigurationID]configapi.Configuration
-	watchersMu     sync.RWMutex
 	cacheMu        sync.RWMutex
 }
 
@@ -274,7 +273,6 @@ func (s *configurationStore) List(ctx context.Context) ([]*configapi.Configurati
 }
 
 func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.ConfigurationEvent, opts ...WatchOption) error {
-	watchOpts := make([]_map.WatchOption, 0)
 	watcher := watcher{}
 	for _, opt := range opts {
 		switch e := opt.(type) {
@@ -283,47 +281,18 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 		case watchIDOption:
 			watcher.watchID = e.id
 		}
-		watchOpts = opt.apply(watchOpts)
 	}
-	eventCh := make(chan configapi.ConfigurationEvent)
-	watcher.eventCh = eventCh
+
+	watcher.eventCh = ch
 	watcherID := uuid.New()
 	err := s.watchers.add(watcherID, watcher)
 	if err != nil {
 		return err
 	}
-	var configurations []configapi.Configuration
-	if watcher.replay {
-		s.cacheMu.RLock()
-		configurations = make([]configapi.Configuration, 0, len(s.cache))
-		for _, configuration := range s.cache {
-			configurations = append(configurations, configuration)
-
-		}
-		s.cacheMu.RUnlock()
-
-	}
-
-	go func() {
-		defer close(ch)
-		for _, configuration := range configurations {
-			ch <- configapi.ConfigurationEvent{
-				Type:          configapi.ConfigurationEvent_REPLAYED,
-				Configuration: configuration,
-			}
-		}
-
-		for event := range eventCh {
-			ch <- event
-		}
-	}()
 
 	go func() {
 		<-ctx.Done()
-		err := s.watchers.remove(watcherID)
-		if err != nil {
-			return
-		}
+		s.watchers.remove(watcherID)
 		close(ch)
 	}()
 

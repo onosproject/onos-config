@@ -1,5 +1,16 @@
-// SPDX-FileCopyrightText: ${year}-present Open Networking Foundation <info@opennetworking.org>
-// SPDX-License-Identifier: LicenseRef-ONF-Member-Only-1.0
+// Copyright 2021-present Open Networking Foundation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package configuration
 
@@ -32,15 +43,13 @@ func newWatchers() *watchers {
 // sendAll sends a configuration event for all registered watchers
 func (ws *watchers) sendAll(event configapi.ConfigurationEvent) {
 	ws.rm.RLock()
-	go func() {
-		for _, watcher := range ws.watchers {
-			if watcher.watchID != "" && watcher.watchID == event.Configuration.ID {
-				watcher.eventCh <- event
-			} else if watcher.watchID == "" {
-				watcher.eventCh <- event
-			}
+	for _, watcher := range ws.watchers {
+		if watcher.watchID != "" && watcher.watchID == event.Configuration.ID {
+			watcher.eventCh <- event
+		} else if watcher.watchID == "" {
+			watcher.eventCh <- event
 		}
-	}()
+	}
 	ws.rm.RUnlock()
 }
 
@@ -54,16 +63,9 @@ func (ws *watchers) add(id uuid.UUID, watcher watcher) error {
 }
 
 // remove removes a watcher
-func (ws *watchers) remove(id uuid.UUID) error {
+func (ws *watchers) remove(id uuid.UUID) {
 	ws.rm.Lock()
-	watchers := make(map[uuid.UUID]watcher, len(ws.watchers)-1)
-	for watcherID, watcher := range ws.watchers {
-		if watcherID != id {
-			watchers[id] = watcher
-		}
-	}
-	ws.watchers = watchers
+	delete(ws.watchers, id)
 	ws.rm.Unlock()
-	return nil
 
 }
