@@ -1,17 +1,17 @@
 FROM onosproject/config-model-build:v1.0 AS build
 
 ENV GO111MODULE=on
-ARG ONOS_MAKE_TARGET=build
+WORKDIR /build
 
-COPY Makefile go.mod go.sum /build/
-RUN go mod download -x
+# copy only the files that are needed for the build, exclude everything else to make better use of the docker cache
+COPY ./cmd /build/cmd
+COPY ./pkg /build/pkg
+COPY ./vendor /build/vendor
+COPY ./go.mod /build
+COPY ./go.sum /build
 
-COPY Makefile /build/
-COPY cmd/ /build/cmd/
-COPY pkg/ /build/pkg/
-COPY build/build-tools /build/build/build-tools/
-
-RUN make ${ONOS_MAKE_TARGET}
+# build the executable
+RUN go build -mod=vendor -o build/_output/onos-config ./cmd/onos-config
 
 FROM alpine:3.13
 RUN apk add libc6-compat
