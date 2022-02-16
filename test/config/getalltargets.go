@@ -17,6 +17,7 @@ package config
 import (
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,18 +28,6 @@ import (
 
 // TestGetAllTargets tests retrieval of all target IDs via path.Target="*"
 func (s *TestSuite) TestGetAllTargets(t *testing.T) {
-	const (
-		value1 = "test-motd-banner"
-		path1  = "/system/config/motd-banner"
-		value2 = "test-login-banner"
-		path2  = "/system/config/login-banner"
-	)
-
-	var (
-		paths  = []string{path1, path2}
-		values = []string{value1, value2}
-	)
-
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
 
@@ -52,24 +41,10 @@ func (s *TestSuite) TestGetAllTargets(t *testing.T) {
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target1.Name()), time.Minute)
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target2.Name()), time.Minute)
 
-	// Set up paths for the two targets
-	targets := []string{target1.Name(), target2.Name()}
-
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
-	// Set initial values
-	targetPathsForSet := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
-
-	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
-		Client:      gnmiClient,
-		Encoding:    gnmiapi.Encoding_PROTO,
-		Extensions:  gnmiutils.SyncExtension(t),
-		UpdatePaths: targetPathsForSet,
-	}
-	setReq.SetOrFail(t)
-
+	// Get the list of all targets via get query on target "*"
 	var getReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
@@ -80,8 +55,7 @@ func (s *TestSuite) TestGetAllTargets(t *testing.T) {
 	getValue, err := getReq.Get()
 	assert.NoError(t, err)
 	assert.Len(t, getValue, 1)
-
 	assert.Equal(t, "/all-targets", getValue[0].Path)
-	assert.True(t, getValue[0].PathDataValue == "["+target1.Name()+", "+target2.Name()+"]" ||
-		getValue[0].PathDataValue == "["+target2.Name()+", "+target1.Name()+"]")
+	assert.True(t, strings.Contains(getValue[0].PathDataValue, target1.Name()))
+	assert.True(t, strings.Contains(getValue[0].PathDataValue, target2.Name()))
 }
