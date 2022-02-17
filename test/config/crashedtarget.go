@@ -1,0 +1,114 @@
+// Copyright 2019-present Open Networking Foundation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package config
+
+import (
+	"context"
+	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/onos-config/test/utils/proto"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
+	"testing"
+	"time"
+
+	"github.com/onosproject/onos-api/go/onos/topo"
+
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
+)
+
+const (
+	value1 = "test-motd-banner"
+	path1  = "/system/config/motd-banner"
+	value2 = "test-login-banner"
+	path2  = "/system/config/login-banner"
+)
+
+var (
+	paths  = []string{path1, path2}
+	values = []string{value1, value2}
+)
+
+// TestCrashedTarget tests that a crashed target receives proper configuration restoration
+func (s *TestSuite) TestCrashedTarget(t *testing.T) {
+	ctx, cancel := gnmiutils.MakeContext()
+	defer cancel()
+
+	// Create a simulator and wait for it to become available
+	target := gnmiutils.CreateSimulator(ctx, t)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target.Name()), time.Minute)
+
+	// Set up paths to configure
+	targets := []string{target.Name()}
+	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
+
+	// Make a GNMI client to use for requests
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+
+	// Set initial values
+	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
+
+	var setReq = &gnmiutils.SetRequest{
+		Ctx:         ctx,
+		Client:      gnmiClient,
+		Encoding:    gnmiapi.Encoding_PROTO,
+		Extensions:  gnmiutils.SyncExtension(t),
+		UpdatePaths: targetPathsForInit,
+	}
+	setReq.SetOrFail(t)
+
+	// Make sure the configuration has been applied to both onos-config
+	var getReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Encoding:   gnmiapi.Encoding_PROTO,
+		Extensions: gnmiutils.SyncExtension(t),
+	}
+	targetPath1 := gnmiutils.GetTargetPath(target.Name(), path1)
+	targetPath2 := gnmiutils.GetTargetPath(target.Name(), path2)
+
+	// Check that the values were set correctly
+	getReq.Paths = targetPath1
+	getReq.CheckValue(t, value1)
+	getReq.Paths = targetPath2
+	getReq.CheckValue(t, value2)
+
+	// ... and the target
+	checkTarget(ctx, t, target, targetPathsForGet)
+
+	// Kill the target simulator
+	gnmiutils.DeleteSimulator(t, target)
+
+	// Re-create the target simulator with the same name and wait for it to become available
+	target = gnmiutils.CreateSimulatorWithName(ctx, t, target.Name(), false)
+	defer gnmiutils.DeleteSimulator(t, target)
+	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target.Name()), time.Minute)
+
+	// Make sure the configuration has been re-applied to the target
+	checkTarget(ctx, t, target, targetPathsForGet)
+}
+
+// Check that the values are set on the target
+func checkTarget(ctx context.Context, t *testing.T, target *helm.HelmRelease, targetPathsForGet []proto.TargetPath) {
+	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target)
+
+	var targetGetReq = &gnmiutils.GetRequest{
+		Ctx:      ctx,
+		Client:   targetGnmiClient,
+		Encoding: gnmiapi.Encoding_JSON,
+	}
+	targetGetReq.Paths = targetPathsForGet[0:1]
+	targetGetReq.CheckValue(t, value1)
+	targetGetReq.Paths = targetPathsForGet[1:2]
+	targetGetReq.CheckValue(t, value2)
+}
