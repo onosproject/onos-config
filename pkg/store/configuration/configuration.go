@@ -282,8 +282,6 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 			watcher.watchID = e.id
 		}
 	}
-	if watcher.replay {
-	}
 
 	watcher.eventCh = ch
 	watcherID := uuid.New()
