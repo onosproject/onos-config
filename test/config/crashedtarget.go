@@ -28,15 +28,15 @@ import (
 )
 
 const (
-	value1 = "test-motd-banner"
-	path1  = "/system/config/motd-banner"
-	value2 = "test-login-banner"
-	path2  = "/system/config/login-banner"
+	crashedTargetValue1 = "test-motd-banner"
+	crashedTargetPath1  = "/system/config/motd-banner"
+	crashedTargetValue2 = "test-login-banner"
+	crashedTargetPath2  = "/system/config/login-banner"
 )
 
 var (
-	paths  = []string{path1, path2}
-	values = []string{value1, value2}
+	crashedTargetPaths  = []string{crashedTargetPath1, crashedTargetPath2}
+	crashedTargetValues = []string{crashedTargetValue1, crashedTargetValue2}
 )
 
 // TestCrashedTarget tests that a crashed target receives proper configuration restoration
@@ -48,15 +48,15 @@ func (s *TestSuite) TestCrashedTarget(t *testing.T) {
 	target := gnmiutils.CreateSimulator(ctx, t)
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target.Name()), time.Minute)
 
-	// Set up paths to configure
+	// Set up crashedTargetPaths to configure
 	targets := []string{target.Name()}
-	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
+	targetPathsForGet := gnmiutils.GetTargetPaths(targets, crashedTargetPaths)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
-	// Set initial values
-	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
+	// Set initial crashedTargetValues
+	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, crashedTargetPaths, crashedTargetValues)
 
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
@@ -74,14 +74,14 @@ func (s *TestSuite) TestCrashedTarget(t *testing.T) {
 		Encoding:   gnmiapi.Encoding_PROTO,
 		Extensions: gnmiutils.SyncExtension(t),
 	}
-	targetPath1 := gnmiutils.GetTargetPath(target.Name(), path1)
-	targetPath2 := gnmiutils.GetTargetPath(target.Name(), path2)
+	targetPath1 := gnmiutils.GetTargetPath(target.Name(), crashedTargetPath1)
+	targetPath2 := gnmiutils.GetTargetPath(target.Name(), crashedTargetPath2)
 
-	// Check that the values were set correctly
+	// Check that the crashedTargetValues were set correctly
 	getReq.Paths = targetPath1
-	getReq.CheckValue(t, value1)
+	getReq.CheckValue(t, crashedTargetValue1)
 	getReq.Paths = targetPath2
-	getReq.CheckValue(t, value2)
+	getReq.CheckValue(t, crashedTargetValue2)
 
 	// ... and the target
 	checkTarget(ctx, t, target, targetPathsForGet)
@@ -94,21 +94,27 @@ func (s *TestSuite) TestCrashedTarget(t *testing.T) {
 	defer gnmiutils.DeleteSimulator(t, target)
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target.Name()), time.Minute)
 
+	// FIXME: Here is a potential for a race between onos-config reapplying the changes to the freshly restarted
+	// target and the following checks. The race is won favorably most of the time, but possibility exists of the
+	// race being lost. We need to come up with a more robust guard, but this solves the problem in the meantime.
+	time.Sleep(5 * time.Second)
+
 	// Make sure the configuration has been re-applied to the target
 	checkTarget(ctx, t, target, targetPathsForGet)
 }
 
-// Check that the values are set on the target
+// Check that the crashedTargetValues are set on the target
 func checkTarget(ctx context.Context, t *testing.T, target *helm.HelmRelease, targetPathsForGet []proto.TargetPath) {
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target)
 
 	var targetGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
-		Client:   targetGnmiClient,
-		Encoding: gnmiapi.Encoding_JSON,
+		Ctx:        ctx,
+		Client:     targetGnmiClient,
+		Encoding:   gnmiapi.Encoding_JSON,
+		Extensions: gnmiutils.SyncExtension(t),
 	}
 	targetGetReq.Paths = targetPathsForGet[0:1]
-	targetGetReq.CheckValue(t, value1)
+	targetGetReq.CheckValue(t, crashedTargetValue1)
 	targetGetReq.Paths = targetPathsForGet[1:2]
-	targetGetReq.CheckValue(t, value2)
+	targetGetReq.CheckValue(t, crashedTargetValue2)
 }
