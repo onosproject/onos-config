@@ -171,21 +171,34 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 				ch := make(chan configapi.ConfigurationEvent)
 				err := s.configurations.Watch(ctx, ch, configuration.WithConfigurationID(configuration.NewID(target.targetID)), configuration.WithReplay())
 				if err != nil {
-					return nil, err
+					return nil, errors.Status(err).Err()
 				}
 				wg.Add(1)
-				go func(id configapi.ConfigurationID) {
+				go func(target *targetInfo) {
+					defer wg.Done()
 					for event := range ch {
 						if event.Configuration.Status.Applied.Index >= target.configuration.Status.Committed.Index &&
 							event.Configuration.Status.Applied.Term == event.Configuration.Status.Term {
-							wg.Done()
 							return
 						}
 					}
-				}(target.configuration.ID)
+				}(target)
 			}
 		}
-		wg.Wait()
+
+		// Wait for the configurations to be propagated.
+		doneCh := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(doneCh)
+		}()
+
+		// If the context is canceled by the client, return the context error.
+		select {
+		case <-doneCh:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 	}
 
 	response := gnmi.GetResponse{
