@@ -126,8 +126,8 @@ func (req *GetRequest) Get() ([]protoutils.TargetPath, error) {
 	return convertGetResults(response)
 }
 
-// CheckValue checks that the correct value is read back via a gnmi get request
-func (req *GetRequest) CheckValue(t *testing.T, expectedValues ...string) {
+// CheckValues checks that the correct value is read back via a gnmi get request
+func (req *GetRequest) CheckValues(t *testing.T, expectedValues ...string) {
 	t.Helper()
 	value, err := req.Get()
 	assert.NoError(t, err, "Get operation returned an unexpected error")
@@ -136,13 +136,17 @@ func (req *GetRequest) CheckValue(t *testing.T, expectedValues ...string) {
 	}
 }
 
-// CheckValueDeleted makes sure that the specified paths have been removed
-func (req *GetRequest) CheckValueDeleted(t *testing.T) {
-	_, err := req.Get()
-	if err == nil {
-		assert.Fail(t, "Path not deleted", req.Paths)
-	} else if !strings.Contains(err.Error(), "NotFound") {
-		assert.Fail(t, "Incorrect error received", err)
+// CheckValuesDeleted makes sure that the specified paths have been removed
+func (req *GetRequest) CheckValuesDeleted(t *testing.T) {
+	values, err := req.Get()
+	if err != nil {
+		if strings.Contains(err.Error(), "NotFound") {
+			return
+		}
+		assert.NoError(t, err)
+	}
+	for _, value := range values {
+		assert.Equal(t, "", value.PathDataValue)
 	}
 }
 

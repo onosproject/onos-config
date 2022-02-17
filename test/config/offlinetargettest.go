@@ -69,7 +69,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 		Extensions: gnmiutils.SyncExtension(t),
 		Encoding:   gnmiapi.Encoding_PROTO,
 	}
-	getConfigReq.CheckValue(t, modValue)
+	getConfigReq.CheckValues(t, modValue)
 
 	// Check that the value was set properly on the target, wait for configuration gets completed
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
@@ -79,7 +79,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
 	}
-	getTargetReq.CheckValue(t, modValue)
+	getTargetReq.CheckValues(t, modValue)
 }
 
 func createOfflineTarget(t *testing.T, targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {

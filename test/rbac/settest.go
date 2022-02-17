@@ -101,7 +101,7 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 					Paths:    targetPath,
 					Encoding: gnmiapi.Encoding_PROTO,
 				}
-				getConfigReq.CheckValue(t, tzValue)
+				getConfigReq.CheckValues(t, tzValue)
 
 				// Remove the path we added
 				setReq.UpdatePaths = nil

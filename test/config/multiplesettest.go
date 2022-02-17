@@ -70,14 +70,14 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 			Extensions: gnmiutils.SyncExtension(t),
 			Encoding:   gnmiapi.Encoding_PROTO,
 		}
-		getConfigReq.CheckValue(t, msValue)
+		getConfigReq.CheckValues(t, msValue)
 		var getTargetReq = &gnmiutils.GetRequest{
 			Ctx:      ctx,
 			Client:   targetClient,
 			Encoding: gnmiapi.Encoding_JSON,
 			Paths:    targetPath,
 		}
-		getTargetReq.CheckValue(t, msValue)
+		getTargetReq.CheckValues(t, msValue)
 
 		// Remove the path we added
 		setReq.UpdatePaths = nil
@@ -85,7 +85,7 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 		setReq.SetOrFail(t)
 
 		//  Make sure it got removed, both from onos-config and the target
-		getConfigReq.CheckValue(t, "")
-		getTargetReq.CheckValueDeleted(t)
+		getConfigReq.CheckValuesDeleted(t)
+		getTargetReq.CheckValuesDeleted(t)
 	}
 }

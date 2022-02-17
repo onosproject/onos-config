@@ -66,7 +66,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 		Encoding: gnmiapi.Encoding_PROTO,
 		Paths:    targetPath,
 	}
-	getConfigReq.CheckValue(t, newValue)
+	getConfigReq.CheckValues(t, newValue)
 
 	// Check that the values are set on the target
 	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
@@ -76,7 +76,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
 	}
-	getTargetReq.CheckValue(t, newValue)
+	getTargetReq.CheckValues(t, newValue)
 
 	// Now rollback the change
 	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)

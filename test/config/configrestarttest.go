@@ -65,14 +65,14 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 		Extensions: gnmiutils.SyncExtension(t),
 		Encoding:   gnmiapi.Encoding_PROTO,
 	}
-	getReq.CheckValue(t, restartTzValue)
+	getReq.CheckValues(t, restartTzValue)
 
 	// Restart onos-config
 	configPod := hautils.FindPodWithPrefix(t, "onos-config")
 	hautils.CrashPodOrFail(t, configPod)
 
 	// Check that the value was set correctly in the new onos-config instance
-	getReq.CheckValue(t, restartTzValue)
+	getReq.CheckValues(t, restartTzValue)
 
 	// Check that the value is set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
@@ -82,7 +82,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
 	}
-	getTargetReq.CheckValue(t, restartTzValue)
+	getTargetReq.CheckValues(t, restartTzValue)
 }
 
 // TestSetOperationAfterNodeRestart tests a Set operation after restarting the onos-config node
@@ -131,11 +131,11 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 		Encoding:   gnmiapi.Encoding_PROTO,
 	}
 	getConfigReq.Paths = tzPath
-	getConfigReq.CheckValue(t, restartTzValue)
+	getConfigReq.CheckValues(t, restartTzValue)
 	getConfigReq.Paths = loginBannerPath
-	getConfigReq.CheckValue(t, restartLoginBannerValue)
+	getConfigReq.CheckValues(t, restartLoginBannerValue)
 	getConfigReq.Paths = motdBannerPath
-	getConfigReq.CheckValue(t, restartMotdBannerValue)
+	getConfigReq.CheckValues(t, restartMotdBannerValue)
 
 	// Check that the values are set on the target
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
@@ -145,10 +145,10 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	getTargetReq.Paths = tzPath
-	getTargetReq.CheckValue(t, restartTzValue)
+	getTargetReq.CheckValues(t, restartTzValue)
 	getTargetReq.Paths = loginBannerPath
-	getTargetReq.CheckValue(t, restartLoginBannerValue)
+	getTargetReq.CheckValues(t, restartLoginBannerValue)
 	getTargetReq.Paths = motdBannerPath
-	getTargetReq.CheckValue(t, restartMotdBannerValue)
+	getTargetReq.CheckValues(t, restartMotdBannerValue)
 
 }
