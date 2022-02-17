@@ -18,13 +18,14 @@ import (
 	"testing"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 const (
-	stateValue = "opennetworking.org"
-	statePath  = "/system/state/domain-name"
+	stateValue1 = "opennetworking.org"
+	statePath1  = "/system/state/domain-name"
+	statePath2  = "/system/state/login-banner"
+	stateValue2 = "This device is for authorized use only"
 )
 
 // TestGetState tests query/set/delete of a single GNMI path to a single device
@@ -40,7 +41,7 @@ func (s *TestSuite) TestGetState(t *testing.T) {
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 
 	// Get the GNMI path
-	targetPaths := gnmiutils.GetTargetPathWithValue(simulator.Name(), statePath, stateValue, proto.StringVal)
+	targetPaths := gnmiutils.GetTargetPathsWithValues([]string{simulator.Name(), simulator.Name()}, []string{statePath1, statePath2}, []string{stateValue1, stateValue2})
 
 	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{
@@ -52,6 +53,6 @@ func (s *TestSuite) TestGetState(t *testing.T) {
 	}
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValue(t, stateValue)
+	onosConfigGetReq.CheckValue(t, stateValue1, stateValue2)
 
 }
