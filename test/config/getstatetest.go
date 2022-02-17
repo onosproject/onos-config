@@ -53,6 +53,6 @@ func (s *TestSuite) TestGetState(t *testing.T) {
 	}
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValue(t, stateValue1, stateValue2)
+	onosConfigGetReq.CheckValues(t, stateValue1, stateValue2)
 
 }

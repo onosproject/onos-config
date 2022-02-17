@@ -79,9 +79,9 @@ func (s *TestSuite) TestCrashedTarget(t *testing.T) {
 
 	// Check that the crashedTargetValues were set correctly
 	getReq.Paths = targetPath1
-	getReq.CheckValue(t, crashedTargetValue1)
+	getReq.CheckValues(t, crashedTargetValue1)
 	getReq.Paths = targetPath2
-	getReq.CheckValue(t, crashedTargetValue2)
+	getReq.CheckValues(t, crashedTargetValue2)
 
 	// ... and the target
 	checkTarget(ctx, t, target, targetPathsForGet)
@@ -114,7 +114,7 @@ func checkTarget(ctx context.Context, t *testing.T, target *helm.HelmRelease, ta
 		Extensions: gnmiutils.SyncExtension(t),
 	}
 	targetGetReq.Paths = targetPathsForGet[0:1]
-	targetGetReq.CheckValue(t, crashedTargetValue1)
+	targetGetReq.CheckValues(t, crashedTargetValue1)
 	targetGetReq.Paths = targetPathsForGet[1:2]
-	targetGetReq.CheckValue(t, crashedTargetValue2)
+	targetGetReq.CheckValues(t, crashedTargetValue2)
 }
