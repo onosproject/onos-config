@@ -71,7 +71,7 @@ func NewAtomixStore(client atomix.Client) (Store, error) {
 	}
 	store := &configurationStore{
 		configurations: configurations,
-		cache:          make(map[configapi.ConfigurationID]configapi.Configuration),
+		cache:          make(map[configapi.ConfigurationID]*_map.Entry),
 		watchers:       make(map[uuid.UUID]chan<- configapi.ConfigurationEvent),
 		eventCh:        make(chan configapi.ConfigurationEvent, 1000),
 	}
@@ -119,7 +119,7 @@ func WithConfigurationID(id configapi.ConfigurationID) WatchOption {
 
 type configurationStore struct {
 	configurations _map.Map
-	cache          map[configapi.ConfigurationID]configapi.Configuration
+	cache          map[configapi.ConfigurationID]*_map.Entry
 	cacheMu        sync.RWMutex
 	watchers       map[uuid.UUID]chan<- configapi.ConfigurationEvent
 	watchersMu     sync.RWMutex
@@ -133,20 +133,12 @@ func (s *configurationStore) open(ctx context.Context) error {
 	}
 	go func() {
 		for event := range ch {
-			var configuration configapi.Configuration
-			if err := decodeConfiguration(&event.Entry, &configuration); err != nil {
-				log.Error(err)
-				continue
-			}
-			s.updateCache(configuration)
+			entry := event.Entry
+			s.updateCache(&entry)
 		}
 	}()
 	go s.processEvents()
 	return nil
-}
-
-func (s *configurationStore) publishEvent(event configapi.ConfigurationEvent) {
-	s.eventCh <- event
 }
 
 func (s *configurationStore) processEvents() {
@@ -159,13 +151,15 @@ func (s *configurationStore) processEvents() {
 	}
 }
 
-func (s *configurationStore) updateCache(configuration configapi.Configuration) {
+func (s *configurationStore) updateCache(newEntry *_map.Entry) {
+	configurationID := configapi.ConfigurationID(newEntry.Key)
+
 	// Use a double-checked lock when updating the cache.
 	// First, check for a more recent version of the configuration already in the cache.
 	s.cacheMu.RLock()
-	entry, ok := s.cache[configuration.ID]
+	entry, ok := s.cache[configurationID]
 	s.cacheMu.RUnlock()
-	if ok && entry.Version >= configuration.Version {
+	if ok && entry.Revision >= newEntry.Revision {
 		return
 	}
 
@@ -173,31 +167,44 @@ func (s *configurationStore) updateCache(configuration configapi.Configuration) 
 	// for a more recent version of the configuration.
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
-	entry, ok = s.cache[configuration.ID]
+	entry, ok = s.cache[configurationID]
 	if !ok {
-		s.cache[configuration.ID] = configuration
-		s.publishEvent(configapi.ConfigurationEvent{
-			Type:          configapi.ConfigurationEvent_CREATED,
-			Configuration: configuration,
-		})
-	} else if configuration.Version > entry.Version {
+		s.cache[configurationID] = newEntry
+		var configuration configapi.Configuration
+		if err := decodeConfiguration(newEntry, &configuration); err != nil {
+			log.Error(err)
+		} else {
+			s.eventCh <- configapi.ConfigurationEvent{
+				Type:          configapi.ConfigurationEvent_CREATED,
+				Configuration: configuration,
+			}
+		}
+	} else if newEntry.Revision > entry.Revision {
 		// Add the configuration to the ID and index caches and publish an event.
-		s.cache[configuration.ID] = configuration
-		s.publishEvent(configapi.ConfigurationEvent{
-			Type:          configapi.ConfigurationEvent_UPDATED,
-			Configuration: configuration,
-		})
+		s.cache[configurationID] = newEntry
+		var configuration configapi.Configuration
+		if err := decodeConfiguration(newEntry, &configuration); err != nil {
+			log.Error(err)
+		} else {
+			s.eventCh <- configapi.ConfigurationEvent{
+				Type:          configapi.ConfigurationEvent_UPDATED,
+				Configuration: configuration,
+			}
+		}
 	}
 }
 
 func (s *configurationStore) Get(ctx context.Context, id configapi.ConfigurationID) (*configapi.Configuration, error) {
 	// Check the ID cache for the latest version of the configuration.
 	s.cacheMu.RLock()
-	cached, ok := s.cache[id]
+	cachedEntry, ok := s.cache[id]
 	s.cacheMu.RUnlock()
 	if ok {
-		configuration := cached
-		return &configuration, nil
+		configuration := &configapi.Configuration{}
+		if err := decodeConfiguration(cachedEntry, configuration); err != nil {
+			return nil, errors.NewInvalid("configuration decoding failed: %v", err)
+		}
+		return configuration, nil
 	}
 
 	// If the configuration is not already in the cache, get it from the underlying primitive.
@@ -206,14 +213,14 @@ func (s *configurationStore) Get(ctx context.Context, id configapi.Configuration
 		return nil, errors.FromAtomix(err)
 	}
 
-	// Decode the configuration bytes.
+	// Decode and return the Configuration.
 	configuration := &configapi.Configuration{}
-	if err := decodeConfiguration(entry, configuration); err != nil {
+	if err := decodeConfiguration(cachedEntry, configuration); err != nil {
 		return nil, errors.NewInvalid("configuration decoding failed: %v", err)
 	}
 
-	// Update the cache before returning the configuration.
-	s.updateCache(*configuration)
+	// Update the cache.
+	s.updateCache(entry)
 	return configuration, nil
 }
 
@@ -252,7 +259,7 @@ func (s *configurationStore) Create(ctx context.Context, configuration *configap
 	}
 
 	// Update the cache.
-	s.updateCache(*configuration)
+	s.updateCache(entry)
 	return nil
 }
 
@@ -291,7 +298,7 @@ func (s *configurationStore) Update(ctx context.Context, configuration *configap
 	}
 
 	// Update the cache.
-	s.updateCache(*configuration)
+	s.updateCache(entry)
 	return nil
 }
 
@@ -329,7 +336,7 @@ func (s *configurationStore) UpdateStatus(ctx context.Context, configuration *co
 	}
 
 	// Update the cache.
-	s.updateCache(*configuration)
+	s.updateCache(entry)
 	return nil
 }
 
@@ -369,22 +376,32 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 		if options.configurationID == "" {
 			s.cacheMu.RLock()
 			replay = make([]configapi.ConfigurationEvent, 0, len(s.cache))
-			for _, configuration := range s.cache {
-				replay = append(replay, configapi.ConfigurationEvent{
-					Type:          configapi.ConfigurationEvent_REPLAYED,
-					Configuration: configuration,
-				})
+			for _, entry := range s.cache {
+				var configuration configapi.Configuration
+				if err := decodeConfiguration(entry, &configuration); err != nil {
+					log.Error(err)
+				} else {
+					replay = append(replay, configapi.ConfigurationEvent{
+						Type:          configapi.ConfigurationEvent_REPLAYED,
+						Configuration: configuration,
+					})
+				}
 			}
 			s.cacheMu.RUnlock()
 		} else {
 			s.cacheMu.RLock()
-			configuration, ok := s.cache[options.configurationID]
+			entry, ok := s.cache[options.configurationID]
 			if ok {
-				replay = []configapi.ConfigurationEvent{
-					{
-						Type:          configapi.ConfigurationEvent_REPLAYED,
-						Configuration: configuration,
-					},
+				var configuration configapi.Configuration
+				if err := decodeConfiguration(entry, &configuration); err != nil {
+					log.Error(err)
+				} else {
+					replay = []configapi.ConfigurationEvent{
+						{
+							Type:          configapi.ConfigurationEvent_REPLAYED,
+							Configuration: configuration,
+						},
+					}
 				}
 			}
 			s.cacheMu.RUnlock()
