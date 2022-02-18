@@ -17,8 +17,11 @@ package config
 import (
 	"context"
 	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/helmit/pkg/kubernetes"
+	hautils "github.com/onosproject/onos-config/test/utils/ha"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 
@@ -86,13 +89,15 @@ func (s *TestSuite) TestCrashedTarget(t *testing.T) {
 	// ... and the target
 	_ = checkTarget(ctx, t, target, targetPathsForGet, true)
 
-	// Kill the target simulator
-	gnmiutils.DeleteSimulator(t, target)
+	// Crash the target simulator
+	client := kubernetes.NewForReleaseOrDie(target)
+	pods, err := client.CoreV1().Pods().List(ctx)
+	assert.NoError(t, err)
+	assert.Len(t, pods, 1)
+	hautils.CrashPodOrFail(t, pods[0])
 	gnmiutils.WaitForTargetUnavailable(ctx, t, topo.ID(target.Name()), time.Minute)
 
-	// Re-create the target simulator with the same name and wait for it to become available
-	target = gnmiutils.CreateSimulatorWithName(ctx, t, target.Name(), false)
-	defer gnmiutils.DeleteSimulator(t, target)
+	// Wait for it to become available
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target.Name()), time.Minute)
 
 	// Settle the race between reapplying the changes to the freshly restarted target and the subsequent checks.
