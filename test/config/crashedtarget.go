@@ -88,6 +88,7 @@ func (s *TestSuite) TestCrashedTarget(t *testing.T) {
 
 	// Kill the target simulator
 	gnmiutils.DeleteSimulator(t, target)
+	gnmiutils.WaitForTargetUnavailable(ctx, t, topo.ID(target.Name()), time.Minute)
 
 	// Re-create the target simulator with the same name and wait for it to become available
 	target = gnmiutils.CreateSimulatorWithName(ctx, t, target.Name(), false)
