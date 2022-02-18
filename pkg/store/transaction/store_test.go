@@ -151,7 +151,6 @@ func TestTransactionStore(t *testing.T) {
 
 	event := nextEvent(t, transactionCh)
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
-	assert.Equal(t, transaction2.Revision, event.Transaction.Revision)
 
 	// Read and then update the transaction
 	transaction2, err = store2.Get(context.TODO(), "transaction-2")
@@ -173,7 +172,6 @@ func TestTransactionStore(t *testing.T) {
 
 	event = nextEvent(t, transactionCh)
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
-	assert.Equal(t, transaction2.Revision, event.Transaction.Revision)
 
 	// Verify that concurrent updates fail
 	transaction11, err := store1.Get(context.TODO(), "transaction-1")
