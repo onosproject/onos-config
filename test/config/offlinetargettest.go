@@ -44,7 +44,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	createOfflineTarget(t, offlineTargetName, "devicesim", "1.0.0", offlineTargetName+":11161")
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)

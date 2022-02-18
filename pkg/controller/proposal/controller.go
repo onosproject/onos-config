@@ -527,7 +527,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		if config.Status.Applied.Index >= proposal.TransactionIndex {
 			log.Infof("Applied Proposal '%s'", proposal.ID)
 			proposal.Status.Phases.Apply.State = configapi.ProposalApplyPhase_APPLIED
-			proposal.Status.Phases.Apply.Term = config.Status.Applied.Term
+			proposal.Status.Phases.Apply.Term = config.Status.Applied.Mastership.Term
 			proposal.Status.Phases.Apply.End = getCurrentTimestamp()
 			if err := r.updateProposalStatus(ctx, proposal); err != nil {
 				return controller.Result{}, err
@@ -564,13 +564,13 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		mastershipTerm := configapi.MastershipTerm(mastership.Term)
 
 		// If the configuration is in an old term, wait for synchronization.
-		if config.Status.Term < mastershipTerm {
+		if config.Status.Mastership.Term < mastershipTerm {
 			log.Infof("Waiting for synchronization of Configuration to target '%s'", proposal.TargetID)
 			return controller.Result{}, nil
 		}
 
 		// If the mastership term is older than the last applied term, wait for it to be updated.
-		if mastershipTerm < config.Status.Applied.Term {
+		if mastershipTerm < config.Status.Applied.Mastership.Term {
 			log.Infof("Waiting for mastership change for target '%s'", proposal.TargetID)
 			return controller.Result{}, nil
 		}
@@ -691,7 +691,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 				// Update the Configuration's applied index to indicate this Proposal was applied even though it failed.
 				log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, mastershipTerm)
 				config.Status.Applied.Index = proposal.TransactionIndex
-				config.Status.Applied.Term = mastershipTerm
+				config.Status.Applied.Mastership.Master = mastership.NodeId
+				config.Status.Applied.Mastership.Term = mastershipTerm
 				if err := r.configurations.UpdateStatus(ctx, config); err != nil {
 					log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 					return controller.Result{}, err
@@ -717,7 +718,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		// Update the Configuration's applied index to indicate this Proposal was applied.
 		log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, mastershipTerm)
 		config.Status.Applied.Index = proposal.TransactionIndex
-		config.Status.Applied.Term = mastershipTerm
+		config.Status.Applied.Mastership.Master = mastership.NodeId
+		config.Status.Applied.Mastership.Term = mastershipTerm
 		if config.Status.Applied.Values == nil {
 			config.Status.Applied.Values = make(map[string]*configapi.PathValue)
 		}
