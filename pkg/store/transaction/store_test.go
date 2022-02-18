@@ -19,8 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/onosproject/onos-lib-go/pkg/errors"
-
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
@@ -52,8 +50,8 @@ func TestTransactionStore(t *testing.T) {
 	target1 := configapi.TargetID("target-1")
 	target2 := configapi.TargetID("target-2")
 
-	ch := make(chan configapi.TransactionEvent)
-	err = store2.Watch(context.Background(), ch)
+	eventCh := make(chan configapi.TransactionEvent)
+	err = store2.Watch(context.Background(), eventCh)
 	assert.NoError(t, err)
 
 	transaction1 := &configapi.Transaction{
@@ -132,9 +130,9 @@ func TestTransactionStore(t *testing.T) {
 	assert.NotEqual(t, configapi.Revision(0), transaction2.Revision)
 
 	// Verify events were received for the transactions
-	transactionEvent := nextEvent(t, ch)
+	transactionEvent := nextTransaction(t, eventCh)
 	assert.Equal(t, configapi.TransactionID("transaction-1"), transactionEvent.ID)
-	transactionEvent = nextEvent(t, ch)
+	transactionEvent = nextTransaction(t, eventCh)
 	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
 
 	// Watch events for a specific transaction
@@ -148,26 +146,12 @@ func TestTransactionStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, transaction2.Revision)
 
-	event := <-transactionCh
+	transactionEvent = nextTransaction(t, eventCh)
+	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
+
+	event := nextEvent(t, transactionCh)
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
 	assert.Equal(t, transaction2.Revision, event.Transaction.Revision)
-
-	// Get previous and next transactions
-	transaction1, err = store2.Get(context.TODO(), "transaction-1")
-	assert.NoError(t, err)
-	assert.NotNil(t, transaction1)
-	transaction2, err = store2.GetNext(context.TODO(), transaction1.Index)
-	assert.NoError(t, err)
-	assert.NotNil(t, transaction2)
-	assert.Equal(t, configapi.Index(2), transaction2.Index)
-
-	transaction2, err = store2.Get(context.TODO(), "transaction-2")
-	assert.NoError(t, err)
-	assert.NotNil(t, transaction2)
-	transaction1, err = store2.GetPrev(context.TODO(), transaction2.Index)
-	assert.NoError(t, err)
-	assert.NotNil(t, transaction1)
-	assert.Equal(t, configapi.Index(1), transaction1.Index)
 
 	// Read and then update the transaction
 	transaction2, err = store2.Get(context.TODO(), "transaction-2")
@@ -184,7 +168,10 @@ func TestTransactionStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, transaction2.Revision)
 
-	event = <-transactionCh
+	transactionEvent = nextTransaction(t, eventCh)
+	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
+
+	event = nextEvent(t, transactionCh)
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
 	assert.Equal(t, transaction2.Revision, event.Transaction.Revision)
 
@@ -210,12 +197,7 @@ func TestTransactionStore(t *testing.T) {
 	err = store2.Update(context.TODO(), transaction12)
 	assert.Error(t, err)
 
-	// Verify events were received again
-	transactionEvent = nextEvent(t, ch)
-	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
-	transactionEvent = nextEvent(t, ch)
-	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
-	transactionEvent = nextEvent(t, ch)
+	transactionEvent = nextTransaction(t, eventCh)
 	assert.Equal(t, configapi.TransactionID("transaction-1"), transactionEvent.ID)
 
 	// List the transactions
@@ -223,27 +205,7 @@ func TestTransactionStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(transactions))
 
-	// Delete a transaction
-	err = store1.Delete(context.TODO(), transaction2)
-	assert.NoError(t, err)
-	transaction, err := store2.Get(context.TODO(), "transaction-2")
-	assert.NoError(t, err)
-	assert.NotNil(t, transaction.Deleted)
-	err = store1.Delete(context.TODO(), transaction2)
-	assert.NoError(t, err)
-	transaction, err = store2.Get(context.TODO(), "transaction-2")
-	assert.Error(t, err)
-	assert.True(t, errors.IsNotFound(err))
-	assert.Nil(t, transaction)
-
-	event = <-transactionCh
-	assert.Equal(t, transaction2.ID, event.Transaction.ID)
-	assert.Equal(t, configapi.TransactionEvent_UPDATED, event.Type)
-	event = <-transactionCh
-	assert.Equal(t, transaction2.ID, event.Transaction.ID)
-	assert.Equal(t, configapi.TransactionEvent_DELETED, event.Type)
-
-	transaction = &configapi.Transaction{
+	transaction := &configapi.Transaction{
 		ID: "transaction-3",
 		Details: &configapi.Transaction_Change{
 			Change: &configapi.ChangeTransaction{
@@ -289,24 +251,30 @@ func TestTransactionStore(t *testing.T) {
 	err = store1.Create(context.TODO(), transaction)
 	assert.NoError(t, err)
 
-	ch = make(chan configapi.TransactionEvent)
-	err = store1.Watch(context.TODO(), ch, WithReplay())
+	eventCh = make(chan configapi.TransactionEvent)
+	err = store1.Watch(context.TODO(), eventCh, WithReplay())
 	assert.NoError(t, err)
 
-	transaction = nextEvent(t, ch)
+	transaction = nextTransaction(t, eventCh)
 	assert.Equal(t, configapi.Index(1), transaction.Index)
-	transaction = nextEvent(t, ch)
+	transaction = nextTransaction(t, eventCh)
+	assert.Equal(t, configapi.Index(2), transaction.Index)
+	transaction = nextTransaction(t, eventCh)
 	assert.Equal(t, configapi.Index(3), transaction.Index)
-	transaction = nextEvent(t, ch)
+	transaction = nextTransaction(t, eventCh)
 	assert.Equal(t, configapi.Index(4), transaction.Index)
 }
 
-func nextEvent(t *testing.T, ch chan configapi.TransactionEvent) *configapi.Transaction {
+func nextEvent(t *testing.T, ch chan configapi.TransactionEvent) *configapi.TransactionEvent {
 	select {
-	case c := <-ch:
-		return &c.Transaction
+	case e := <-ch:
+		return &e
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
 	return nil
+}
+
+func nextTransaction(t *testing.T, ch chan configapi.TransactionEvent) *configapi.Transaction {
+	return &nextEvent(t, ch).Transaction
 }
