@@ -253,21 +253,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 				return controller.Result{}, nil
 			}
 
-			if proposal.Status.Phases.Initialize == nil {
-				log.Infof("Initializing Transaction %d changes to target '%s'", transaction.Index, proposal.TargetID)
-				proposal.Status.Phases.Initialize = &configapi.ProposalInitializePhase{
-					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
-						Start: getCurrentTimestamp(),
-					},
-				}
-				if err := r.updateProposalStatus(ctx, proposal); err != nil {
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
-			}
-
-			switch proposal.Status.Phases.Initialize.State {
-			case configapi.ProposalInitializePhase_INITIALIZING:
+			if proposal.Status.Phases.Initialize == nil ||
+				proposal.Status.Phases.Initialize.State == configapi.ProposalInitializePhase_INITIALIZING {
 				allInitialized = false
 			}
 		}
