@@ -126,7 +126,6 @@ func TestProposalStore(t *testing.T) {
 
 	event := <-proposalCh
 	assert.Equal(t, target2Config.ID, event.Proposal.ID)
-	assert.Equal(t, target2Config.Revision, event.Proposal.Revision)
 
 	// Lists proposals
 	proposalList, err := store1.List(context.TODO())
@@ -150,7 +149,6 @@ func TestProposalStore(t *testing.T) {
 
 	event = <-proposalCh
 	assert.Equal(t, target2Config.ID, event.Proposal.ID)
-	assert.Equal(t, target2Config.Revision, event.Proposal.Revision)
 
 	// Verify that concurrent updates fail
 	target1Config11, err := store1.Get(context.TODO(), configapi.ProposalID(target1))
