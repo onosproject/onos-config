@@ -119,7 +119,7 @@ func WithTransactionID(id configapi.TransactionID) WatchOption {
 }
 
 type cacheEntry struct {
-	configapi.Transaction
+	*indexedmap.Entry
 	prev *cacheEntry
 	next *cacheEntry
 }
@@ -142,12 +142,8 @@ func (s *transactionStore) open(ctx context.Context) error {
 	}
 	go func() {
 		for event := range ch {
-			var transaction configapi.Transaction
-			if err := decodeTransaction(&event.Entry, &transaction); err != nil {
-				log.Error(err)
-				continue
-			}
-			s.updateCache(transaction)
+			entry := event.Entry
+			s.updateCache(&entry)
 		}
 	}()
 	go s.processEvents()
@@ -168,13 +164,16 @@ func (s *transactionStore) processEvents() {
 	}
 }
 
-func (s *transactionStore) updateCache(transaction configapi.Transaction) {
+func (s *transactionStore) updateCache(updateEntry *indexedmap.Entry) {
+	transactionID := configapi.TransactionID(updateEntry.Key)
+	transactionIndex := configapi.Index(updateEntry.Index)
+
 	// Use a double-checked lock when updating the cache.
 	// First, check for a more recent version of the transaction already in the cache.
 	s.cacheMu.RLock()
-	entry, ok := s.cacheIDs[transaction.ID]
+	entry, ok := s.cacheIDs[transactionID]
 	s.cacheMu.RUnlock()
-	if ok && entry.Version >= transaction.Version {
+	if ok && entry.Revision >= updateEntry.Revision {
 		return
 	}
 
@@ -182,34 +181,40 @@ func (s *transactionStore) updateCache(transaction configapi.Transaction) {
 	// for a more recent version of the transaction.
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
-	entry, ok = s.cacheIDs[transaction.ID]
+	entry, ok = s.cacheIDs[transactionID]
 	if !ok {
 		newEntry := &cacheEntry{
-			Transaction: transaction,
+			Entry: updateEntry,
 		}
 		if s.firstEntry == nil || newEntry.Index < s.firstEntry.Index {
 			s.firstEntry = newEntry
 		}
-		if prevEntry, ok := s.cacheIndexes[transaction.Index-1]; ok {
+		if prevEntry, ok := s.cacheIndexes[transactionIndex-1]; ok {
 			newEntry.prev = prevEntry
 			prevEntry.next = newEntry
 		}
-		if nextEntry, ok := s.cacheIndexes[transaction.Index+1]; ok {
+		if nextEntry, ok := s.cacheIndexes[transactionIndex+1]; ok {
 			newEntry.next = nextEntry
 			nextEntry.prev = newEntry
 		}
-		s.cacheIDs[newEntry.ID] = newEntry
-		s.cacheIndexes[newEntry.Index] = newEntry
-		s.publishEvent(configapi.TransactionEvent{
-			Type:        configapi.TransactionEvent_CREATED,
-			Transaction: transaction,
-		})
-	} else if transaction.Version > entry.Version {
+		s.cacheIDs[transactionID] = newEntry
+		s.cacheIndexes[transactionIndex] = newEntry
+
+		var transaction configapi.Transaction
+		if err := decodeTransaction(updateEntry, &transaction); err != nil {
+			log.Error(err)
+		} else {
+			s.eventCh <- configapi.TransactionEvent{
+				Type:        configapi.TransactionEvent_CREATED,
+				Transaction: transaction,
+			}
+		}
+	} else if updateEntry.Revision > entry.Revision {
 		// Add the transaction to the ID and index caches and publish an event.
 		newEntry := &cacheEntry{
-			Transaction: transaction,
-			prev:        entry.prev,
-			next:        entry.next,
+			Entry: updateEntry,
+			prev:  entry.prev,
+			next:  entry.next,
 		}
 		if newEntry.prev != nil {
 			newEntry.prev.next = newEntry
@@ -219,12 +224,18 @@ func (s *transactionStore) updateCache(transaction configapi.Transaction) {
 		if newEntry.next != nil {
 			newEntry.next.prev = newEntry
 		}
-		s.cacheIDs[newEntry.ID] = newEntry
-		s.cacheIndexes[newEntry.Index] = newEntry
-		s.publishEvent(configapi.TransactionEvent{
-			Type:        configapi.TransactionEvent_UPDATED,
-			Transaction: transaction,
-		})
+		s.cacheIDs[transactionID] = newEntry
+		s.cacheIndexes[transactionIndex] = newEntry
+
+		var transaction configapi.Transaction
+		if err := decodeTransaction(updateEntry, &transaction); err != nil {
+			log.Error(err)
+		} else {
+			s.eventCh <- configapi.TransactionEvent{
+				Type:        configapi.TransactionEvent_UPDATED,
+				Transaction: transaction,
+			}
+		}
 	}
 }
 
@@ -232,11 +243,14 @@ func (s *transactionStore) updateCache(transaction configapi.Transaction) {
 func (s *transactionStore) Get(ctx context.Context, id configapi.TransactionID) (*configapi.Transaction, error) {
 	// Check the ID cache for the latest version of the transaction.
 	s.cacheMu.RLock()
-	cached, ok := s.cacheIDs[id]
+	cachedEntry, ok := s.cacheIDs[id]
 	s.cacheMu.RUnlock()
 	if ok {
-		transaction := cached.Transaction
-		return &transaction, nil
+		transaction := &configapi.Transaction{}
+		if err := decodeTransaction(cachedEntry.Entry, transaction); err != nil {
+			return nil, errors.NewInvalid("proposal decoding failed: %v", err)
+		}
+		return transaction, nil
 	}
 
 	// If the transaction is not already in the cache, get it from the underlying primitive.
@@ -252,7 +266,7 @@ func (s *transactionStore) Get(ctx context.Context, id configapi.TransactionID) 
 	}
 
 	// Update the cache before returning the transaction.
-	s.updateCache(*transaction)
+	s.updateCache(entry)
 	return transaction, nil
 }
 
@@ -260,11 +274,14 @@ func (s *transactionStore) Get(ctx context.Context, id configapi.TransactionID) 
 func (s *transactionStore) GetByIndex(ctx context.Context, index configapi.Index) (*configapi.Transaction, error) {
 	// Check the index cache for the latest version of the transaction.
 	s.cacheMu.RLock()
-	cached, ok := s.cacheIndexes[index]
+	cachedEntry, ok := s.cacheIndexes[index]
 	s.cacheMu.RUnlock()
 	if ok {
-		transaction := cached.Transaction
-		return &transaction, nil
+		transaction := &configapi.Transaction{}
+		if err := decodeTransaction(cachedEntry.Entry, transaction); err != nil {
+			return nil, errors.NewInvalid("proposal decoding failed: %v", err)
+		}
+		return transaction, nil
 	}
 
 	// If the transaction is not already in the cache, get it from the underlying primitive.
@@ -280,7 +297,7 @@ func (s *transactionStore) GetByIndex(ctx context.Context, index configapi.Index
 	}
 
 	// Update the cache before returning the transaction.
-	s.updateCache(*transaction)
+	s.updateCache(entry)
 	return transaction, nil
 }
 
@@ -317,7 +334,7 @@ func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Tr
 	}
 
 	// Update the cache.
-	s.updateCache(*transaction)
+	s.updateCache(entry)
 	return nil
 }
 
@@ -350,7 +367,7 @@ func (s *transactionStore) Update(ctx context.Context, transaction *configapi.Tr
 	}
 
 	// Update the cache.
-	s.updateCache(*transaction)
+	s.updateCache(entry)
 	return nil
 }
 
@@ -382,7 +399,7 @@ func (s *transactionStore) UpdateStatus(ctx context.Context, transaction *config
 	}
 
 	// Update the cache.
-	s.updateCache(*transaction)
+	s.updateCache(entry)
 	return nil
 }
 
@@ -425,10 +442,15 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 			replay = make([]configapi.TransactionEvent, 0, len(s.cacheIDs))
 			entry := s.firstEntry
 			for entry != nil {
-				replay = append(replay, configapi.TransactionEvent{
-					Type:        configapi.TransactionEvent_REPLAYED,
-					Transaction: entry.Transaction,
-				})
+				var transaction configapi.Transaction
+				if err := decodeTransaction(entry.Entry, &transaction); err != nil {
+					log.Error(err)
+				} else {
+					replay = append(replay, configapi.TransactionEvent{
+						Type:        configapi.TransactionEvent_REPLAYED,
+						Transaction: transaction,
+					})
+				}
 				entry = entry.next
 			}
 			s.cacheMu.RUnlock()
@@ -436,11 +458,16 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 			s.cacheMu.RLock()
 			entry, ok := s.cacheIDs[options.transactionID]
 			if ok {
-				replay = []configapi.TransactionEvent{
-					{
-						Type:        configapi.TransactionEvent_REPLAYED,
-						Transaction: entry.Transaction,
-					},
+				var transaction configapi.Transaction
+				if err := decodeTransaction(entry.Entry, &transaction); err != nil {
+					log.Error(err)
+				} else {
+					replay = []configapi.TransactionEvent{
+						{
+							Type:        configapi.TransactionEvent_REPLAYED,
+							Transaction: transaction,
+						},
+					}
 				}
 			}
 			s.cacheMu.RUnlock()
