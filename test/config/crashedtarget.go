@@ -84,7 +84,7 @@ func (s *TestSuite) TestCrashedTarget(t *testing.T) {
 	getReq.CheckValues(t, crashedTargetValue2)
 
 	// ... and the target
-	checkTarget(ctx, t, target, targetPathsForGet)
+	_ = checkTarget(ctx, t, target, targetPathsForGet, true)
 
 	// Kill the target simulator
 	gnmiutils.DeleteSimulator(t, target)
@@ -94,17 +94,20 @@ func (s *TestSuite) TestCrashedTarget(t *testing.T) {
 	defer gnmiutils.DeleteSimulator(t, target)
 	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target.Name()), time.Minute)
 
-	// FIXME: Here is a potential for a race between onos-config reapplying the changes to the freshly restarted
-	// target and the following checks. The race is won favorably most of the time, but possibility exists of the
-	// race being lost. We need to come up with a more robust guard, but this solves the problem in the meantime.
-	time.Sleep(5 * time.Second)
+	// Settle the race between reapplying the changes to the freshly restarted target and the subsequent checks.
+	for i := 0; i < 30; i++ {
+		if ok := checkTarget(ctx, t, target, targetPathsForGet, false); ok {
+			break
+		}
+		time.Sleep(2 * time.Second)
+	}
 
 	// Make sure the configuration has been re-applied to the target
-	checkTarget(ctx, t, target, targetPathsForGet)
+	_ = checkTarget(ctx, t, target, targetPathsForGet, true)
 }
 
 // Check that the crashedTargetValues are set on the target
-func checkTarget(ctx context.Context, t *testing.T, target *helm.HelmRelease, targetPathsForGet []proto.TargetPath) {
+func checkTarget(ctx context.Context, t *testing.T, target *helm.HelmRelease, targetPathsForGet []proto.TargetPath, enforce bool) bool {
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target)
 
 	var targetGetReq = &gnmiutils.GetRequest{
@@ -114,7 +117,14 @@ func checkTarget(ctx context.Context, t *testing.T, target *helm.HelmRelease, ta
 		Extensions: gnmiutils.SyncExtension(t),
 	}
 	targetGetReq.Paths = targetPathsForGet[0:1]
+
+	if !enforce {
+		// If we're not enforcing, simply return true if we got the expected value for the first path
+		paths, err := targetGetReq.Get()
+		return err == nil && len(paths) == 1 && paths[0].PathDataValue == crashedTargetValue1
+	}
 	targetGetReq.CheckValues(t, crashedTargetValue1)
 	targetGetReq.Paths = targetPathsForGet[1:2]
 	targetGetReq.CheckValues(t, crashedTargetValue2)
+	return false
 }
