@@ -15,6 +15,8 @@
 package transaction
 
 import (
+	"github.com/google/uuid"
+	"sync"
 	"time"
 
 	"github.com/atomix/atomix-go-client/pkg/atomix"
@@ -42,12 +44,6 @@ type Store interface {
 	// GetByIndex gets a transaction by index
 	GetByIndex(ctx context.Context, index configapi.Index) (*configapi.Transaction, error)
 
-	// GetPrev gets the previous network change by index
-	GetPrev(ctx context.Context, index configapi.Index) (*configapi.Transaction, error)
-
-	// GetNext gets the next transaction by index
-	GetNext(ctx context.Context, index configapi.Index) (*configapi.Transaction, error)
-
 	// Create creates a new transaction
 	Create(ctx context.Context, transaction *configapi.Transaction) error
 
@@ -56,9 +52,6 @@ type Store interface {
 
 	// UpdateStatus updates the status of an existing transaction
 	UpdateStatus(ctx context.Context, transaction *configapi.Transaction) error
-
-	// Delete deletes a transaction
-	Delete(ctx context.Context, transaction *configapi.Transaction) error
 
 	// List lists transactions
 	List(ctx context.Context) ([]*configapi.Transaction, error)
@@ -76,22 +69,35 @@ func NewAtomixStore(client atomix.Client) (Store, error) {
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return &transactionStore{
+	store := &transactionStore{
 		transactions: transactions,
-	}, nil
+		cacheIDs:     make(map[configapi.TransactionID]*cacheEntry),
+		cacheIndexes: make(map[configapi.Index]*cacheEntry),
+		watchers:     make(map[uuid.UUID]chan<- configapi.TransactionEvent),
+		eventCh:      make(chan configapi.TransactionEvent, 1000),
+	}
+	if err := store.open(context.Background()); err != nil {
+		return nil, err
+	}
+	return store, nil
+}
+
+type watchOptions struct {
+	transactionID configapi.TransactionID
+	replay        bool
 }
 
 // WatchOption is a configuration option for Watch calls
 type WatchOption interface {
-	apply([]indexedmap.WatchOption) []indexedmap.WatchOption
+	apply(*watchOptions)
 }
 
 // watchReplyOption is an option to replay events on watch
 type watchReplayOption struct {
 }
 
-func (o watchReplayOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
-	return append(opts, indexedmap.WithReplay())
+func (o watchReplayOption) apply(options *watchOptions) {
+	options.replay = true
 }
 
 // WithReplay returns a WatchOption that replays past changes
@@ -103,10 +109,8 @@ type watchIDOption struct {
 	id configapi.TransactionID
 }
 
-func (o watchIDOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
-	return append(opts, indexedmap.WithFilter(indexedmap.Filter{
-		Key: string(o.id),
-	}))
+func (o watchIDOption) apply(options *watchOptions) {
+	options.transactionID = o.id
 }
 
 // WithTransactionID returns a Watch option that watches for transactions based on a  given transaction ID
@@ -114,50 +118,171 @@ func WithTransactionID(id configapi.TransactionID) WatchOption {
 	return watchIDOption{id: id}
 }
 
+type cacheEntry struct {
+	*configapi.Transaction
+	prev *cacheEntry
+	next *cacheEntry
+}
+
 type transactionStore struct {
 	transactions indexedmap.IndexedMap
+	cacheIDs     map[configapi.TransactionID]*cacheEntry
+	cacheIndexes map[configapi.Index]*cacheEntry
+	firstEntry   *cacheEntry
+	cacheMu      sync.RWMutex
+	watchers     map[uuid.UUID]chan<- configapi.TransactionEvent
+	watchersMu   sync.RWMutex
+	eventCh      chan configapi.TransactionEvent
+}
+
+func (s *transactionStore) open(ctx context.Context) error {
+	ch := make(chan indexedmap.Event)
+	if err := s.transactions.Watch(ctx, ch, indexedmap.WithReplay()); err != nil {
+		return err
+	}
+	go func() {
+		for event := range ch {
+			transaction := &configapi.Transaction{}
+			if err := decodeTransaction(&event.Entry, transaction); err != nil {
+				log.Error(err)
+				continue
+			}
+			s.updateCache(transaction)
+		}
+	}()
+	go s.processEvents()
+	return nil
+}
+
+func (s *transactionStore) publishEvent(event configapi.TransactionEvent) {
+	s.eventCh <- event
+}
+
+func (s *transactionStore) processEvents() {
+	for event := range s.eventCh {
+		s.watchersMu.RLock()
+		for _, watcher := range s.watchers {
+			watcher <- event
+		}
+		s.watchersMu.RUnlock()
+	}
+}
+
+func (s *transactionStore) updateCache(transaction *configapi.Transaction) {
+	// Use a double-checked lock when updating the cache.
+	// First, check for a more recent version of the transaction already in the cache.
+	s.cacheMu.RLock()
+	entry, ok := s.cacheIDs[transaction.ID]
+	s.cacheMu.RUnlock()
+	if ok && entry.Version >= transaction.Version {
+		*transaction = *entry.Transaction
+		return
+	}
+
+	// The cache needs to be updated. Acquire a write lock and check once again
+	// for a more recent version of the transaction.
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+	entry, ok = s.cacheIDs[transaction.ID]
+	if !ok {
+		entry = &cacheEntry{
+			Transaction: transaction,
+		}
+		s.cacheIDs[entry.ID] = entry
+		s.cacheIndexes[entry.Index] = entry
+		if s.firstEntry == nil || entry.Index < s.firstEntry.Index {
+			s.firstEntry = entry
+		}
+		if prevEntry, ok := s.cacheIndexes[transaction.Index-1]; ok {
+			entry.prev = prevEntry
+			prevEntry.next = entry
+		}
+		if nextEntry, ok := s.cacheIndexes[transaction.Index+1]; ok {
+			entry.next = nextEntry
+			nextEntry.prev = entry
+		}
+		s.publishEvent(configapi.TransactionEvent{
+			Type:        configapi.TransactionEvent_CREATED,
+			Transaction: *transaction,
+		})
+		return
+	}
+
+	// If the cached entry version is greater than the update version, skip the update.
+	if entry.Version >= transaction.Version {
+		*transaction = *entry.Transaction
+		return
+	}
+
+	// Add the transaction to the ID and index caches and publish an event.
+	entry.Transaction = transaction
+	s.publishEvent(configapi.TransactionEvent{
+		Type:        configapi.TransactionEvent_UPDATED,
+		Transaction: *transaction,
+	})
 }
 
 // Get gets a transaction
 func (s *transactionStore) Get(ctx context.Context, id configapi.TransactionID) (*configapi.Transaction, error) {
+	// Check the ID cache for the latest version of the transaction.
+	s.cacheMu.RLock()
+	cached, ok := s.cacheIDs[id]
+	s.cacheMu.RUnlock()
+	if ok {
+		return cached.Transaction, nil
+	}
+
+	// If the transaction is not already in the cache, get it from the underlying primitive.
 	entry, err := s.transactions.Get(ctx, string(id))
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return decodeTransaction(*entry)
+
+	// Decode the transaction bytes.
+	transaction := &configapi.Transaction{}
+	if err := decodeTransaction(entry, transaction); err != nil {
+		return nil, errors.NewInvalid("transaction decoding failed: %v", err)
+	}
+
+	// Update the cache before returning the transaction.
+	s.updateCache(transaction)
+	return transaction, nil
 }
 
 // GetByIndex gets a transaction by index
 func (s *transactionStore) GetByIndex(ctx context.Context, index configapi.Index) (*configapi.Transaction, error) {
+	// Check the index cache for the latest version of the transaction.
+	s.cacheMu.RLock()
+	cached, ok := s.cacheIndexes[index]
+	s.cacheMu.RUnlock()
+	if ok {
+		return cached.Transaction, nil
+	}
+
+	// If the transaction is not already in the cache, get it from the underlying primitive.
 	entry, err := s.transactions.GetIndex(ctx, indexedmap.Index(index))
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return decodeTransaction(*entry)
-}
 
-// GetPrev gets the previous network change by index
-func (s *transactionStore) GetPrev(ctx context.Context, index configapi.Index) (*configapi.Transaction, error) {
-	entry, err := s.transactions.PrevEntry(ctx, indexedmap.Index(index))
-	if err != nil {
-		return nil, errors.FromAtomix(err)
+	// Decode the transaction bytes.
+	transaction := &configapi.Transaction{}
+	if err := decodeTransaction(entry, transaction); err != nil {
+		return nil, errors.NewInvalid("transaction decoding failed: %v", err)
 	}
-	return decodeTransaction(*entry)
-}
 
-// GetNext gets the next transaction by index
-func (s *transactionStore) GetNext(ctx context.Context, index configapi.Index) (*configapi.Transaction, error) {
-	entry, err := s.transactions.NextEntry(ctx, indexedmap.Index(index))
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-	return decodeTransaction(*entry)
+	// Update the cache before returning the transaction.
+	s.updateCache(transaction)
+	return transaction, nil
 }
 
 // Create creates a new transaction
 func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Transaction) error {
 	if transaction.ID == "" {
 		transaction.ID = newTransactionID()
+	}
+	if transaction.Version != 0 {
+		return errors.NewInvalid("not a new object")
 	}
 	if transaction.Revision != 0 {
 		return errors.NewInvalid("not a new object")
@@ -166,18 +291,25 @@ func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Tr
 	transaction.Created = time.Now()
 	transaction.Updated = time.Now()
 
+	// Encode the transaction bytes.
 	bytes, err := proto.Marshal(transaction)
 	if err != nil {
 		return errors.NewInvalid("transaction encoding failed: %v", err)
 	}
 
+	// Append a new entry to the transaction log.
 	entry, err := s.transactions.Append(ctx, string(transaction.ID), bytes)
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
-	transaction.Index = configapi.Index(entry.Index)
-	transaction.Version = uint64(entry.Revision)
+	// Decode the transaction from the returned entry bytes.
+	if err := decodeTransaction(entry, transaction); err != nil {
+		return errors.NewInvalid("transaction decoding failed: %v", err)
+	}
+
+	// Update the cache.
+	s.updateCache(transaction)
 	return nil
 }
 
@@ -192,17 +324,25 @@ func (s *transactionStore) Update(ctx context.Context, transaction *configapi.Tr
 	transaction.Revision++
 	transaction.Updated = time.Now()
 
+	// Encode the transaction bytes.
 	bytes, err := proto.Marshal(transaction)
 	if err != nil {
 		return errors.NewInvalid("change encoding failed: %v", err)
 	}
 
+	// Update the entry in the transaction log.
 	entry, err := s.transactions.Set(ctx, indexedmap.Index(transaction.Index), string(transaction.ID), bytes, indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Version))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
-	transaction.Version = uint64(entry.Revision)
+	// Decode the transaction from the returned entry bytes.
+	if err := decodeTransaction(entry, transaction); err != nil {
+		return errors.NewInvalid("transaction decoding failed: %v", err)
+	}
+
+	// Update the cache.
+	s.updateCache(transaction)
 	return nil
 }
 
@@ -216,48 +356,25 @@ func (s *transactionStore) UpdateStatus(ctx context.Context, transaction *config
 	}
 	transaction.Updated = time.Now()
 
+	// Encode the transaction bytes.
 	bytes, err := proto.Marshal(transaction)
 	if err != nil {
 		return errors.NewInvalid("change encoding failed: %v", err)
 	}
 
+	// Update the entry in the transaction log.
 	entry, err := s.transactions.Set(ctx, indexedmap.Index(transaction.Index), string(transaction.ID), bytes, indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Version))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
-	transaction.Version = uint64(entry.Revision)
-	return nil
-}
-
-// Delete deletes a transaction
-func (s *transactionStore) Delete(ctx context.Context, transaction *configapi.Transaction) error {
-	if transaction.Version == 0 {
-		return errors.NewInvalid("transaction must contain a version on delete")
+	// Decode the transaction from the returned entry bytes.
+	if err := decodeTransaction(entry, transaction); err != nil {
+		return errors.NewInvalid("transaction decoding failed: %v", err)
 	}
 
-	if transaction.Deleted == nil {
-		log.Debugf("Updating transaction %s", transaction.ID)
-		t := time.Now()
-		transaction.Deleted = &t
-		bytes, err := proto.Marshal(transaction)
-		if err != nil {
-			return errors.NewInvalid("transaction encoding failed: %v", err)
-		}
-		entry, err := s.transactions.Set(ctx, indexedmap.Index(transaction.Index), string(transaction.ID), bytes, indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Version))))
-		if err != nil {
-			return errors.FromAtomix(err)
-		}
-		transaction.Version = uint64(entry.Revision)
-	} else {
-		log.Debugf("Deleting transaction %s", transaction.ID)
-		_, err := s.transactions.RemoveIndex(ctx, indexedmap.Index(transaction.Index), indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Version))))
-		if err != nil {
-			log.Warnf("Failed to delete transaction %s: %s", transaction.ID, err)
-			return errors.FromAtomix(err)
-		}
-		transaction.Version = 0
-	}
+	// Update the cache.
+	s.updateCache(transaction)
 	return nil
 }
 
@@ -269,9 +386,11 @@ func (s *transactionStore) List(ctx context.Context) ([]*configapi.Transaction, 
 	}
 
 	transactions := make([]*configapi.Transaction, 0)
-
 	for entry := range indexMapCh {
-		if transaction, err := decodeTransaction(entry); err == nil {
+		transaction := &configapi.Transaction{}
+		if err := decodeTransaction(&entry, transaction); err != nil {
+			log.Error(err)
+		} else {
 			transactions = append(transactions, transaction)
 		}
 	}
@@ -280,39 +399,64 @@ func (s *transactionStore) List(ctx context.Context) ([]*configapi.Transaction, 
 
 // Watch watches the transaction store  for changes
 func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.TransactionEvent, opts ...WatchOption) error {
-	watchOpts := make([]indexedmap.WatchOption, 0)
+	var options watchOptions
 	for _, opt := range opts {
-		watchOpts = opt.apply(watchOpts)
+		opt.apply(&options)
 	}
 
-	indexMapCh := make(chan indexedmap.Event)
-	if err := s.transactions.Watch(ctx, indexMapCh, watchOpts...); err != nil {
-		return errors.FromAtomix(err)
+	watchCh := make(chan configapi.TransactionEvent, 10)
+	id := uuid.New()
+	s.watchersMu.Lock()
+	s.watchers[id] = watchCh
+	s.watchersMu.Unlock()
+
+	var replay []configapi.TransactionEvent
+	if options.replay {
+		if options.transactionID == "" {
+			s.cacheMu.RLock()
+			replay = make([]configapi.TransactionEvent, 0, len(s.cacheIDs))
+			entry := s.firstEntry
+			for entry != nil {
+				replay = append(replay, configapi.TransactionEvent{
+					Type:        configapi.TransactionEvent_REPLAYED,
+					Transaction: *entry.Transaction,
+				})
+				entry = entry.next
+			}
+			s.cacheMu.RUnlock()
+		} else {
+			s.cacheMu.RLock()
+			entry, ok := s.cacheIDs[options.transactionID]
+			if ok {
+				replay = []configapi.TransactionEvent{
+					{
+						Type:        configapi.TransactionEvent_REPLAYED,
+						Transaction: *entry.Transaction,
+					},
+				}
+			}
+			s.cacheMu.RUnlock()
+		}
 	}
 
 	go func() {
 		defer close(ch)
-		for event := range indexMapCh {
-			if transaction, err := decodeTransaction(event.Entry); err == nil {
-				var eventType configapi.TransactionEvent_EventType
-				switch event.Type {
-				case indexedmap.EventReplay:
-					eventType = configapi.TransactionEvent_REPLAYED
-				case indexedmap.EventInsert:
-					eventType = configapi.TransactionEvent_CREATED
-				case indexedmap.EventRemove:
-					eventType = configapi.TransactionEvent_DELETED
-				case indexedmap.EventUpdate:
-					eventType = configapi.TransactionEvent_UPDATED
-				default:
-					eventType = configapi.TransactionEvent_UPDATED
-				}
-				ch <- configapi.TransactionEvent{
-					Type:        eventType,
-					Transaction: *transaction,
-				}
+		for _, event := range replay {
+			ch <- event
+		}
+		for event := range watchCh {
+			if options.transactionID == "" || event.Transaction.ID == options.transactionID {
+				ch <- event
 			}
 		}
+	}()
+
+	go func() {
+		<-ctx.Done()
+		s.watchersMu.Lock()
+		delete(s.watchers, id)
+		s.watchersMu.Unlock()
+		close(watchCh)
 	}()
 	return nil
 }
@@ -326,15 +470,14 @@ func (s *transactionStore) Close(ctx context.Context) error {
 	return nil
 }
 
-func decodeTransaction(entry indexedmap.Entry) (*configapi.Transaction, error) {
-	transaction := &configapi.Transaction{}
+func decodeTransaction(entry *indexedmap.Entry, transaction *configapi.Transaction) error {
 	if err := proto.Unmarshal(entry.Value, transaction); err != nil {
-		return nil, errors.NewInvalid("transaction decoding failed: %v", err)
+		return err
 	}
 	transaction.ID = configapi.TransactionID(entry.Key)
 	transaction.Index = configapi.Index(entry.Index)
 	transaction.Version = uint64(entry.Revision)
-	return transaction, nil
+	return nil
 }
 
 // newTransactionID creates a new transaction ID
