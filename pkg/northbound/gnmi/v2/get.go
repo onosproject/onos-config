@@ -174,7 +174,7 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 				defer wg.Done()
 
 				if target.configuration.Status.Applied.Index < target.configuration.Status.Committed.Index ||
-					target.configuration.Status.Applied.Mastership.Term < target.configuration.Status.Mastership.Term {
+					(!target.persistent && target.configuration.Status.Applied.Mastership.Term < target.configuration.Status.Mastership.Term) {
 					log.Debugf("Waiting for target '%s' configuration to be synchronized to index %d for term %d",
 						target.targetID, target.configuration.Status.Committed.Index, target.configuration.Status.Mastership.Term)
 					watchCh := make(chan configapi.ConfigurationEvent)
@@ -187,13 +187,13 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 					}
 
 					for event := range watchCh {
-						if event.Configuration.Status.Mastership.Term > target.configuration.Status.Mastership.Term {
+						if !target.persistent && event.Configuration.Status.Mastership.Term > target.configuration.Status.Mastership.Term {
 							log.Warnf("Mastership changed for target '%s'", target.targetID)
 							errCh <- errors.NewUnavailable("mastership term for target '%s' changed", target.targetID)
 							return
 						}
 						if event.Configuration.Status.Applied.Index >= target.configuration.Status.Committed.Index &&
-							event.Configuration.Status.Applied.Mastership.Term == target.configuration.Status.Mastership.Term {
+							(target.persistent || event.Configuration.Status.Applied.Mastership.Term == target.configuration.Status.Mastership.Term) {
 							log.Debugf("Configuration index %d has been applied to target '%s' in term %d",
 								target.configuration.Status.Committed.Index, target.targetID, target.configuration.Status.Mastership.Term)
 							break
@@ -201,38 +201,40 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 					}
 				}
 
-				connID := gnmisb.ConnID(target.configuration.Status.Mastership.Master)
-				conn, ok := s.conns.Get(ctx, connID)
-				if !ok {
-					log.Warnf("Target '%s' master connection '%s' not found", target.targetID, target.configuration.Status.Mastership.Master)
-					errCh <- errors.NewUnavailable("connection '%s' not found", connID)
-					return
-				}
+				if !target.persistent {
+					connID := gnmisb.ConnID(target.configuration.Status.Mastership.Master)
+					conn, ok := s.conns.Get(ctx, connID)
+					if !ok {
+						log.Warnf("Target '%s' master connection '%s' not found", target.targetID, target.configuration.Status.Mastership.Master)
+						errCh <- errors.NewUnavailable("connection '%s' not found", connID)
+						return
+					}
 
-				getRequest := &gnmi.GetRequest{
-					Extension: []*gnmi_ext.Extension{
-						{
-							Ext: &gnmi_ext.Extension_MasterArbitration{
-								MasterArbitration: &gnmi_ext.MasterArbitration{
-									Role: &gnmi_ext.Role{
-										Id: "onos-config",
-									},
-									ElectionId: &gnmi_ext.Uint128{
-										Low: uint64(target.configuration.Status.Mastership.Term),
+					getRequest := &gnmi.GetRequest{
+						Extension: []*gnmi_ext.Extension{
+							{
+								Ext: &gnmi_ext.Extension_MasterArbitration{
+									MasterArbitration: &gnmi_ext.MasterArbitration{
+										Role: &gnmi_ext.Role{
+											Id: "onos-config",
+										},
+										ElectionId: &gnmi_ext.Uint128{
+											Low: uint64(target.configuration.Status.Mastership.Term),
+										},
 									},
 								},
 							},
 						},
-					},
-					Path: []*gnmi.Path{},
-				}
-				log.Debugf("Sending GetRequest %+v to target '%s'", getRequest, target.targetID)
-				getResponse, err := conn.Get(ctx, getRequest)
-				if err != nil {
-					log.Warnf("GetRequest %+v to target '%s' failed: %s", getRequest, target.targetID, err)
-					errCh <- errors.NewUnavailable("synchronization to target '%s' failed: %v", target.targetID, err)
-				} else {
-					log.Debugf("Received GetResponse %+v from target '%s'", getResponse, target.targetID)
+						Path: []*gnmi.Path{},
+					}
+					log.Debugf("Sending GetRequest %+v to target '%s'", getRequest, target.targetID)
+					getResponse, err := conn.Get(ctx, getRequest)
+					if err != nil {
+						log.Warnf("GetRequest %+v to target '%s' failed: %s", getRequest, target.targetID, err)
+						errCh <- errors.NewUnavailable("synchronization to target '%s' failed: %v", target.targetID, err)
+					} else {
+						log.Debugf("Received GetResponse %+v from target '%s'", getResponse, target.targetID)
+					}
 				}
 			}(target)
 		}
@@ -312,15 +314,24 @@ func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi
 }
 
 func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, targets map[configapi.TargetID]*targetInfo) error {
-	modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
+	configurable, err := s.getTargetConfigurable(ctx, topoapi.ID(targetID))
 	if err != nil {
 		log.Warn(err)
 		return err
 	}
+
+	modelPlugin, ok := s.pluginRegistry.GetPlugin(configapi.TargetType(configurable.Type), configapi.TargetVersion(configurable.Version))
+	if !ok {
+		err = errors.NewNotFound("model %s (v%s) plugin not found", configurable.Type, configurable.Version)
+		log.Warn(err)
+		return err
+	}
+
 	targetInfo := &targetInfo{
 		targetID:      targetID,
 		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
 		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
+		persistent:    configurable.Persistent,
 	}
 
 	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID))
@@ -408,12 +419,7 @@ func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo *targetInfo, co
 	}
 
 	log.Debugf("body text of response from OPA:\n%s", bodyText)
-	modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetInfo.targetID))
-	if err != nil {
-		log.Warn(err)
-		return nil, err
-	}
-	return modelPlugin.GetPathValues(ctx, "", []byte(bodyText))
+	return targetInfo.plugin.GetPathValues(ctx, "", []byte(bodyText))
 }
 
 func (s *Server) reportAllTargets(ctx context.Context, encoding gnmi.Encoding) (*gnmi.GetResponse, error) {

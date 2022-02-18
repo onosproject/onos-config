@@ -25,6 +25,7 @@ type targetInfo struct {
 	targetVersion configapi.TargetVersion
 	targetType    configapi.TargetType
 	plugin        pluginregistry.ModelPlugin
+	persistent    bool
 	updates       configapi.TypedValueMap
 	removes       []string
 	configuration *configapi.Configuration

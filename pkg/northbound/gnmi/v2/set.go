@@ -32,7 +32,6 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 
-	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	transactionstore "github.com/onosproject/onos-config/pkg/store/transaction"
 	"github.com/onosproject/onos-config/pkg/utils"
 	valueutils "github.com/onosproject/onos-config/pkg/utils/values/v2"
@@ -232,8 +231,15 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 		return target, nil
 	}
 
-	modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
+	configurable, err := s.getTargetConfigurable(ctx, topoapi.ID(targetID))
 	if err != nil {
+		log.Warn(err)
+		return nil, err
+	}
+
+	modelPlugin, ok := s.pluginRegistry.GetPlugin(configapi.TargetType(configurable.Type), configapi.TargetVersion(configurable.Version))
+	if !ok {
+		err = errors.NewNotFound("model %s (v%s) plugin not found", configurable.Type, configurable.Version)
 		log.Warn(err)
 		return nil, err
 	}
@@ -243,6 +249,7 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
 		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
 		plugin:        modelPlugin,
+		persistent:    configurable.Persistent,
 		updates:       make(configapi.TypedValueMap),
 		removes:       make([]string, 0),
 	}
@@ -251,27 +258,20 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 	return target, nil
 }
 
-func (s *Server) getModelPlugin(ctx context.Context, targetID topoapi.ID) (pluginregistry.ModelPlugin, error) {
+func (s *Server) getTargetConfigurable(ctx context.Context, targetID topoapi.ID) (topoapi.Configurable, error) {
+	var configurable topoapi.Configurable
 	target, err := s.topo.Get(ctx, targetID)
 	if err != nil {
 		log.Warn(err)
-		return nil, err
+		return configurable, err
 	}
 
-	targetConfigurableAspect := &topoapi.Configurable{}
-	err = target.GetAspect(targetConfigurableAspect)
+	err = target.GetAspect(&configurable)
 	if err != nil {
 		log.Warn(err)
-		return nil, err
+		return configurable, err
 	}
-
-	modelPlugin, ok := s.pluginRegistry.GetPlugin(configapi.TargetType(targetConfigurableAspect.Type), configapi.TargetVersion(targetConfigurableAspect.Version))
-	if !ok {
-		err = errors.NewNotFound("model %s (v%s) plugin not found", targetConfigurableAspect.Type, targetConfigurableAspect.Version)
-		log.Warn(err)
-		return nil, err
-	}
-	return modelPlugin, nil
+	return configurable, nil
 }
 
 // This deals with either a path and a value (simple case) or a path with
