@@ -47,7 +47,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	targetPath := gnmiutils.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
 
 	// Set a value using gNMI client - target is up
-	c := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	c := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      c,

@@ -100,7 +100,8 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		// SOUND THE ALARM! and revert back to the SYNCHRONIZING state.
 		log.Errorf("Mastership state lost for target '%s'. Future configuration changes may not be applicable!")
 		config.Status.State = configapi.ConfigurationStatus_UNKNOWN
-		config.Status.Term = 0
+		config.Status.Mastership.Master = ""
+		config.Status.Mastership.Term = 0
 		if err := r.updateConfigurationStatus(ctx, config); err != nil {
 			return controller.Result{}, err
 		}
@@ -130,10 +131,11 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	}
 
 	// If the mastership term has changed, update the configuration and mark it SYNCHRONIZING for the next term.
-	if mastershipTerm > config.Status.Term {
+	if mastershipTerm > config.Status.Mastership.Term {
 		log.Infof("Synchronizing Configuration '%s'", config.ID)
 		config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZING
-		config.Status.Term = mastershipTerm
+		config.Status.Mastership.Master = mastership.NodeId
+		config.Status.Mastership.Term = mastershipTerm
 		if err := r.updateConfigurationStatus(ctx, config); err != nil {
 			return controller.Result{}, err
 		}
@@ -231,7 +233,8 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 
 	// Update the configuration state and path statuses
 	log.Infof("Configuration '%s' synchronization complete", config.ID)
-	config.Status.Applied.Term = mastershipTerm
+	config.Status.Applied.Mastership.Master = mastership.NodeId
+	config.Status.Applied.Mastership.Term = mastershipTerm
 	config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
 	if err := r.updateConfigurationStatus(ctx, config); err != nil {
 		return controller.Result{}, err
