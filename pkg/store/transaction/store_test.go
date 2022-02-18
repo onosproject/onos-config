@@ -146,6 +146,9 @@ func TestTransactionStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, transaction2.Revision)
 
+	transactionEvent = nextTransaction(t, eventCh)
+	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
+
 	event := nextEvent(t, transactionCh)
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
 	assert.Equal(t, transaction2.Revision, event.Transaction.Revision)
@@ -164,6 +167,9 @@ func TestTransactionStore(t *testing.T) {
 	err = store1.Update(context.TODO(), transaction2)
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, transaction2.Revision)
+
+	transactionEvent = nextTransaction(t, eventCh)
+	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
 
 	event = nextEvent(t, transactionCh)
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
@@ -191,11 +197,6 @@ func TestTransactionStore(t *testing.T) {
 	err = store2.Update(context.TODO(), transaction12)
 	assert.Error(t, err)
 
-	// Verify events were received again
-	transactionEvent = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
-	transactionEvent = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
 	transactionEvent = nextTransaction(t, eventCh)
 	assert.Equal(t, configapi.TransactionID("transaction-1"), transactionEvent.ID)
 
