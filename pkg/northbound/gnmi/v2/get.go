@@ -419,7 +419,13 @@ func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo *targetInfo, co
 	}
 
 	log.Debugf("body text of response from OPA:\n%s", bodyText)
-	return targetInfo.plugin.GetPathValues(ctx, "", []byte(bodyText))
+	modelPlugin, ok := s.pluginRegistry.GetPlugin(targetInfo.targetType, targetInfo.targetVersion)
+	if !ok {
+		err = errors.NewNotFound("model %s (v%s) plugin not found", targetInfo.targetType, targetInfo.targetVersion)
+		log.Warn(err)
+		return nil, err
+	}
+	return modelPlugin.GetPathValues(ctx, "", []byte(bodyText))
 }
 
 func (s *Server) reportAllTargets(ctx context.Context, encoding gnmi.Encoding) (*gnmi.GetResponse, error) {
