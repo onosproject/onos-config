@@ -127,9 +127,7 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 				prevTransaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_INITIALIZING {
 				log.Infow("Transaction waiting for previous Transaction to initialize",
 					"Transaction.ID", transaction.ID,
-					"Transaction.Index", transaction.Index,
-					"prevTransactionId", prevTransaction.ID,
-					"prevTransaction.Index", prevTransaction.Index)
+					"Transaction.Index", transaction.Index)
 				return controller.Result{}, nil
 			}
 		}
@@ -349,9 +347,7 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 							prevTransaction.Status.State < configapi.TransactionStatus_VALIDATED {
 							log.Infow("Transaction waiting for previous Transaction to be validated",
 								"Transaction.ID", transaction.ID,
-								"Transaction.Index", transaction.Index,
-								"prevTransactionId", prevTransaction.ID,
-								"prevTransaction.Index", prevTransaction.Index)
+								"Transaction.Index", transaction.Index)
 							return controller.Result{}, nil
 						}
 					}
@@ -481,9 +477,7 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 							prevTransaction.Status.State < configapi.TransactionStatus_COMMITTED {
 							log.Infow("Transaction waiting for previous Transaction to be committed",
 								"Transaction.ID", transaction.ID,
-								"Transaction.Index", transaction.Index,
-								"prevTransactionId", prevTransaction.ID,
-								"prevTransaction.Index", prevTransaction.Index)
+								"Transaction.Index", transaction.Index)
 							return controller.Result{}, nil
 						}
 					}
@@ -588,9 +582,7 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 							prevTransaction.Status.State < configapi.TransactionStatus_APPLIED {
 							log.Infow("Transaction waiting for previous Transaction to be applied",
 								"Transaction.ID", transaction.ID,
-								"Transaction.Index", transaction.Index,
-								"prevTransactionId", prevTransaction.ID,
-								"prevTransaction.Index", prevTransaction.Index)
+								"Transaction.Index", transaction.Index)
 							return controller.Result{}, nil
 						}
 					}
