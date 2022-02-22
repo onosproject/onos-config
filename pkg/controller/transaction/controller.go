@@ -66,18 +66,18 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			log.Warnw("Failed to reconcile Transaction",
-				"transactionIndex", index,
+				"Transaction.Index", index,
 				"error", err)
 			return controller.Result{}, err
 		}
 		log.Debugw("Transaction not found",
-			"transactionIndex", index)
+			"Transaction.Index", index)
 		return controller.Result{}, nil
 	}
 
 	log.Infow("Reconciling Transaction",
-		"transactionId", transaction.ID,
-		"transactionIndex", transaction.Index)
+		"Transaction.ID", transaction.ID,
+		"Transaction.Index", transaction.Index)
 	log.Debugw("Reconciling Transactions",
 		"transaction", transaction)
 	return r.reconcileTransaction(ctx, transaction)
@@ -96,8 +96,8 @@ func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *conf
 		return r.reconcileInitialize(ctx, transaction)
 	} else {
 		log.Infow("Initializing Transaction ",
-			"transactionId", transaction.ID,
-			"transactionIndex", transaction.Index)
+			"Transaction.ID", transaction.ID,
+			"Transaction.Index", transaction.Index)
 		transaction.Status.Phases.Initialize = &configapi.TransactionInitializePhase{
 			TransactionPhaseStatus: configapi.TransactionPhaseStatus{
 				Start: getCurrentTimestamp(),
@@ -117,8 +117,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				log.Errorw("Failed reconciling Transaction",
-					"transactionId", transaction.ID,
-					"transactionIndex", transaction.Index,
+					"Transaction.ID", transaction.ID,
+					"Transaction.Index", transaction.Index,
 					"error", err)
 				return controller.Result{}, err
 			}
@@ -126,10 +126,10 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 			if prevTransaction.Status.Phases.Initialize == nil ||
 				prevTransaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_INITIALIZING {
 				log.Infow("Transaction waiting for previous Transaction to initialize",
-					"transactionId", transaction.ID,
-					"transactionIndex", transaction.Index,
+					"Transaction.ID", transaction.ID,
+					"Transaction.Index", transaction.Index,
 					"prevTransactionId", prevTransaction.ID,
-					"prevTransactionIndex", prevTransaction.Index)
+					"prevTransaction.Index", prevTransaction.Index)
 				return controller.Result{}, nil
 			}
 		}
@@ -144,8 +144,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 					if err != nil {
 						if !errors.IsNotFound(err) {
 							log.Errorw("Failed reconciling Transaction %d",
-								"transactionId", transaction.ID,
-								"transactionIndex", transaction.Index,
+								"Transaction.ID", transaction.ID,
+								"Transaction.Index", transaction.Index,
 								"error", err)
 							return controller.Result{}, err
 						}
@@ -163,13 +163,17 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 						if err != nil {
 							if !errors.IsAlreadyExists(err) {
 								log.Errorw("Failed reconciling Transaction %d",
-									"transactionId", transaction.ID,
-									"transactionIndex", transaction.Index,
+									"Transaction.ID", transaction.ID,
+									"Transaction.Index", transaction.Index,
 									"error", err)
 								return controller.Result{}, err
 							}
 							return controller.Result{}, nil
 						}
+						log.Infow("Created proposal from change transaction",
+							"Transaction.ID", transaction.ID,
+							"Transaction.Index", transaction.Index,
+							"Proposal.ID", proposal.ID)
 					}
 					proposals = append(proposals, proposalID)
 				}
@@ -178,15 +182,15 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 				if err != nil {
 					if !errors.IsNotFound(err) {
 						log.Errorw("Failed reconciling Transaction",
-							"transactionId", transaction.ID,
-							"transactionIndex", transaction.Index,
+							"Transaction.ID", transaction.ID,
+							"Transaction.Index", transaction.Index,
 							"error", err)
 						return controller.Result{}, err
 					}
 					err = errors.NewNotFound("transaction %d not found", details.Rollback.RollbackIndex)
 					log.Errorw("Failed reconciling Transaction",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"error", err)
 					failure := &configapi.Failure{
 						Type:        configapi.Failure_NOT_FOUND,
@@ -216,8 +220,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 						if err != nil {
 							if !errors.IsNotFound(err) {
 								log.Errorw("Failed reconciling Transaction",
-									"transactionId", transaction.ID,
-									"transactionIndex", transaction.Index,
+									"Transaction.ID", transaction.ID,
+									"Transaction.Index", transaction.Index,
 									"error", err)
 								return controller.Result{}, err
 							}
@@ -235,21 +239,25 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 							if err != nil {
 								if !errors.IsAlreadyExists(err) {
 									log.Errorw("Failed reconciling Transaction",
-										"transactionId", transaction.ID,
-										"transactionIndex", transaction.Index,
+										"Transaction.ID", transaction.ID,
+										"Transaction.Index", transaction.Index,
 										"error", err)
 									return controller.Result{}, err
 								}
 								return controller.Result{}, nil
 							}
+							log.Infow("Created proposal from rollback transaction",
+								"Transaction.ID", transaction.ID,
+								"Transaction.Index", transaction.Index,
+								"Proposal.ID", proposal.ID)
 						}
 						proposals = append(proposals, proposalID)
 					}
 				case *configapi.Transaction_Rollback:
 					err = errors.NewNotFound("transaction %d is not a valid change", details.Rollback.RollbackIndex)
 					log.Errorw("Failed reconciling Transaction",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"error", err)
 					failure := &configapi.Failure{
 						Type:        configapi.Failure_FORBIDDEN,
@@ -284,8 +292,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					log.Errorw("Failed reconciling Transaction",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"error", err)
 					return controller.Result{}, err
 				}
@@ -300,8 +308,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 
 		if allInitialized {
 			log.Infow("Transaction initialized",
-				"transactionId", transaction.ID,
-				"transactionIndex", transaction.Index)
+				"Transaction.ID", transaction.ID,
+				"Transaction.Index", transaction.Index)
 			transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_INITIALIZED
 			transaction.Status.Phases.Initialize.End = getCurrentTimestamp()
 			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
@@ -317,8 +325,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					log.Errorw("Failed reconciling Transaction %d",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"error", err)
 					return controller.Result{}, err
 				}
@@ -330,8 +338,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 					if err != nil {
 						if !errors.IsNotFound(err) {
 							log.Errorw("Failed reconciling Transaction",
-								"transactionId", transaction.ID,
-								"transactionIndex", transaction.Index,
+								"Transaction.ID", transaction.ID,
+								"Transaction.Index", transaction.Index,
 								"error", err)
 							return controller.Result{}, err
 						}
@@ -340,10 +348,10 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 						if prevTransaction.Isolation == configapi.TransactionStrategy_SERIALIZABLE &&
 							prevTransaction.Status.State < configapi.TransactionStatus_VALIDATED {
 							log.Infow("Transaction waiting for previous Transaction to be validated",
-								"transactionId", transaction.ID,
-								"transactionIndex", transaction.Index,
+								"Transaction.ID", transaction.ID,
+								"Transaction.Index", transaction.Index,
 								"prevTransactionId", prevTransaction.ID,
-								"prevTransactionIndex", prevTransaction.Index)
+								"prevTransaction.Index", prevTransaction.Index)
 							return controller.Result{}, nil
 						}
 					}
@@ -353,8 +361,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 		}
 
 		log.Infow("Validating Transaction",
-			"transactionId", transaction.ID,
-			"transactionIndex", transaction.Index)
+			"Transaction.ID", transaction.ID,
+			"Transaction.Index", transaction.Index)
 		transaction.Status.Phases.Validate = &configapi.TransactionValidatePhase{
 			TransactionPhaseStatus: configapi.TransactionPhaseStatus{
 				Start: getCurrentTimestamp(),
@@ -380,8 +388,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					log.Errorw("Failed reconciling Transaction",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"error", err)
 					return controller.Result{}, err
 				}
@@ -391,8 +399,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 			if proposal.Status.Phases.Validate == nil {
 				log.Infow("Validating Transaction changes to target",
 					"targetId", proposal.TargetID,
-					"transactionId", transaction.ID,
-					"transactionIndex", transaction.Index)
+					"Transaction.ID", transaction.ID,
+					"Transaction.Index", transaction.Index)
 				proposal.Status.Phases.Validate = &configapi.ProposalValidatePhase{
 					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
 						Start: getCurrentTimestamp(),
@@ -410,8 +418,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 			case configapi.ProposalValidatePhase_FAILED:
 				log.Warnw("Transaction proposal validation failed for target",
 					"targetId", proposal.TargetID,
-					"transactionId", transaction.ID,
-					"transactionIndex", transaction.Index)
+					"Transaction.ID", transaction.ID,
+					"Transaction.Index", transaction.Index)
 				transaction.Status.State = configapi.TransactionStatus_FAILED
 				transaction.Status.Failure = proposal.Status.Phases.Validate.Failure
 				transaction.Status.Phases.Abort = &configapi.TransactionAbortPhase{
@@ -431,8 +439,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 
 		if allValidated {
 			log.Infow("Transaction validated",
-				"transactionId", transaction.ID,
-				"transactionIndex", transaction.Index)
+				"Transaction.ID", transaction.ID,
+				"Transaction.Index", transaction.Index)
 			transaction.Status.State = configapi.TransactionStatus_VALIDATED
 			transaction.Status.Phases.Validate.State = configapi.TransactionValidatePhase_VALIDATED
 			transaction.Status.Phases.Validate.End = getCurrentTimestamp()
@@ -449,8 +457,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					log.Errorw("Failed reconciling Transaction",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"error", err)
 					return controller.Result{}, err
 				}
@@ -462,8 +470,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 					if err != nil {
 						if !errors.IsNotFound(err) {
 							log.Errorw("Failed reconciling Transaction",
-								"transactionId", transaction.ID,
-								"transactionIndex", transaction.Index,
+								"Transaction.ID", transaction.ID,
+								"Transaction.Index", transaction.Index,
 								"error", err)
 							return controller.Result{}, err
 						}
@@ -472,10 +480,10 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 						if prevTransaction.Isolation == configapi.TransactionStrategy_SERIALIZABLE &&
 							prevTransaction.Status.State < configapi.TransactionStatus_COMMITTED {
 							log.Infow("Transaction waiting for previous Transaction to be committed",
-								"transactionId", transaction.ID,
-								"transactionIndex", transaction.Index,
+								"Transaction.ID", transaction.ID,
+								"Transaction.Index", transaction.Index,
 								"prevTransactionId", prevTransaction.ID,
-								"prevTransactionIndex", prevTransaction.Index)
+								"prevTransaction.Index", prevTransaction.Index)
 							return controller.Result{}, nil
 						}
 					}
@@ -485,8 +493,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 		}
 
 		log.Infow("Committing Transaction",
-			"transactionId", transaction.ID,
-			"transactionIndex", transaction.Index)
+			"Transaction.ID", transaction.ID,
+			"Transaction.Index", transaction.Index)
 		transaction.Status.Phases.Commit = &configapi.TransactionCommitPhase{
 			TransactionPhaseStatus: configapi.TransactionPhaseStatus{
 				Start: getCurrentTimestamp(),
@@ -510,8 +518,8 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					log.Errorw("Failed reconciling Transaction",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"error", err)
 					return controller.Result{}, err
 				}
@@ -521,8 +529,8 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 			if proposal.Status.Phases.Commit == nil {
 				log.Infow("Committing Transaction changes to target",
 					"targetId", proposal.TargetID,
-					"transactionId", transaction.ID,
-					"transactionIndex", transaction.Index)
+					"Transaction.ID", transaction.ID,
+					"Transaction.Index", transaction.Index)
 				proposal.Status.Phases.Commit = &configapi.ProposalCommitPhase{
 					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
 						Start: getCurrentTimestamp(),
@@ -542,8 +550,8 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 
 		if allCommitted {
 			log.Infow("Transaction committed",
-				"transactionId", transaction.ID,
-				"transactionIndex", transaction.Index)
+				"Transaction.ID", transaction.ID,
+				"Transaction.Index", transaction.Index)
 			transaction.Status.State = configapi.TransactionStatus_COMMITTED
 			transaction.Status.Phases.Commit.State = configapi.TransactionCommitPhase_COMMITTED
 			transaction.Status.Phases.Commit.End = getCurrentTimestamp()
@@ -560,8 +568,8 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					log.Errorw("Failed reconciling Transaction",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"error", err)
 					return controller.Result{}, err
 				}
@@ -579,10 +587,10 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 						if prevTransaction.Isolation == configapi.TransactionStrategy_SERIALIZABLE &&
 							prevTransaction.Status.State < configapi.TransactionStatus_APPLIED {
 							log.Infow("Transaction waiting for previous Transaction to be applied",
-								"transactionId", transaction.ID,
-								"transactionIndex", transaction.Index,
+								"Transaction.ID", transaction.ID,
+								"Transaction.Index", transaction.Index,
 								"prevTransactionId", prevTransaction.ID,
-								"prevTransactionIndex", prevTransaction.Index)
+								"prevTransaction.Index", prevTransaction.Index)
 							return controller.Result{}, nil
 						}
 					}
@@ -592,8 +600,8 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 		}
 
 		log.Infow("Applying Transaction",
-			"transactionId", transaction.ID,
-			"transactionIndex", transaction.Index)
+			"Transaction.ID", transaction.ID,
+			"Transaction.Index", transaction.Index)
 		transaction.Status.Phases.Apply = &configapi.TransactionApplyPhase{
 			TransactionPhaseStatus: configapi.TransactionPhaseStatus{
 				Start: getCurrentTimestamp(),
@@ -617,8 +625,8 @@ func (r *Reconciler) reconcileAbort(ctx context.Context, transaction *configapi.
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					log.Errorw("Failed reconciling Transaction",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"error", err)
 					return controller.Result{}, err
 				}
@@ -628,8 +636,8 @@ func (r *Reconciler) reconcileAbort(ctx context.Context, transaction *configapi.
 			if proposal.Status.Phases.Abort == nil {
 				log.Infow("Aborting Transaction changes to target",
 					"targetId", proposal.TargetID,
-					"transactionId", transaction.ID,
-					"transactionIndex", transaction.Index)
+					"Transaction.ID", transaction.ID,
+					"Transaction.Index", transaction.Index)
 				proposal.Status.Phases.Abort = &configapi.ProposalAbortPhase{
 					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
 						Start: getCurrentTimestamp(),
@@ -649,8 +657,8 @@ func (r *Reconciler) reconcileAbort(ctx context.Context, transaction *configapi.
 
 		if allAborted {
 			log.Infow("Transaction aborted",
-				"transactionId", transaction.ID,
-				"transactionIndex", transaction.Index)
+				"Transaction.ID", transaction.ID,
+				"Transaction.Index", transaction.Index)
 			transaction.Status.Phases.Abort.State = configapi.TransactionAbortPhase_ABORTED
 			transaction.Status.Phases.Abort.End = getCurrentTimestamp()
 			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
@@ -671,8 +679,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					log.Errorw("Failed reconciling Transaction",
-						"transactionId", transaction.ID,
-						"transactionIndex", transaction.Index,
+						"Transaction.ID", transaction.ID,
+						"Transaction.Index", transaction.Index,
 						"err", err)
 					return controller.Result{}, err
 				}
@@ -682,8 +690,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.
 			if proposal.Status.Phases.Apply == nil {
 				log.Infow("Applying Transaction changes to target",
 					"targetId", proposal.TargetID,
-					"transactionId", transaction.ID,
-					"transactionIndex", transaction.Index)
+					"Transaction.ID", transaction.ID,
+					"Transaction.Index", transaction.Index)
 				proposal.Status.Phases.Apply = &configapi.ProposalApplyPhase{
 					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
 						Start: getCurrentTimestamp(),
@@ -700,8 +708,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.
 				allApplied = false
 			case configapi.ProposalApplyPhase_FAILED:
 				log.Warnw("Transaction apply failed",
-					"transactionId", transaction.ID,
-					"transactionIndex", transaction.Index)
+					"Transaction.ID", transaction.ID,
+					"Transaction.Index", transaction.Index)
 				transaction.Status.State = configapi.TransactionStatus_FAILED
 				transaction.Status.Failure = proposal.Status.Phases.Apply.Failure
 				transaction.Status.Phases.Apply.State = configapi.TransactionApplyPhase_FAILED
@@ -716,8 +724,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.
 
 		if allApplied {
 			log.Infow("Transaction applied",
-				"transactionId", transaction.ID,
-				"transactionIndex", transaction.Index)
+				"Transaction.ID", transaction.ID,
+				"Transaction.Index", transaction.Index)
 			transaction.Status.State = configapi.TransactionStatus_APPLIED
 			transaction.Status.Phases.Apply.State = configapi.TransactionApplyPhase_APPLIED
 			transaction.Status.Phases.Apply.End = getCurrentTimestamp()
@@ -738,14 +746,14 @@ func (r *Reconciler) updateTransactionStatus(ctx context.Context, transaction *c
 	if err != nil {
 		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Errorw("Failed updating Transaction status",
-				"transactionId", transaction.ID,
-				"transactionIndex", transaction.Index,
+				"Transaction.ID", transaction.ID,
+				"Transaction.Index", transaction.Index,
 				"error", err)
 			return err
 		}
 		log.Warnw("Write conflict updating Transaction %d status",
-			"transactionId", transaction.ID,
-			"transactionIndex", transaction.Index,
+			"Transaction.ID", transaction.ID,
+			"Transaction.Index", transaction.Index,
 			"error", err)
 		return nil
 	}
@@ -758,12 +766,12 @@ func (r *Reconciler) updateProposalStatus(ctx context.Context, proposal *configa
 	if err != nil {
 		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Errorw("Failed updating Proposal status",
-				"porposalID", proposal.ID,
+				"Porposal.ID", proposal.ID,
 				"error", err)
 			return err
 		}
 		log.Warnw("Write conflict updating Proposal '%s' status",
-			"porposalID", proposal.ID,
+			"Porposal.ID", proposal.ID,
 			"error", err)
 		return nil
 	}
