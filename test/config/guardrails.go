@@ -72,7 +72,6 @@ func testTXPowerViolation(t *testing.T, setReq *gnmiutils.SetRequest) error {
 	// set a tx-power value of 10 in list2a[txpower2]. This should be invalid.
 	setReq.UpdatePaths = gnmiutils.GetTargetPathWithValue(testTargetName, TXPower2Path, "10", proto.IntVal)
 	_, _, err = setReq.Set()
-	t.Skip()
 	return err
 }
 
