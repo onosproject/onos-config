@@ -1,11 +1,11 @@
-# Administrative and Diagnostic Command-Line
+# Administrative Command-Line
 The project provides a command-line facilities for remotely 
-interacting with the administrative and diagnostic services of the `onos-config` server.
+interacting with the administrative service of the `onos-config` server.
 
 The commands are available at run-time using the consolidated `onos` client hosted in 
 the `onos-cli` repository, but their implementation is hosted and built here.
 
-The documentation about building and deploying the consolidate `onos` client or its Docker container
+The documentation about building and deploying the consolidated `onos` command-line client or its Docker container
 is available in the `onos-cli` GitHub repository.
 
 ## Usage
@@ -17,19 +17,17 @@ Usage:
   onos config [command]
 
 Available Commands:
-  add             Add a config resource
-  compact-changes Takes a snapshot of network and device changes
-  config          Manage the CLI configuration
-  get             Get config resources
-  load            Load configuration from a file
-  rollback        Rolls-back a network change
-  snapshot        Commands for managing snapshots
-  watch           Watch for updates to a config resource type
+  config      Manage the CLI configuration
+  get         Get config resources
+  log         logging api commands
+  rollback    Rolls-back a transaction
+  watch       Watch for updates to a config resource type
 
 Flags:
-  -h, --help                     help for config
+      --auth-header string       Auth header in the form 'Bearer <base64>'
+      -h, --help                 help for config
       --no-tls                   if present, do not use TLS
-      --service-address string   the onos-config service address (default "onos-config:5150")
+      --service-address string   the gRPC endpoint (default "onos-config:5150")
       --tls-cert-path string     the path to the TLS certificate
       --tls-key-path string      the path to the TLS key
 
@@ -53,84 +51,63 @@ option to indicate the server address, resulting in easier usage.
 
 ## Example Commands
 
-### Rollback Network Change
-To rollback a network use the rollback admin tool. This will rollback the last network
-change unless a specific change is given with the `changename` parameter
-```bash
-> onos config rollback Change-VgUAZI928B644v/2XQ0n24x0SjA=
-```
+### Listing of configuration model plugins
+A configuration model plugin is a sidecar container that runs in the same pod as `onos-config`.
+Each plugin represents a complete set of YANG models supported by a particular device type. 
+Each plugin has a name (sometimes referred to as type) and a version. 
 
-### Listing and Loading model plugins
-A model plugin is a shared object library that represents the YANG models of a
-particular Device Type and Version. The plugin allows user to create and load
-their own device models in to onos-config that can be used for validating that
-configuration changes observe the structure of the YANG models in use on the
-device. This improves usability by pushing information about the devices'
-model back up to the onos-config gNMI northbound interface.
-
-Model plugins can be loaded at the startup of onos-config by (repeated) `--modelPlugin`
-options, or they can be loaded at run time. To see the list of currently loaded
-plugins use the command:
+To see the list of currently loaded plugins use the command:
 ```bash
 > onos config get plugins
+ID                  STATUS    ENDPOINT          INFO.NAME     INFO.VERSION    ERROR
+testdevice-2.0.0    Loaded    localhost:5154    testdevice    2.0.0
+devicesim-1.0.0     Loaded    localhost:5152    devicesim     1.0.0
+testdevice-1.0.0    Loaded    localhost:5153    testdevice    1.0.0
+```
+See more information on building and deploying configuration model plugins in `config-models` repository.
+
+### List configuration transactions
+Configuration changes made through the `onos-config` gNMI interface are represented as _transactions_. To view the list
+of these transactions use the following command:
+```shell
+> onos config get transactions
+ID                                           INDEX    STATUS.STATE    TRANSACTIONTYPE    CREATED                                  UPDATED                                  DELETED    USERNAME    TRANSACTIONSTRATEGY.ISOLATION    TRANSACTIONSTRATEGY.SYNCHRONICITY
+uuid:1865ad96-6159-4050-b9cf-7d1f7ece54c4    1        APPLIED         Change             2022-02-23 17:18:21.8499168 +0000 UTC    2022-02-23 17:18:22.0512956 +0000 UTC    <nil>                  DEFAULT                          SYNCHRONOUS
+uuid:9acdbe9e-f8c3-4797-b77e-d4a324270564    2        APPLIED         Change             2022-02-23 17:19:07.1359094 +0000 UTC    2022-02-23 17:19:07.4341523 +0000 UTC    <nil>                  DEFAULT                          SYNCHRONOUS
+uuid:745d9944-49aa-441f-8394-ad2e4ad70543    3        APPLIED         Change             2022-02-23 17:19:37.6194301 +0000 UTC    2022-02-23 17:20:16.6840849 +0000 UTC    <nil>                  DEFAULT                          ASYNCHRONOUS
+uuid:e7df0125-3cca-4fab-a002-04ee3a67ef99    4        APPLIED         Change             2022-02-23 17:20:31.5019776 +0000 UTC    2022-02-23 17:20:31.6836693 +0000 UTC    <nil>                  DEFAULT                          SYNCHRONOUS
+uuid:63bcdfd8-b9bc-4cfa-a20d-93159cd384f5    5        APPLIED         Rollback           2022-02-23 17:20:31.7456597 +0000 UTC    2022-02-23 17:20:31.9213865 +0000 UTC    <nil>                  DEFAULT                          SYNCHRONOUS
+uuid:8edb7b9d-4571-4fac-9f4c-d876c0d4cafe    6        APPLIED         Change             2022-02-23 17:20:46.6952989 +0000 UTC    2022-02-23 17:20:46.8966023 +0000 UTC    <nil>                  DEFAULT                          SYNCHRONOUS
+uuid:734cfad1-9154-42c3-9e73-d6bec1101267    7        APPLIED         Change             2022-02-23 17:20:46.9112378 +0000 UTC    2022-02-23 17:20:47.0962395 +0000 UTC    <nil>                  DEFAULT                          SYNCHRONOUS
+uuid:095a064a-7f37-457a-933d-b991029127da    8        APPLIED         Change             2022-02-23 17:21:02.2661133 +0000 UTC    2022-02-23 17:21:02.4532263 +0000 UTC    <nil>                  DEFAULT                          SYNCHRONOUS
 ```
 
-## Other Diagnostic Commands
-There are a number of commands that provide internal view into the state the onos-config store.
-These tools use a special-purpose gRPC interfaces to obtain the internal meta-data
-from the running onos-config process. Please note that these tools are intended purely for
-diagnostics and should not be relied upon for programmatic purposes as they are not subject
-to any backward compatibility guarantees.
+To continuously monitor the transaction events, you can use a similar command `onos config watch transactions`.
 
-### List and Watch Changes
-For example, to list and watch all changes stored internally run:
+### Rollback Network Change
+To rollback the most recent transaction, and revert the configuration of all targets involved in that transaction to their
+prior state, use the `rollback` command and specify the `Index` of the most recent transaction.
 ```bash
-> onos config watch network-changes
-...
-```
-or to watch `device-changes`
-```bash
-> onos config watch device-changes
-...
+> onos config rollback 8
 ```
 
-### Loading configuration data in bulk
-Configuration data can be loaded in to onos-config through the cli with
-```bash
-onos config load yaml <filename(s)>
+### Listing target configurations
+To list the status of all configurable targets use the following command:
+```onos config get configurations
+ID                                 TARGETID                           STATUS.STATE    INDEX
+square-stingray                    square-stingray                    SYNCHRONIZED    39
+fond-bulldog                       fond-bulldog                       SYNCHRONIZED    47
+reincarnated-target                reincarnated-target                SYNCHRONIZED    3
+guiding-whale                      guiding-whale                      SYNCHRONIZED    0
+expert-tortoise                    expert-tortoise                    SYNCHRONIZED    33
+gentle-polliwog                    gentle-polliwog                    SYNCHRONIZED    44
+new-bull                           new-bull                           SYNCHRONIZED    1
 ```
 
-The Yaml file must be in the form below. Several updates, replace or delete entries can be made.
+Similarly, to continuously monitor ongoing changes to configurations, you can use the `onos config watch configurations`.
 
-This effectively is the same as a gNMI SetRequest, but with the input in YAML
-format instead of PROTO.
-> Only the SeqRequest functionality is possible with this command. To do a gNMI GetRequest
-> use the **gnmi_cli** tool [GetRequest](./gnmi.md#Northbound gNMI Get Request)
-
-A separate NetworkChange will be created for each file given.
-> This allows the set of updates to be broken up in to smaller groups.
-
-```yaml
-setrequest:
-    prefix:
-        elem:
-            - name: e2node
-        target: ""
-    delete: []
-    replace: []
-    update:
-    - path:
-          elem:
-              - name: intervals
-              - name: RadioMeasReportPerUe
-          target: 315010-0001420
-      val:
-          uintvalue:
-              uintval: 20
-      duplicates: 0
-    extension:
-    - id: 101
-      value: 1.0.0
-    - id: 102
-      value: E2Node
+To get details on the current configuration for a specific target, use:
+```onos config get configuration square-stingray -v
+ID                 TARGETID           STATUS.STATE    INDEX    VALUES
+square-stingray    square-stingray    SYNCHRONIZED    39       map[/system/config/login-banner:path:"/system/config/login-banner" value:<bytes:"2" type:STRING >  /system/config/motd-banner:path:"/system/config/motd-banner" value:<bytes:"1" type:STRING > ]
 ```
