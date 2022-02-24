@@ -23,6 +23,7 @@ import (
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	controllerutils "github.com/onosproject/onos-config/pkg/controller/utils"
 	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal"
+	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
 	"github.com/onosproject/onos-config/pkg/utils/tree"
 	utilsv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
@@ -288,7 +289,6 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 			rollbackIndex = config.Index
 			rollbackValues = make(map[string]*configapi.PathValue)
 			for path, changeValue := range details.Change.Values {
-				changeValues[path] = changeValue
 				if configValue, ok := config.Values[path]; ok {
 					rollbackValues[path] = configValue
 				} else {
@@ -296,6 +296,10 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 						Path:    path,
 						Deleted: true,
 					}
+				}
+				deletedParentPath, deletedParentValue := applyChangeToConfig(changeValues, path, changeValue)
+				if deletedParentValue != nil {
+					rollbackValues[deletedParentPath] = deletedParentValue
 				}
 			}
 		case *configapi.Proposal_Rollback:
@@ -478,7 +482,7 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 				config.Values = make(map[string]*configapi.PathValue)
 			}
 			for path, changeValue := range changeValues {
-				config.Values[path] = changeValue
+				_, _ = applyChangeToConfig(config.Values, path, changeValue)
 			}
 			config.Values = tree.PrunePathMap(config.Values, true)
 
@@ -507,6 +511,23 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 	default:
 		return controller.Result{}, nil
 	}
+}
+
+func applyChangeToConfig(values map[string]*configapi.PathValue, path string, value *configapi.PathValue) (string, *configapi.PathValue) {
+	values[path] = value
+
+	// Walk up the path and make sure that there are no parents marked as deleted in the given map, if so, remove them
+	parent := pathutils.GetParentPath(path)
+	for len(parent) > 0 {
+
+		if v := values[parent]; v.Deleted {
+			// Delete the parent marked as deleted and return its path and value
+			delete(values, parent)
+			return parent, v
+		}
+		parent = pathutils.GetParentPath(parent)
+	}
+	return "", nil
 }
 
 func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Proposal) (controller.Result, error) {

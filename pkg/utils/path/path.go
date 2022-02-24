@@ -510,3 +510,12 @@ func IsPathValid(path string) error {
 	}
 	return nil
 }
+
+// GetParentPath returns the immediate parent path of the specified path; empty string if "/" is given
+func GetParentPath(path string) string {
+	i := strings.LastIndex(path, "/")
+	if i <= 0 {
+		return ""
+	}
+	return path[0:i]
+}
