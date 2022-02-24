@@ -75,11 +75,14 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		return controller.Result{}, nil
 	}
 
-	log.Infow("Reconciling Transaction",
-		"Transaction.ID", transaction.ID,
-		"Transaction.Index", transaction.Index)
-	log.Debugw("Reconciling Transactions",
+	if log.GetLevel() != logging.DebugLevel {
+		log.Infow("Reconciling Transaction",
+			"Transaction.ID", transaction.ID,
+			"Transaction.Index", transaction.Index)
+	}
+	log.Debugw("Reconciling Transaction",
 		"transaction", transaction)
+
 	return r.reconcileTransaction(ctx, transaction)
 }
 
