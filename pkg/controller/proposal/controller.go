@@ -289,6 +289,10 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 			rollbackIndex = config.Index
 			rollbackValues = make(map[string]*configapi.PathValue)
 			for path, changeValue := range details.Change.Values {
+				deletedParentPath, deletedParentValue := applyChangeToConfig(changeValues, path, changeValue)
+				if deletedParentValue != nil {
+					rollbackValues[deletedParentPath] = deletedParentValue
+				}
 				if configValue, ok := config.Values[path]; ok {
 					rollbackValues[path] = configValue
 				} else {
@@ -296,10 +300,6 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 						Path:    path,
 						Deleted: true,
 					}
-				}
-				deletedParentPath, deletedParentValue := applyChangeToConfig(changeValues, path, changeValue)
-				if deletedParentValue != nil {
-					rollbackValues[deletedParentPath] = deletedParentValue
 				}
 			}
 		case *configapi.Proposal_Rollback:
@@ -519,7 +519,7 @@ func applyChangeToConfig(values map[string]*configapi.PathValue, path string, va
 	// Walk up the path and make sure that there are no parents marked as deleted in the given map, if so, remove them
 	parent := pathutils.GetParentPath(path)
 	for len(parent) > 0 {
-		if v := values[parent]; v.Deleted {
+		if v := values[parent]; v != nil && v.Deleted {
 			// Delete the parent marked as deleted and return its path and value
 			delete(values, parent)
 			return parent, v
