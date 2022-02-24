@@ -41,11 +41,14 @@ import (
 
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
-	log.Infof("Received gNMI Set Request %+v", req)
+	log.Infow("Received gNMI Set Request", "req", req)
 	var userName string
 	if md := metautils.ExtractIncoming(ctx); md != nil {
-		log.Infof("gNMI Set() called by '%s (%s) (%s)'. Groups [%v]",
-			md.Get("preferred_username"), md.Get("name"), md.Get("email"), md.Get("groups"))
+		log.Infow("gNMI Set() called by",
+			"username", md.Get("preferred_username"),
+			"name", md.Get("name"),
+			"email", md.Get("email"),
+			"groups", md.Get("groups"))
 		userName = md.Get("preferred_username")
 		if userName == "" {
 			userName = md.Get("name")
@@ -111,6 +114,12 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 	}
 
+	log.Debugw("Processed gNMI Set Request",
+		"req", req,
+		"targets", targets,
+		"strategy", transactionStrategy,
+		"username", userName)
+
 	transaction, err := newTransaction(targets, transactionStrategy, userName)
 	if err != nil {
 		log.Warn(err)
@@ -122,6 +131,12 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
 	}
+
+	log.Debugw("Created Transaction for gNMI Set Request",
+		"req", req,
+		"transaction", transaction,
+	)
+
 	eventCh := make(chan configapi.TransactionEvent)
 	err = s.transactions.Watch(ctx, eventCh, transactionstore.WithReplay(), transactionstore.WithTransactionID(transaction.ID))
 	if err != nil {
@@ -178,7 +193,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 					},
 				},
 			}
-			log.Debugf("Sending SetResponse %+v", response)
+			log.Debugw("Sending SetResponse", "response", response)
 			return response, nil
 		} else if transactionEvent.Transaction.Status.State == configapi.TransactionStatus_FAILED {
 			var err error
