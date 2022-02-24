@@ -30,8 +30,49 @@ a number of off-the-shelf tools such as YGOT, pyang and automatically generates 
 a Makefile that can be used to build, assemble and publish the model plugin docker image.
 
 ### Create your own Model Plugin
+To build your own configuration model plugin, assemble all the required YANG files and place
+them in the `yang/` directory located at the root of your project. Then, author a
+small YAML file `metadata.yaml` at the root of the project. This file names the model,
+specifies its version, names the Go package for the generated code and
+identifies the root YANG files that should be passed to YGOT by the model compiler.
+Here's an example:
+```yaml
+name: mymodel
+version: 1.0.0
+artifactName: devicesim
+goPackage: github.com/onosproject/config-models/models/mymodel
+modules:
+  - name: openconfig-interfaces
+    organization: OpenConfig working group
+    revision: 2017-07-14
+    file: openconfig-interfaces@2017-07-14.yang
+  - name: openconfig-openflow
+    organization: OpenConfig working group
+    revision: 2017-06-01
+    file: openconfig-openflow@2017-06-01.yang
+  - name: openconfig-platform
+    organization: OpenConfig working group
+    revision: 2016-12-22
+    file: openconfig-platform@2016-12-22.yang
+  - name: openconfig-system
+    organization: OpenConfig working group
+    revision: 2017-07-06
+    file: openconfig-system@2017-07-06.yang
+```
+Note that the `yang/` directory will also need to contain all YANG files being included/referenced
+by any of the root modules.
 
-...
+## Invoke the model compiler
+Once the YANG files and metadata YAML file are ready invoke the model compiler as follows:
+```shell
+docker run -v $(pwd):/config-model onosproject/model-compiler:latest
+```
+
+Afterwards, to compile and assemble the configuration model docker image, simply run:
+```shell
+make image
+```
+
 
 ## Loading the Model Plugin
 

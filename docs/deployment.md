@@ -91,12 +91,36 @@ Also to verify how template values are expanded, run:
 helm install template onos-config
 ```
 
-## Uninstalling the chart.
+## Uninstalling the chart
 
 To remove the `onos-config` pod issue
 ```bash
  helm delete -n micro-onos onos-config
 ```
+
+## Including configuration model plugins
+To include specific configuration model plugins as part of the `onos-config` pod,
+list their names, their image name and the desired gRPC port in the `modelPlugins`
+section of the `values.yaml` file of the `onos-config` chart. See below:
+
+```yaml
+modelPlugins:
+  - name: devicesim-1
+    image: onosproject/devicesim:0.5.5-devicesim-1.0.0
+    endpoint: localhost
+    port: 5152
+  - name: testdevice-1
+    image: onosproject/testdevice:0.5.5-testdevice-1.0.0
+    endpoint: localhost
+    port: 5153
+  - name: testdevice-2
+    image: onosproject/testdevice:0.5.5-testdevice-2.0.0
+    endpoint: localhost
+    port: 5154
+```
+This value map will be processed during deployment time and will start each given
+model plugin as a sidecar in the `onos-config` pod, with the appropriate gRPC port number.
+
 ## Pod Information
 
 To view the pods that are deployed, run `kubectl -n micro-onos get pods`:
