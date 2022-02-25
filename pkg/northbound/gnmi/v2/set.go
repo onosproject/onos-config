@@ -72,14 +72,14 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, errors.Status(err).Err()
 	}
 
-	// Update - extract targets and their models
-	for _, u := range req.GetUpdate() {
-		target, err := s.getTargetInfo(ctx, targets, u.Path.GetTarget(), prefixTargetID)
+	//Delete
+	for _, u := range req.GetDelete() {
+		target, err := s.getTargetInfo(ctx, targets, u.GetTarget(), prefixTargetID)
 		if err != nil {
 			return nil, errors.Status(err).Err()
 		}
 
-		if err := s.doUpdateOrReplace(ctx, req.GetPrefix(), u, target); err != nil {
+		if err := s.doDelete(req.GetPrefix(), u, target); err != nil {
 			log.Warn(err)
 			return nil, errors.Status(err).Err()
 		}
@@ -98,14 +98,14 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 	}
 
-	//Delete
-	for _, u := range req.GetDelete() {
-		target, err := s.getTargetInfo(ctx, targets, u.GetTarget(), prefixTargetID)
+	// Update - extract targets and their models
+	for _, u := range req.GetUpdate() {
+		target, err := s.getTargetInfo(ctx, targets, u.Path.GetTarget(), prefixTargetID)
 		if err != nil {
 			return nil, errors.Status(err).Err()
 		}
 
-		if err := s.doDelete(req.GetPrefix(), u, target); err != nil {
+		if err := s.doUpdateOrReplace(ctx, req.GetPrefix(), u, target); err != nil {
 			log.Warn(err)
 			return nil, errors.Status(err).Err()
 		}
