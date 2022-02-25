@@ -146,7 +146,7 @@ func topoEntity(id topoapi.ID, targetType string, targetVersion string) *topoapi
 func setupTopoAndRegistry(test *testContext, id string, model string, version string, noPlugin bool) {
 	plugin := gnmitest.NewMockModelPlugin(test.mctl)
 	rwPaths := path.ReadWritePathMap{}
-	for _, p := range []string{"/foo", "/bar", "/goo"} {
+	for _, p := range []string{"/foo", "/bar", "/goo", "/some/nested/path"} {
 		rwPaths[p] = path.ReadWritePathElem{
 			ReadOnlyAttrib: path.ReadOnlyAttrib{
 				ValueType: configapi.ValueType_STRING,

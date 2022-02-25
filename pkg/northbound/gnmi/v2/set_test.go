@@ -161,3 +161,72 @@ func Test_NoPlugin(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "plugin not found")
 }
+
+func Test_SetDeleteSet(t *testing.T) {
+	test := createServer(t)
+	defer test.atomix.Stop()
+	defer test.mctl.Finish()
+
+	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
+
+	test.startControllers(t)
+	defer test.stopControllers()
+
+	targetID := configapi.TargetID("target-1")
+	deleteNestedPath(t, targetID, test)
+	setNestedPath(t, targetID, test)
+	validateNestedPath(t, targetID, test)
+}
+
+func validateNestedPath(t *testing.T, targetID configapi.TargetID, test *testContext) {
+	request := gnmi.GetRequest{
+		Path:     []*gnmi.Path{targetPath(t, targetID, "some", "nested", "path")},
+		Encoding: gnmi.Encoding_JSON,
+	}
+
+	result, err := test.server.Get(context.TODO(), &request)
+	assert.NoError(t, err)
+	assert.Len(t, result.Notification, 1)
+	assert.Len(t, result.Notification[0].Update, 1)
+	assert.Equal(t, "{\n  \"some\": {\n    \"nested\": {\n      \"path\": \"Hello Again!\"\n    }\n  }\n}",
+		string(result.Notification[0].Update[0].GetVal().GetJsonVal()))
+}
+
+func setNestedPath(t *testing.T, targetID configapi.TargetID, test *testContext) {
+	request := gnmi.SetRequest{
+		Update: []*gnmi.Update{
+			{
+				Path: targetPath(t, targetID, "some", "nested", "path"),
+				Val:  &gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "Hello Again!"}},
+			},
+		},
+	}
+
+	result, err := test.server.Set(context.TODO(), &request)
+	assert.NoError(t, err)
+	assert.Len(t, result.Extension, 1)
+
+	transactionInfo := &configapi.TransactionInfo{}
+	assert.NoError(t, proto.Unmarshal(result.Extension[0].GetRegisteredExt().GetMsg(), transactionInfo))
+	tx, err := test.transaction.Get(context.TODO(), transactionInfo.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, tx.Status.Phases.Commit)
+	assert.Equal(t, configapi.TransactionCommitPhase_COMMITTED, tx.Status.Phases.Commit.State)
+}
+
+func deleteNestedPath(t *testing.T, targetID configapi.TargetID, test *testContext) {
+	request := gnmi.SetRequest{
+		Delete: []*gnmi.Path{targetPath(t, targetID, "some")},
+	}
+
+	result, err := test.server.Set(context.TODO(), &request)
+	assert.NoError(t, err)
+	assert.Len(t, result.Extension, 1)
+
+	transactionInfo := &configapi.TransactionInfo{}
+	assert.NoError(t, proto.Unmarshal(result.Extension[0].GetRegisteredExt().GetMsg(), transactionInfo))
+	tx, err := test.transaction.Get(context.TODO(), transactionInfo.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, tx.Status.Phases.Commit)
+	assert.Equal(t, configapi.TransactionCommitPhase_COMMITTED, tx.Status.Phases.Commit.State)
+}
