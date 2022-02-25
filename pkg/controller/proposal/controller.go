@@ -518,7 +518,7 @@ func applyChangeToConfig(values map[string]*configapi.PathValue, path string, va
 
 	// Walk up the path and make sure that there are no parents marked as deleted in the given map, if so, remove them
 	parent := pathutils.GetParentPath(path)
-	for len(parent) > 0 {
+	for parent != "" {
 		if v := values[parent]; v != nil && v.Deleted {
 			// Delete the parent marked as deleted and return its path and value
 			delete(values, parent)
