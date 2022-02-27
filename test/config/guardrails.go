@@ -84,16 +84,20 @@ func (s *TestSuite) TestGuardRails(t *testing.T) {
 	)
 
 	testCases := map[string]struct {
-		test func(t *testing.T, setReq *gnmiutils.SetRequest) error
+		test     func(t *testing.T, setReq *gnmiutils.SetRequest) error
+		expected string
 	}{
 		"Range Max Violation": {
-			test: testRangeMaxViolation,
+			test:     testRangeMaxViolation,
+			expected: "Unable to unmarshal JSON: error parsing 10000 for schema range-max: value 10000 falls outside the int range [0, 255]",
 		},
 		"Range Min Violation": {
-			test: testRangeMinViolation,
+			test:     testRangeMinViolation,
+			expected: "Must statement 'number(./t1:range-min) <= number(./t1:range-max)'",
 		},
 		"TX Power Violation": {
-			test: testTXPowerViolation,
+			test:     testTXPowerViolation,
+			expected: "Must statement 'not(t1:list2a[set-contains(following-sibling::t1:list2a/t1:tx-power, t1:tx-power)])'",
 		},
 	}
 
@@ -126,11 +130,13 @@ func (s *TestSuite) TestGuardRails(t *testing.T) {
 			func(t *testing.T) {
 				err = testCase.test(t, setReq)
 				assert.Error(t, err)
-				assert.Equal(t, codes.InvalidArgument, status.Code(err))
+				if err != nil {
+					assert.Equal(t, codes.InvalidArgument, status.Code(err))
+					assert.Contains(t, err.Error(), testCase.expected)
+				}
 			},
 		)
 	}
-	err = testRangeMinViolation(t, setReq)
 	assert.Error(t, err)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 }
