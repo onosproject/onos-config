@@ -15,8 +15,10 @@
 package config
 
 import (
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
+	"time"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -38,6 +40,10 @@ func (s *TestSuite) TestModels(t *testing.T) {
 
 	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
+
+	// Wait for config to connect to the target
+	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
+	assert.True(t, ready)
 
 	// Data to run the test cases
 	testCases := []struct {
