@@ -4,11 +4,6 @@ gNMI is designed primarily as a device management interface, and augmenting it
 with the extra functionality to do network wide configuration management
 across many devices requires some extension.
 
-Some functions (e.g. rollback and version management) are far beyond what gNMI is
-designed for, and have been given their own gRPC definitions as
-[admin](https://github.com/onosproject/onos-api/blob/master/proto/onos/config/admin/admin.proto) and
-[diags](https://github.com/onosproject/onos-api/blob/master/proto/onos/config/diags/diags.proto).
-
 ## Use of target in the NBI
 In gNMI the Path type is comprised of a set of path elements and a `target`.
 In the onos-config NBI this target represents the `name of the device` as it
