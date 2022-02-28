@@ -52,11 +52,29 @@ type ReadOnlyAttrib struct {
 	AttrName    string
 }
 
+func (ro ReadOnlyAttrib) String() string {
+	// TODO add all fields
+	return fmt.Sprintf("[IsAKey: %t, ValueType: %s, TypeOpts: %d, Description: %s]", ro.IsAKey, ro.ValueType, ro.TypeOpts, ro.Description)
+}
+
 // ReadOnlySubPathMap abstracts the read only subpath
 type ReadOnlySubPathMap map[string]ReadOnlyAttrib
 
+
+
 // ReadOnlyPathMap abstracts the read only path
 type ReadOnlyPathMap map[string]ReadOnlySubPathMap
+
+func (ro ReadOnlyPathMap) PrettyString() string {
+	str := ""
+	for k, subPaths := range ro {
+		str += fmt.Sprintf("%s\n", k)
+		for k1, v := range subPaths {
+			str += fmt.Sprintf("\t%s: %s\n", k1, v)
+		}
+	}
+	return str
+}
 
 var rOnIndex = regexp.MustCompile(MatchOnIndex)
 var rIndexAllowedChars = regexp.MustCompile(IndexAllowedChars)
@@ -105,6 +123,15 @@ type ReadWritePathElem struct {
 
 // ReadWritePathMap is a map of ReadWrite paths their metadata
 type ReadWritePathMap map[string]ReadWritePathElem
+
+func (rw ReadWritePathMap) PrettyString() string {
+	str := ""
+	for k, v := range rw {
+		str += fmt.Sprintf("%s\n", k)
+		str += fmt.Sprintf("\t%s\n", v)
+	}
+	return str
+}
 
 // JustPaths extracts keys from a read write path map
 // expandSubPaths is not relevant for RW paths
