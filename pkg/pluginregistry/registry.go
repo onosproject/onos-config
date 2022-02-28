@@ -118,7 +118,8 @@ func NewPluginRegistry(endpoints ...string) PluginRegistry {
 
 // Start the plugin registry
 func (r *pluginRegistry) Start() {
-	go r.discoverPlugins()
+	// Discover plugins synchronously on start-up.
+	r.discoverPlugins()
 }
 
 // Stop the plugin registry
@@ -134,7 +135,6 @@ func (r *pluginRegistry) discoverPlugins() {
 }
 
 func (r *pluginRegistry) discoverPlugin(endpoint string) {
-
 	log.Infof("Attempting to contact model plugin at: %s", endpoint)
 
 	plugin := &ModelPluginInfo{
