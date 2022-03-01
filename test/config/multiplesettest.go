@@ -16,11 +16,13 @@ package config
 
 import (
 	"github.com/Pallinder/go-randomdata"
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func generateTimezoneName() string {
@@ -40,6 +42,10 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 	// Create a simulated device
 	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
+
+	// Wait for config to connect to the target
+	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
+	assert.True(t, ready)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)

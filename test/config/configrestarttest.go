@@ -15,8 +15,11 @@
 package config
 
 import (
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	hautils "github.com/onosproject/onos-config/test/utils/ha"
@@ -40,6 +43,10 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	// Create a simulated target
 	simulator := gnmiutils.CreateSimulator(ctx, t)
 	defer gnmiutils.DeleteSimulator(t, simulator)
+
+	// Wait for config to connect to the target
+	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
+	assert.True(t, ready)
 
 	// Make a GNMI client to use for onos-config requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
