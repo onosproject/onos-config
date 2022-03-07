@@ -215,7 +215,7 @@ func (s *configurationStore) Get(ctx context.Context, id configapi.Configuration
 
 	// Decode and return the Configuration.
 	configuration := &configapi.Configuration{}
-	if err := decodeConfiguration(cachedEntry, configuration); err != nil {
+	if err := decodeConfiguration(entry, configuration); err != nil {
 		return nil, errors.NewInvalid("configuration decoding failed: %v", err)
 	}
 
