@@ -14,7 +14,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.8.8
 	github.com/onosproject/helmit v0.6.19
 	github.com/onosproject/onos-api/go v0.9.3
-	github.com/onosproject/onos-lib-go v0.8.1
+	github.com/onosproject/onos-lib-go v0.8.13
 	github.com/onosproject/onos-ric-sdk-go v0.8.2
 	github.com/onosproject/onos-test v0.6.6
 	github.com/onosproject/onos-topo v0.9.3
@@ -24,7 +24,7 @@ require (
 	github.com/prometheus/common v0.26.0
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	google.golang.org/grpc v1.41.0
 	gopkg.in/yaml.v2 v2.4.0
