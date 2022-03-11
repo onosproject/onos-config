@@ -30,11 +30,11 @@ build: mod-update local-deps
 	go build -mod=vendor -o build/_output/onos-config ./cmd/onos-config
 
 test: # @HELP run the unit tests and source code validation producing a golang style report
-test: mod-lint build license_check_apache linters reuse-lint
+test: mod-lint build linters license
 	go test -race github.com/onosproject/onos-config/...
 
 jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
-jenkins-test: mod-lint build license_check_apache linters reuse-lint
+jenkins-test: mod-lint build linters license
 	TEST_PACKAGES=github.com/onosproject/onos-config/... ./build/build-tools/build/jenkins/make-unit
 
 helmit-config: integration-test-namespace # @HELP run helmit gnmi tests locally
