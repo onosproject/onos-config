@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Administrative Command-Line
 The project provides a command-line facilities for remotely 
 interacting with the administrative service of the `onos-config` server.

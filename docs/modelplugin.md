@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Extending onos-config with Configuration Model Plugins
 
 `onos-config` is an extensible configuration management system, that allows the
