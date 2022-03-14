@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Northbound gNMI service
 The system provides a Northbound gNMI service. gNMI is a specialization of gRPC,
 specifically for configuration of systems or devices. In `onos-config` the gNMI

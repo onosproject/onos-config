@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # gNMI extensions on the Northbound interface
 
 gNMI is designed primarily as a device management interface, and augmenting it

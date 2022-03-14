@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # GoLand Copyright Profile Setup
 
 GoLand IDE can be configured to automatically include the required Apache 2.0 license text in

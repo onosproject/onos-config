@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 The GNMI CLI may be used to demo the `onos-config`. Example files in this directory.
 
 See more details at [https://docs.onosproject.org/onos-config/docs/gnmi/](https://docs.onosproject.org/onos-config/docs/gnmi/)
