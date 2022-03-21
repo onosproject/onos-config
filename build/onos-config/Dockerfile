@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM onosproject/config-model-build:v1.0 AS build
+FROM onosproject/config-model-build:v1.2.0 AS build
 
 ENV GO111MODULE=on
 WORKDIR /build
