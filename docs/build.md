@@ -11,18 +11,22 @@ required [development tools](../../developers/prerequisites.md).
 Currently, the project build and validation is driven by a top-level `Makefile`, which supports the following usage:
 ```bash
 > make help
-build                           build the Go binaries and run all validations (default)
-clean                           remove all the build artifacts
-coverage                        generate unit test coverage data
-deps                            ensure that the required dependencies are in place
-gofmt                           run the Go format validation
-images                          build all Docker images
-kind                            build Docker images and add them to the currently configured kind cluster
-license_check                   examine and ensure license headers exist
-linters                         examines Go source code and reports coding problems
-onos-config-base-docker         build onos-config base Docker image
-protos                          compile the protobuf files (using protoc-go Docker)
-test                            run the unit tests and source code validation
+Makefile:build                  build the Go binaries and run all validations (default)
+Makefile:clean:                 remove all the build artifacts
+Makefile:images                 build all Docker images
+Makefile:jenkins-test           run the unit tests and source code validation producing a junit style report for Jenkins
+Makefile:kind-only              deploy the image without rebuilding first
+Makefile:kind                   build Docker images and add them to the currently configured kind cluster
+Makefile:local-deps             imports local deps in the vendor folder
+Makefile:local-helmit           Copies a local version of the helmit dependency into the vendor directory
+Makefile:local-onos-api         Copies a local version of the onos-api dependency into the vendor directory
+Makefile:local-onos-lib-go      Copies a local version of the onos-lib-go dependency into the vendor directory
+Makefile:local-onos-ric-sdk-go  Copies a local version of the onos-ric-sdk-go dependency into the vendor directory
+Makefile:local-onos-test        Copies a local version of the onos-test dependency into the vendor directory
+Makefile:local-onos-topo        Copies a local version of the onos-topo dependency into the vendor directory
+Makefile:mod-update             Download the dependencies to the vendor folder
+Makefile:publish                publish version on github and dockerhub
+Makefile:test                   run the unit tests and source code validation producing a golang style report
 ```
 
 ## Building Go binaries
