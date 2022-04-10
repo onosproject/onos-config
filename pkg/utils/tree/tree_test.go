@@ -6,11 +6,11 @@ package tree
 
 import (
 	"fmt"
+	testdevice_2_0_0 "github.com/onosproject/config-models/models/testdevice-2.0.x/api"
 	"testing"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
-	"github.com/onosproject/config-models/modelplugin/testdevice-2.0.0/testdevice_2_0_0"
 	"gotest.tools/assert"
 )
 
