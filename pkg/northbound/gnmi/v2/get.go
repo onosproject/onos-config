@@ -380,7 +380,7 @@ func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo *targetInfo, co
 		return nil, err
 	}
 	// add 'input' and `groups` objects to the JSON
-	jsonTreeInput := utils.FormatInput(jsonTree, groups)
+	jsonTreeInput := utils.FormatInput(jsonTree, groups, targetInfo.targetID)
 	log.Debugf("OPA Input:\n%s", jsonTreeInput)
 
 	client := &http.Client{}
