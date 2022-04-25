@@ -634,7 +634,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
 
 		// Create a gNMI set request
-		setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues)
+		setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues, proposal.TargetID)
 		if err != nil {
 			log.Errorf("Failed constructing SetRequest for Configuration '%s'", config.ID, err)
 			return controller.Result{}, nil

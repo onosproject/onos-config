@@ -28,7 +28,7 @@ func NewChangeValue(path string, value configapi.TypedValue, delete bool) (*conf
 }
 
 // PathValuesToGnmiChange converts a Protobuf defined array of values objects to gNMI format
-func PathValuesToGnmiChange(values []*configapi.PathValue) (*gnmi.SetRequest, error) {
+func PathValuesToGnmiChange(values []*configapi.PathValue, target configapi.TargetID) (*gnmi.SetRequest, error) {
 	var deletePaths = []*gnmi.Path{}
 	var replacedPaths = []*gnmi.Update{}
 	var updatedPaths = []*gnmi.Update{}
@@ -53,10 +53,12 @@ func PathValuesToGnmiChange(values []*configapi.PathValue) (*gnmi.SetRequest, er
 		}
 	}
 
+	targetPath := &gnmi.Path{Target: string(target)}
 	var setRequest = gnmi.SetRequest{
 		Delete:  deletePaths,
 		Replace: replacedPaths,
 		Update:  updatedPaths,
+		Prefix:  targetPath,
 	}
 
 	return &setRequest, nil
