@@ -185,7 +185,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
 
 	// Create a gNMI set request
-	setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues)
+	setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues, config.TargetID)
 	if err != nil {
 		log.Errorf("Failed constructing SetRequest for Configuration '%s'", config.ID, err)
 		return controller.Result{}, nil
