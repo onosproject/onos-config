@@ -118,7 +118,7 @@ func splitRequest(req *gnmi.SubscribeRequest) (map[string]*gnmi.SubscribeRequest
 }
 
 func splitSubscribeRequest(req *gnmi.SubscribeRequest) (map[string]*gnmi.SubscribeRequest, error) {
-	targets := make(map[string]*gnmi.SubscribeRequest, 0)
+	targets := make(map[string]*gnmi.SubscribeRequest)
 	subs := req.GetSubscribe()
 
 	prefixTarget := subs.Prefix.Target // fallback target for a single-target request
@@ -177,6 +177,6 @@ func copyPrefix(prefix *gnmi.Path, target string) *gnmi.Path {
 }
 
 func splitPollRequest(req *gnmi.SubscribeRequest) (map[string]*gnmi.SubscribeRequest, error) {
-	targets := make(map[string]*gnmi.SubscribeRequest, 0)
+	targets := make(map[string]*gnmi.SubscribeRequest)
 	return targets, nil
 }
