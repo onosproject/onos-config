@@ -18,7 +18,6 @@ import (
 )
 
 type subContext struct {
-	ctx       context.Context
 	nbStream  gnmi.GNMI_SubscribeServer
 	sbStreams map[string]gnmi.GNMI_SubscribeClient
 }
@@ -33,7 +32,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 			md.Get("name"), md.Get("email"), groups, md.Get("at_hash"))
 	}
 
-	sctx := &subContext{ctx: stream.Context(), nbStream: stream}
+	sctx := &subContext{nbStream: stream}
 
 	log.Info("Waiting for subscription messages")
 	for {
@@ -51,7 +50,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		}
 
 		log.Info("Received gNMI Subscribe Request: %+v", req)
-		err = s.processSubscribeRequest(sctx, req)
+		err = s.processSubscribeRequest(stream.Context(), sctx, req)
 		if err != nil {
 			log.Warn(err)
 			return err
@@ -60,8 +59,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 }
 
 // Determine the target, pass the request onto it and relay any events onto the NB stream
-func (s *Server) processSubscribeRequest(sctx *subContext,
-	req *gnmi.SubscribeRequest) error {
+func (s *Server) processSubscribeRequest(ctx context.Context, sctx *subContext, req *gnmi.SubscribeRequest) error {
 	targetReqs, err := splitRequest(req)
 	if err != nil {
 		return err
@@ -69,16 +67,16 @@ func (s *Server) processSubscribeRequest(sctx *subContext,
 
 	log.Info(targetReqs)
 	for target, targetReq := range targetReqs {
-		_ = s.sendSubscriptionRequest(sctx, target, targetReq)
+		_ = s.sendSubscriptionRequest(ctx, sctx, target, targetReq)
 	}
 	return nil
 }
 
 // Send the specified request to the target, creating new subscribe stream if needed together with a watcher
 // that relay any SB events onto the NB stream
-func (s *Server) sendSubscriptionRequest(sctx *subContext, target string, req *gnmi.SubscribeRequest) error {
+func (s *Server) sendSubscriptionRequest(ctx context.Context, sctx *subContext, target string, req *gnmi.SubscribeRequest) error {
 	// Check if there is already a stream for the specified target; if not, create one
-	client, err := s.conns.GetByTarget(sctx.ctx, topo.ID(target))
+	client, err := s.conns.GetByTarget(ctx, topo.ID(target))
 	if err != nil {
 		return err
 	}
@@ -103,7 +101,7 @@ func (s *Server) sendSubscriptionRequest(sctx *subContext, target string, req *g
 	}
 
 	log.Infof("Forwarding subscription query to target %s: %+v", target, query)
-	return client.Subscribe(sctx.ctx, query)
+	return client.Subscribe(ctx, query)
 }
 
 // Iterate over the paths in the subscription list and split the request into a multiple requests of the same type,
