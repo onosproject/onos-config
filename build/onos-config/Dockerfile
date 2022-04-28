@@ -1,8 +1,9 @@
+# SPDX-FileCopyrightText: 2022-present Intel Corporation
 # SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM onosproject/config-model-build:v1.0 AS build
+FROM onosproject/golang-build:v1 AS build
 
 ENV GO111MODULE=on
 WORKDIR /build
