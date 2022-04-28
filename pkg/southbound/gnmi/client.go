@@ -7,6 +7,7 @@ package gnmi
 import (
 	"context"
 	"io"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 
@@ -31,13 +32,33 @@ type Client interface {
 
 // client gnmi client
 type client struct {
-	client *gclient.Client
+	client  *gclient.Client
+	lock    sync.RWMutex
+	running bool
 }
 
-// Subscribe calls gNMI subscription based on a given query
+// Subscribe calls gNMI subscription bacc
+//sed on a given query
 func (c *client) Subscribe(ctx context.Context, q baseClient.Query) error {
 	err := c.client.Subscribe(ctx, q)
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if !c.running {
+		c.running = true
+		go c.run(ctx)
+	}
 	return errors.FromGRPC(err)
+}
+
+func (c *client) run(ctx context.Context) {
+	log.Infof("Subscription response monitor started")
+	for {
+		err := c.client.Recv()
+		if err != nil {
+			log.Infof("Subscription response monitor stopped due to %v", err)
+			return
+		}
+	}
 }
 
 // Capabilities returns the capabilities of the target

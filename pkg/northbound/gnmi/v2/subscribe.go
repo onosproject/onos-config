@@ -35,7 +35,9 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 
 	sctx := &subContext{ctx: stream.Context(), nbStream: stream}
 
+	log.Info("Waiting for subscription messages")
 	for {
+		log.Info("Reading...")
 		req, err := stream.Recv()
 		if err != nil {
 			if err != io.EOF {
@@ -83,19 +85,24 @@ func (s *Server) sendSubscriptionRequest(sctx *subContext, target string, req *g
 
 	// Queue up the request to the target
 	query, err := baseClient.NewQuery(req)
+	if err != nil {
+		log.Warn("Unable to create query", err)
+		return err
+	}
+
+	query.NotificationHandler = nil
 	query.ProtoHandler = func(msg proto.Message) error {
+		log.Infof("Received response from target %s: %+v", target, msg)
 		resp, ok := msg.(*gnmi.SubscribeResponse)
 		if !ok {
 			log.Warn("Failed to type assert message %#v", msg)
 			return errors.NewInvalid("Failed to type assert message %#v", msg)
 		}
+		log.Infof("Forwarding response from target %s to client: %+v", target, resp)
 		return sctx.nbStream.Send(resp)
 	}
 
-	if err != nil {
-		log.Warn("Unable to create query", err)
-		return err
-	}
+	log.Infof("Forwarding subscription query to target %s: %+v", target, query)
 	return client.Subscribe(sctx.ctx, query)
 }
 
