@@ -17,11 +17,6 @@ import (
 	"strings"
 )
 
-type subContext struct {
-	nbStream  gnmi.GNMI_SubscribeServer
-	sbStreams map[string]gnmi.GNMI_SubscribeClient
-}
-
 // Subscribe implements gNMI Subscribe
 func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	log.Info("Received gNMI Subscribe stream")
@@ -31,8 +26,6 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		log.Debugf("gNMI Get() called by '%s (%s)'. Groups %v. Token %s",
 			md.Get("name"), md.Get("email"), groups, md.Get("at_hash"))
 	}
-
-	sctx := &subContext{nbStream: stream}
 
 	log.Info("Waiting for subscription messages")
 	for {
@@ -50,7 +43,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		}
 
 		log.Info("Received gNMI Subscribe Request: %+v", req)
-		err = s.processSubscribeRequest(stream.Context(), sctx, req)
+		err = s.processSubscribeRequest(stream.Context(), stream, req)
 		if err != nil {
 			log.Warn(err)
 			return err
@@ -59,7 +52,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 }
 
 // Determine the target, pass the request onto it and relay any events onto the NB stream
-func (s *Server) processSubscribeRequest(ctx context.Context, sctx *subContext, req *gnmi.SubscribeRequest) error {
+func (s *Server) processSubscribeRequest(ctx context.Context, stream gnmi.GNMI_SubscribeServer, req *gnmi.SubscribeRequest) error {
 	targetReqs, err := splitRequest(req)
 	if err != nil {
 		return err
@@ -67,14 +60,15 @@ func (s *Server) processSubscribeRequest(ctx context.Context, sctx *subContext, 
 
 	log.Info(targetReqs)
 	for target, targetReq := range targetReqs {
-		_ = s.sendSubscriptionRequest(ctx, sctx, target, targetReq)
+		_ = s.sendSubscriptionRequest(ctx, stream, target, targetReq)
 	}
 	return nil
 }
 
 // Send the specified request to the target, creating new subscribe stream if needed together with a watcher
 // that relay any SB events onto the NB stream
-func (s *Server) sendSubscriptionRequest(ctx context.Context, sctx *subContext, target string, req *gnmi.SubscribeRequest) error {
+func (s *Server) sendSubscriptionRequest(ctx context.Context, stream gnmi.GNMI_SubscribeServer,
+	target string, req *gnmi.SubscribeRequest) error {
 	// Check if there is already a stream for the specified target; if not, create one
 	client, err := s.conns.GetByTarget(ctx, topo.ID(target))
 	if err != nil {
@@ -97,7 +91,7 @@ func (s *Server) sendSubscriptionRequest(ctx context.Context, sctx *subContext, 
 			return errors.NewInvalid("Failed to type assert message %#v", msg)
 		}
 		log.Infof("Forwarding response from target %s to client: %+v", target, resp)
-		return sctx.nbStream.Send(resp)
+		return stream.Send(resp)
 	}
 
 	log.Infof("Forwarding subscription query to target %s: %+v", target, query)
