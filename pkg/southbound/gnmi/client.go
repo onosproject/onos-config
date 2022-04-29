@@ -6,10 +6,8 @@ package gnmi
 
 import (
 	"context"
-	"io"
-	"sync"
-
 	"github.com/golang/protobuf/proto"
+	"io"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	baseClient "github.com/openconfig/gnmi/client"
@@ -32,21 +30,14 @@ type Client interface {
 
 // client gnmi client
 type client struct {
-	client  *gclient.Client
-	lock    sync.RWMutex
-	running bool
+	client *gclient.Client
 }
 
 // Subscribe calls gNMI subscription bacc
 //sed on a given query
 func (c *client) Subscribe(ctx context.Context, q baseClient.Query) error {
 	err := c.client.Subscribe(ctx, q)
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if !c.running {
-		c.running = true
-		go c.run(ctx)
-	}
+	go c.run(ctx)
 	return errors.FromGRPC(err)
 }
 

@@ -28,8 +28,8 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	}
 
 	log.Info("Waiting for subscription messages")
+	subscribed := false
 	for {
-		log.Info("Reading...")
 		req, err := stream.Recv()
 		if err != nil {
 			if err != io.EOF {
@@ -43,10 +43,13 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		}
 
 		log.Info("Received gNMI Subscribe Request: %+v", req)
-		err = s.processSubscribeRequest(stream.Context(), stream, req)
-		if err != nil {
-			log.Warn(err)
-			return err
+		if !subscribed {
+			subscribed = true
+			err = s.processSubscribeRequest(stream.Context(), stream, req)
+			if err != nil {
+				log.Warn(err)
+				return err
+			}
 		}
 	}
 }
