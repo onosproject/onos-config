@@ -5,22 +5,16 @@
 package config
 
 import (
-	"context"
-	"github.com/golang/protobuf/proto"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-lib-go/pkg/logging"
-	baseClient "github.com/openconfig/gnmi/client"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
-var log = logging.GetLogger("northbound", "gnmi")
-
-// TestSubscribe tests subscribe NB API
-func (s *TestSuite) TestSubscribe(t *testing.T) {
+// TestSubscribePoll tests subscribe NB API with client-side poll
+func (s *TestSuite) TestSubscribePoll(t *testing.T) {
 	generateTimezoneName()
 
 	ctx, cancel := gnmiutils.MakeContext()
@@ -45,7 +39,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 		Request: &gnmiapi.SubscribeRequest_Subscribe{
 			Subscribe: &gnmiapi.SubscriptionList{
 				Prefix: &gnmiapi.Path{Target: "", Elem: []*gnmiapi.PathElem{}},
-				Mode:   gnmiapi.SubscriptionList_ONCE,
+				Mode:   gnmiapi.SubscriptionList_POLL,
 				Subscription: []*gnmiapi.Subscription{{
 					Path: getPath(target1.Name(), "system", "state", "current-datetime"),
 					Mode: gnmiapi.SubscriptionMode_SAMPLE,
@@ -58,49 +52,11 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 			},
 		},
 	}
-
 	updates := make([]*gnmiapi.SubscribeResponse_Update, 0, 4)
 	subscribe(ctx, t, gnmiClient, sr, &updates)
 	waitForResponses(t, gnmiClient, &updates, 2)
-}
 
-func getPath(target string, pe ...string) *gnmiapi.Path {
-	elem := make([]*gnmiapi.PathElem, 0, len(pe))
-	for _, e := range pe {
-		elem = append(elem, &gnmiapi.PathElem{Name: e})
-	}
-	return &gnmiapi.Path{Target: target, Elem: elem}
-}
-
-func subscribe(ctx context.Context, t *testing.T, gnmiClient baseClient.Impl, req *gnmiapi.SubscribeRequest,
-	updates *[]*gnmiapi.SubscribeResponse_Update) {
-
-	q, err := baseClient.NewQuery(req)
+	err := gnmiClient.Poll()
 	assert.NoError(t, err)
-
-	q.NotificationHandler = nil
-	q.ProtoHandler = func(msg proto.Message) error {
-		log.Debugf("Received: %+v", msg)
-		resp := msg.(*gnmiapi.SubscribeResponse)
-		if update, ok := resp.GetResponse().(*gnmiapi.SubscribeResponse_Update); ok {
-			*updates = append(*updates, update)
-		}
-		return nil
-	}
-
-	err = gnmiClient.Subscribe(ctx, q)
-	assert.NoError(t, err)
-}
-
-func waitForResponses(t *testing.T, gnmiClient baseClient.Impl, updates *[]*gnmiapi.SubscribeResponse_Update, count int) {
-	log.Debugf("Subscribe issued... waiting for responses")
-	for {
-		err := gnmiClient.Recv()
-		log.Debugf("Updates: %+v", *updates)
-		if err != nil || len(*updates) >= count {
-			break
-		}
-	}
-
-	assert.Len(t, *updates, count)
+	waitForResponses(t, gnmiClient, &updates, 4)
 }
