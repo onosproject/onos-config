@@ -35,13 +35,9 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 			md.Get("name"), md.Get("email"), groups, md.Get("at_hash"))
 	}
 
-	sctx := &subContext{
-		stream: stream,
-		treqs:  make(map[string]*gnmi.SubscribeRequest),
-	}
+	sctx := &subContext{stream: stream}
 
 	log.Info("Waiting for subscription messages")
-	subscribed := false
 	for {
 		req, err := stream.Recv()
 		if err != nil {
@@ -55,29 +51,46 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 			return err
 		}
 
-		log.Info("Received gNMI Subscribe Request: %+v", req)
-		if !subscribed {
-			subscribed = true
-			err = s.processSubscribeRequest(stream.Context(), sctx, req)
-			if err != nil {
-				log.Warn(err)
-				return err
-			}
+		log.Infof("Received gNMI Subscribe Request: %+v", req)
+		err = s.processSubscribeRequest(stream.Context(), sctx, req)
+		if err != nil {
+			log.Warn(err)
+			return err
 		}
 	}
 }
 
 // Determine the target, pass the request onto it and relay any events onto the NB stream
 func (s *Server) processSubscribeRequest(ctx context.Context, sctx *subContext, req *gnmi.SubscribeRequest) error {
-	err := splitRequest(sctx, req)
-	if err != nil {
-		return err
+	if req.GetSubscribe() != nil && sctx.req != nil {
+		return errors.NewInvalid("duplicate subscription message detected")
+	} else if req.GetPoll() != nil && sctx.req == nil {
+		return errors.NewInvalid("subscription request not received yet")
+
+	} else if req.GetSubscribe() != nil {
+		// If the request is the subscription, remember it and split it between the different targets
+		sctx.req = req
+		err := splitSubscribeRequest(sctx, req)
+		if err != nil {
+			return err
+		}
+
+		// ... and relay it to each target using its specific subscription
+		log.Debugf("Split target requests: %+v", sctx.treqs)
+		for target, targetReq := range sctx.treqs {
+			_ = s.sendSubscriptionRequest(ctx, sctx, target, targetReq)
+		}
+
+	} else if req.GetPoll() != nil {
+		// If the request is a poll, relay it to the previously subscribed targets
+		log.Debugf("Relaying poll to targets")
+		for target := range sctx.treqs {
+			_ = s.sendPollRequest(ctx, target)
+		}
+	} else {
+		return errors.NewInvalid("unknown subscription message type")
 	}
 
-	log.Info(sctx.treqs)
-	for target, targetReq := range sctx.treqs {
-		_ = s.sendSubscriptionRequest(ctx, sctx, target, targetReq)
-	}
 	return nil
 }
 
@@ -113,20 +126,22 @@ func (s *Server) sendSubscriptionRequest(ctx context.Context, sctx *subContext, 
 	return client.Subscribe(ctx, query)
 }
 
-// Iterate over the paths in the subscription list and split the request into a multiple requests of the same type,
-// each for a single target.
-func splitRequest(sctx *subContext, req *gnmi.SubscribeRequest) error {
-	if req.GetSubscribe() != nil {
-		return splitSubscribeRequest(sctx, req)
-	} else if req.GetPoll() != nil {
-		return splitPollRequest(sctx, req)
+// Send a poll request to the target
+func (s *Server) sendPollRequest(ctx context.Context, target string) error {
+	// Check if there is already a stream for the specified target; if not, create one
+	client, err := s.conns.GetByTarget(ctx, topo.ID(target))
+	if err != nil {
+		return err
 	}
-	return errors.NewInvalid("Request is neither subscribe nor poll")
+
+	log.Infof("Forwarding poll request to target %s", target)
+	return client.Poll()
 }
 
 func splitSubscribeRequest(sctx *subContext, req *gnmi.SubscribeRequest) error {
-	subs := req.GetSubscribe()
+	sctx.treqs = make(map[string]*gnmi.SubscribeRequest)
 
+	subs := req.GetSubscribe()
 	prefixTarget := subs.Prefix.Target // fallback target for a single-target request
 
 	// If the prefix names a target, it is assumed this is a single-target request and the original request
@@ -180,8 +195,4 @@ func copyPrefix(prefix *gnmi.Path, target string) *gnmi.Path {
 		Elem:   prefix.Elem,
 		Target: target,
 	}
-}
-
-func splitPollRequest(sctx *subContext, req *gnmi.SubscribeRequest) error {
-	return nil
 }

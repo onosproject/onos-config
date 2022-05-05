@@ -26,6 +26,7 @@ type Client interface {
 	Set(ctx context.Context, r *gpb.SetRequest) (*gpb.SetResponse, error)
 	SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error)
 	Subscribe(ctx context.Context, q baseClient.Query) error
+	Poll() error
 }
 
 // client gnmi client
@@ -39,6 +40,11 @@ func (c *client) Subscribe(ctx context.Context, q baseClient.Query) error {
 	err := c.client.Subscribe(ctx, q)
 	go c.run(ctx)
 	return errors.FromGRPC(err)
+}
+
+// Poll issues a poll request using the backing client
+func (c *client) Poll() error {
+	return c.client.Poll()
 }
 
 func (c *client) run(ctx context.Context) {
