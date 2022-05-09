@@ -46,7 +46,7 @@ helmit-rbac: integration-test-namespace # @HELP run helmit gnmi tests locally
 integration-tests: helmit-config helmit-rbac # @HELP run helmit integration tests locally
 
 onos-config-docker: mod-update local-deps # @HELP build onos-config base Docker image
-	docker build . -f build/onos-config/Dockerfile \
+	docker build --platform linux/amd64 . -f build/onos-config/Dockerfile \
 		-t ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images

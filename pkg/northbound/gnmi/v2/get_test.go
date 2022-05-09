@@ -12,6 +12,8 @@ import (
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/proposal"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -274,4 +276,98 @@ func Test_GetWithPrefixOnly(t *testing.T) {
 	assert.Len(t, result.Notification[0].Update, 1)
 	assert.Equal(t, "{\n  \"foo\": \"Hello world!\"\n}",
 		string(result.Notification[0].Update[0].GetVal().GetJsonVal()))
+}
+
+func Test_ReportAllTargetsNoSecurityAndJson(t *testing.T) {
+	test := createServer(t)
+	defer test.atomix.Stop()
+	defer test.mctl.Finish()
+
+	topo1 := topoEntity("target-1", "devicesim", "1.0.0")
+	topo2 := topoEntity("target-2", "devicesim", "1.0.0")
+	topo3 := topoEntity("target-3", "devicesim", "1.0.0")
+
+	test.topo.EXPECT().List(gomock.Any(), gomock.Any()).Return(
+		[]topoapi.Object{
+			*topo1,
+			*topo2,
+			*topo3,
+		}, nil,
+	).AnyTimes()
+
+	testCtx := context.Background()
+	response, err := test.server.reportAllTargets(testCtx, gnmi.Encoding_JSON_IETF, []string{
+		"target-1", "target-2", "non-target-group",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+	assert.Equal(t, 1, len(response.Notification))
+	not0 := response.Notification[0]
+	assert.Equal(t, 1, len(not0.Update))
+	upd00 := not0.Update[0]
+	assert.Equal(t, "elem:{name:\"all-targets\"} target:\"*\"",
+		strings.ReplaceAll(upd00.Path.String(), "  ", " "))
+
+	// Expect all 3 because no security is applied
+	expectedJSON := `json_val:"{\"targets\": [\"target-1\",\"target-2\",\"target-3\"]}"`
+	assert.Equal(t, expectedJSON, upd00.GetVal().String())
+}
+
+func Test_ReportAllTargetsWithSecurityAndProto(t *testing.T) {
+	test := createServer(t)
+	oldValue := os.Getenv(OIDCServerURL)
+	err := os.Setenv(OIDCServerURL, "test-value")
+	assert.NoError(t, err)
+	defer test.atomix.Stop()
+	defer test.mctl.Finish()
+	defer func(key, value string) {
+		err := os.Setenv(key, value)
+		if err != nil {
+			t.Logf("Error unsetting env var: %s, %v", OIDCServerURL, err)
+		}
+	}(OIDCServerURL, oldValue)
+
+	topo1 := topoEntity("target-1", "devicesim", "1.0.0")
+	topo2 := topoEntity("target-2", "devicesim", "1.0.0")
+	topo3 := topoEntity("target-3", "devicesim", "1.0.0")
+
+	test.topo.EXPECT().List(gomock.Any(), gomock.Any()).Return(
+		[]topoapi.Object{
+			*topo1,
+			*topo2,
+			*topo3,
+		}, nil,
+	).AnyTimes()
+
+	testCtx := context.Background()
+	response, err := test.server.reportAllTargets(testCtx, gnmi.Encoding_PROTO, []string{
+		"target-1", "target-2", "non-target-group",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+	assert.Equal(t, 1, len(response.Notification))
+	not0 := response.Notification[0]
+	assert.Equal(t, 1, len(not0.Update))
+	upd00 := not0.Update[0]
+	assert.Equal(t, "elem:{name:\"all-targets\"} target:\"*\"",
+		strings.ReplaceAll(upd00.Path.String(), "  ", " "))
+
+	expectedProto := `leaflist_val:{element:{string_val:"target-1"} element:{string_val:"target-2"}}`
+	assert.Equal(t, expectedProto, strings.ReplaceAll(upd00.GetVal().String(), "  ", " "))
+
+	// Now try it with an "AetherRocAdmin" - should allow all
+	response2, err := test.server.reportAllTargets(testCtx, gnmi.Encoding_PROTO, []string{
+		"target-1", "target-2", "non-target-group", aetherROCAdmin,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, response2)
+	assert.Equal(t, 1, len(response2.Notification))
+	not20 := response2.Notification[0]
+	assert.Equal(t, 1, len(not20.Update))
+	upd200 := not20.Update[0]
+	assert.Equal(t, "elem:{name:\"all-targets\"} target:\"*\"",
+		strings.ReplaceAll(upd200.Path.String(), "  ", " "))
+
+	expectedProto2 := `leaflist_val:{element:{string_val:"target-1"} element:{string_val:"target-2"} element:{string_val:"target-3"}}`
+	assert.Equal(t, expectedProto2, strings.ReplaceAll(upd200.GetVal().String(), "  ", " "))
 }
