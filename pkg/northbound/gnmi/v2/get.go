@@ -35,6 +35,9 @@ import (
 // be extracted from request without this
 const OIDCServerURL = "OIDC_SERVER_URL"
 
+// aetherROCAdmin user can see all enterprises
+const aetherROCAdmin = "AetherROCAdmin"
+
 // Get implements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 	log.Infof("Received gNMI Get Request: %+v", req)
@@ -83,7 +86,7 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 	for _, path := range req.GetPath() {
 		// If path or prefix target specifies wildcard "*", return response with all configurable targets in the system
 		if path.Target == "*" || (prefix != nil && prefix.Target == "*") {
-			return s.reportAllTargets(ctx, req.Encoding)
+			return s.reportAllTargets(ctx, req.Encoding, groups)
 		}
 
 		targetID := configapi.TargetID(path.Target)
@@ -418,7 +421,7 @@ func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo *targetInfo, co
 	return modelPlugin.GetPathValues(ctx, "", []byte(bodyText))
 }
 
-func (s *Server) reportAllTargets(ctx context.Context, encoding gnmi.Encoding) (*gnmi.GetResponse, error) {
+func (s *Server) reportAllTargets(ctx context.Context, encoding gnmi.Encoding, groups []string) (*gnmi.GetResponse, error) {
 	// Get list of configurable entities from the topo store
 	targetEntities, err := s.topo.List(ctx, &topoapi.Filters{
 		ObjectTypes: []topoapi.Object_Type{topoapi.Object_ENTITY},
@@ -428,10 +431,26 @@ func (s *Server) reportAllTargets(ctx context.Context, encoding gnmi.Encoding) (
 		return nil, err
 	}
 
+	rocAdminUser := aetherROCAdmin
+	if override := os.Getenv(aetherROCAdmin); override != "" {
+		rocAdminUser = override
+	}
+
 	// Distill the list of configurable entities into their corresponding target IDs
 	targets := make([]string, 0, len(targetEntities))
+entities:
 	for _, targetEntity := range targetEntities {
-		targets = append(targets, string(targetEntity.ID))
+		if len(os.Getenv(OIDCServerURL)) > 0 {
+			for _, g := range groups {
+				// No need to pass request out to OPA since comparison is so trivial
+				if string(targetEntity.ID) == g || g == rocAdminUser {
+					targets = append(targets, string(targetEntity.ID))
+					continue entities
+				}
+			}
+		} else {
+			targets = append(targets, string(targetEntity.ID))
+		}
 	}
 
 	// Produce an appropriately encoded path value with all target IDs
