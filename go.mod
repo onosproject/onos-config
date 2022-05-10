@@ -13,9 +13,9 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/onosproject/config-models/models/testdevice-2.0.x v0.0.0-20220402084627-ae31ddb22e46
 	github.com/onosproject/helmit v0.6.19
-	github.com/onosproject/onos-api/go v0.9.8
+	github.com/onosproject/onos-api/go v0.9.11
 	github.com/onosproject/onos-lib-go v0.8.13
-	github.com/onosproject/onos-ric-sdk-go v0.8.2
+	github.com/onosproject/onos-ric-sdk-go v0.8.9
 	github.com/onosproject/onos-test v0.6.6
 	github.com/onosproject/onos-topo v0.9.3
 	github.com/openconfig/gnmi v0.0.0-20210914185457-51254b657b7d
