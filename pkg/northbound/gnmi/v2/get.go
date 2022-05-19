@@ -173,7 +173,8 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 					watchCh := make(chan configapi.ConfigurationEvent)
 					watchCtx, cancel := context.WithCancel(ctx)
 					defer cancel()
-					err := s.configurations.Watch(watchCtx, watchCh, configuration.WithConfigurationID(configuration.NewID(target.targetID)), configuration.WithReplay())
+					configurationID := configuration.NewID(target.targetID, target.targetType, target.targetVersion)
+					err := s.configurations.Watch(watchCtx, watchCh, configuration.WithConfigurationID(configurationID), configuration.WithReplay())
 					if err != nil {
 						errCh <- err
 						return
@@ -327,7 +328,7 @@ func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, tar
 		persistent:    configurable.Persistent,
 	}
 
-	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID))
+	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID, targetInfo.targetType, targetInfo.targetVersion))
 	if err != nil {
 		return err
 	}
