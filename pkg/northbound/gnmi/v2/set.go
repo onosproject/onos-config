@@ -50,6 +50,12 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	prefixTargetID := configapi.TargetID(req.GetPrefix().GetTarget())
 	targets := make(map[configapi.TargetID]*targetInfo)
 
+	overrides, err := getTargetVersionOverrides(req)
+	if err != nil {
+		log.Warn(err)
+		return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
+	}
+
 	transactionStrategy, err := getTransactionStrategy(req)
 	if err != nil {
 		log.Warn(err)
@@ -64,7 +70,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	//Delete
 	for _, u := range req.GetDelete() {
-		target, err := s.getTargetInfo(ctx, targets, u.GetTarget(), prefixTargetID)
+		target, err := s.getTargetInfo(ctx, targets, overrides, u.GetTarget(), prefixTargetID)
 		if err != nil {
 			return nil, errors.Status(err).Err()
 		}
@@ -77,7 +83,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	// Replace
 	for _, u := range req.GetReplace() {
-		target, err := s.getTargetInfo(ctx, targets, u.Path.GetTarget(), prefixTargetID)
+		target, err := s.getTargetInfo(ctx, targets, overrides, u.Path.GetTarget(), prefixTargetID)
 		if err != nil {
 			return nil, errors.Status(err).Err()
 		}
@@ -90,7 +96,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	// Update - extract targets and their models
 	for _, u := range req.GetUpdate() {
-		target, err := s.getTargetInfo(ctx, targets, u.Path.GetTarget(), prefixTargetID)
+		target, err := s.getTargetInfo(ctx, targets, overrides, u.Path.GetTarget(), prefixTargetID)
 		if err != nil {
 			return nil, errors.Status(err).Err()
 		}
@@ -211,35 +217,52 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	return nil, ctx.Err()
 }
 
-func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.TargetID]*targetInfo, idPrefix string, id configapi.TargetID) (*targetInfo, error) {
+func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.TargetID]*targetInfo,
+	overrides *configapi.TargetVersionOverrides, idPrefix string, id configapi.TargetID) (*targetInfo, error) {
 	targetID := configapi.TargetID(idPrefix)
 	if len(id) > 0 {
 		targetID = id
 	}
 
+	// Just return the target info if we already have it
 	if target, found := targets[targetID]; found {
 		return target, nil
 	}
 
-	configurable, err := s.getTargetConfigurable(ctx, topoapi.ID(targetID))
-	if err != nil {
-		log.Warn(err)
-		return nil, err
+	// Use the type/version overrides if they are specified
+	var targetType configapi.TargetType
+	var targetVersion configapi.TargetVersion
+	persistent := true // TODO determine whether this is an appropriate default
+	if ttv, ok := overrides.Overrides[string(targetID)]; ok {
+		targetType = ttv.TargetType
+		targetVersion = ttv.TargetVersion
+	} else {
+		// Otherwise, extract the information from the Configurable aspect of the target topo entity
+		configurable, err := s.getTargetConfigurable(ctx, topoapi.ID(targetID))
+		if err != nil {
+			log.Warn(err)
+			return nil, err
+		}
+		targetType = configapi.TargetType(configurable.Type)
+		targetVersion = configapi.TargetVersion(configurable.Version)
+		persistent = configurable.Persistent
 	}
 
-	modelPlugin, ok := s.pluginRegistry.GetPlugin(configapi.TargetType(configurable.Type), configapi.TargetVersion(configurable.Version))
+	// Find the model plugin using the target type and version
+	modelPlugin, ok := s.pluginRegistry.GetPlugin(targetType, targetVersion)
 	if !ok {
-		err = errors.NewNotFound("model %s (v%s) plugin not found", configurable.Type, configurable.Version)
+		err := errors.NewNotFound("model %s (v%s) plugin not found", targetType, targetVersion)
 		log.Warn(err)
 		return nil, err
 	}
 
+	// Create and register target info using the model information
 	target := &targetInfo{
 		targetID:      targetID,
 		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
 		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
 		plugin:        modelPlugin,
-		persistent:    configurable.Persistent,
+		persistent:    persistent,
 		updates:       make(configapi.TypedValueMap),
 		removes:       make([]string, 0),
 	}

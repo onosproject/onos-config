@@ -8,7 +8,9 @@ import (
 	"context"
 	"github.com/gogo/protobuf/proto"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -31,6 +33,42 @@ func Test_BasicSetUpdate(t *testing.T) {
 				Val:  &gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "Hello world!"}},
 			},
 		},
+	}
+
+	result, err := test.server.Set(context.TODO(), &request)
+	assert.NoError(t, err)
+	assert.Len(t, result.Extension, 1)
+
+	transactionInfo := &configapi.TransactionInfo{}
+	assert.NoError(t, proto.Unmarshal(result.Extension[0].GetRegisteredExt().GetMsg(), transactionInfo))
+	tx, err := test.transaction.Get(context.TODO(), transactionInfo.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, tx.Status.Phases.Commit)
+	assert.Equal(t, configapi.TransactionCommitPhase_COMMITTED, tx.Status.Phases.Commit.State)
+}
+
+func Test_BasicSetUpdateWithOverride(t *testing.T) {
+	test := createServer(t)
+	defer test.atomix.Stop()
+	defer test.mctl.Finish()
+
+	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
+
+	test.startControllers(t)
+	defer test.stopControllers()
+
+	targetID := configapi.TargetID("target-1")
+	tvoext, err := utils.TargetVersionOverrideExtension(targetID, "devicesim", "1.0.0")
+	assert.NoError(t, err)
+
+	request := gnmi.SetRequest{
+		Update: []*gnmi.Update{
+			{
+				Path: targetPath(t, targetID, "foo"),
+				Val:  &gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "Hello world!"}},
+			},
+		},
+		Extension: []*gnmi_ext.Extension{tvoext},
 	}
 
 	result, err := test.server.Set(context.TODO(), &request)

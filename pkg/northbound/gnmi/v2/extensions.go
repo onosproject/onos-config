@@ -53,3 +53,24 @@ func getTransactionStrategy(request interface{}) (configapi.TransactionStrategy,
 	}
 	return *strategy, nil
 }
+
+func getTargetVersionOverrides(request interface{}) (*configapi.TargetVersionOverrides, error) {
+	var err error
+	var s interface{}
+	switch req := request.(type) {
+	case *gnmi.SetRequest:
+		s, err = extractExtension(req.GetExtension(), configapi.TargetVersionOverridesID, &configapi.TargetVersionOverrides{})
+	case *gnmi.GetRequest:
+		s, err = extractExtension(req.GetExtension(), configapi.TargetVersionOverridesID, &configapi.TargetVersionOverrides{})
+	default:
+		return nil, errors.NewInvalid("invalid-request-type")
+	}
+	if err != nil {
+		return nil, err
+	}
+	overrides, ok := s.(*configapi.TargetVersionOverrides)
+	if !ok {
+		return nil, errors.NewInternal("extracted-the-wrong-extensions")
+	}
+	return overrides, nil
+}
