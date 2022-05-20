@@ -88,9 +88,10 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 	go func() {
 		for event := range eventCh {
 			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
-				err = event.Object.GetAspect(&topoapi.Configurable{})
-				if err == nil {
-					ch <- controller.NewID(configuration.NewID(configapi.TargetID(event.Object.ID)))
+				configurable := &topoapi.Configurable{}
+				if err = event.Object.GetAspect(configurable); err == nil {
+					ch <- controller.NewID(configuration.NewID(configapi.TargetID(event.Object.ID),
+						configapi.TargetType(configurable.Type), configapi.TargetVersion(configurable.Version)))
 				}
 			}
 		}

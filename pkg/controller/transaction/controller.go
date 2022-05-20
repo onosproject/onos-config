@@ -121,6 +121,16 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 							log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
 							return controller.Result{}, err
 						}
+
+						// Extract type/version override for this target, if available
+						targetTypeVersion := configapi.TargetTypeVersion{}
+						if transaction.TargetVersionOverrides != nil {
+							if ttv, ttvAvailable := transaction.TargetVersionOverrides.Overrides[string(targetID)]; ttvAvailable {
+								targetTypeVersion = *ttv
+							}
+						}
+
+						// Create a proposal for this target
 						proposal := &configapi.Proposal{
 							ID:               proposalID,
 							TransactionIndex: transaction.Index,
@@ -130,6 +140,7 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 									Values: change.Values,
 								},
 							},
+							TargetTypeVersion: targetTypeVersion,
 						}
 						err := r.proposals.Create(ctx, proposal)
 						if err != nil {

@@ -217,7 +217,7 @@ func Test_BasicGet(t *testing.T) {
 
 	targetID := configapi.TargetID("target-1")
 	targetConfig := &configapi.Configuration{
-		ID:       configapi.ConfigurationID(targetID),
+		ID:       configuration.NewID(targetID, "devicesim", "1.0.0"),
 		TargetID: targetID,
 		Values:   targetConfigValues,
 	}
@@ -256,7 +256,7 @@ func Test_GetWithPrefixOnly(t *testing.T) {
 
 	targetID := configapi.TargetID("target-1")
 	targetConfig := &configapi.Configuration{
-		ID:       configapi.ConfigurationID(targetID),
+		ID:       configuration.NewID(targetID, "devicesim", "1.0.0"),
 		TargetID: targetID,
 		Values:   targetConfigValues,
 	}
