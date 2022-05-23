@@ -127,9 +127,6 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, proposal *configap
 	switch proposal.Status.Phases.Initialize.State {
 	case configapi.ProposalInitializePhase_INITIALIZING:
 		log.Infof("Initializing Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID)
-		if err := r.determineTargetTypeVersion(ctx, proposal); err != nil {
-			return controller.Result{}, err
-		}
 		configID := configuration.NewID(proposal.TargetID, proposal.TargetType, proposal.TargetVersion)
 		config, err := r.configurations.Get(ctx, configID)
 		if err != nil {
@@ -378,31 +375,6 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, proposal *configapi.
 	default:
 		return controller.Result{}, nil
 	}
-}
-
-func (r *Reconciler) determineTargetTypeVersion(ctx context.Context, proposal *configapi.Proposal) error {
-	// If target type/version are not set, extract them from the topology configurable aspect of the target entity.
-	if len(proposal.TargetType) == 0 || len(proposal.TargetVersion) == 0 {
-		target, err := r.topo.Get(ctx, topoapi.ID(proposal.TargetID))
-		if err != nil {
-			if !errors.IsNotFound(err) {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-				return err
-			}
-			log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-			return nil
-		}
-
-		configurable := &topoapi.Configurable{}
-		err = target.GetAspect(configurable)
-		if err != nil {
-			log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
-			return err
-		}
-		proposal.TargetType = configapi.TargetType(configurable.Type)
-		proposal.TargetVersion = configapi.TargetVersion(configurable.Version)
-	}
-	return nil
 }
 
 func (r *Reconciler) reconcileAbort(ctx context.Context, proposal *configapi.Proposal) (controller.Result, error) {
