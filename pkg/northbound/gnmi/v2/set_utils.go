@@ -64,7 +64,7 @@ func computeChange(target *targetInfo) (*configapi.PathValues, error) {
 	return changeElement, nil
 }
 
-func newTransaction(targets map[configapi.TargetID]*targetInfo, strategy configapi.TransactionStrategy, username string) (*configapi.Transaction, error) {
+func newTransaction(targets map[configapi.TargetID]*targetInfo, overrides *configapi.TargetVersionOverrides, strategy configapi.TransactionStrategy, username string) (*configapi.Transaction, error) {
 	values, err := computeChanges(targets)
 	if err != nil {
 		return nil, err
@@ -79,8 +79,9 @@ func newTransaction(targets map[configapi.TargetID]*targetInfo, strategy configa
 				Values: values,
 			},
 		},
-		Username:            username,
-		TransactionStrategy: strategy,
+		Username:               username,
+		TransactionStrategy:    strategy,
+		TargetVersionOverrides: overrides,
 	}
 
 	return transaction, nil
