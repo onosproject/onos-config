@@ -247,6 +247,10 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 		// Otherwise, extract the information from the Configurable aspect
 		targetType = configapi.TargetType(configurable.Type)
 		targetVersion = configapi.TargetVersion(configurable.Version)
+
+		// Push through the information obtained from Configurable aspect via overrides,
+		// so it's available for downstream processing
+		overrides.Overrides[string(targetID)] = &configapi.TargetTypeVersion{TargetType: targetType, TargetVersion: targetVersion}
 	}
 
 	// Find the model plugin using the target type and version
