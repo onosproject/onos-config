@@ -229,23 +229,24 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 		return target, nil
 	}
 
-	// Use the type/version overrides if they are specified
 	var targetType configapi.TargetType
 	var targetVersion configapi.TargetVersion
-	persistent := true // TODO determine whether this is an appropriate default
+
+	// Fetch the Configurable aspect of the target topo entity
+	configurable, err := s.getTargetConfigurable(ctx, topoapi.ID(targetID))
+	if err != nil {
+		log.Warn(err)
+		return nil, err
+	}
+
+	// Use the type/version overrides if they are specified
 	if ttv, ok := overrides.Overrides[string(targetID)]; ok {
 		targetType = ttv.TargetType
 		targetVersion = ttv.TargetVersion
 	} else {
-		// Otherwise, extract the information from the Configurable aspect of the target topo entity
-		configurable, err := s.getTargetConfigurable(ctx, topoapi.ID(targetID))
-		if err != nil {
-			log.Warn(err)
-			return nil, err
-		}
+		// Otherwise, extract the information from the Configurable aspect
 		targetType = configapi.TargetType(configurable.Type)
 		targetVersion = configapi.TargetVersion(configurable.Version)
-		persistent = configurable.Persistent
 	}
 
 	// Find the model plugin using the target type and version
@@ -262,7 +263,7 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
 		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
 		plugin:        modelPlugin,
-		persistent:    persistent,
+		persistent:    configurable.Persistent,
 		updates:       make(configapi.TypedValueMap),
 		removes:       make([]string, 0),
 	}
