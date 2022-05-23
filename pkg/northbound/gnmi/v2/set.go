@@ -56,6 +56,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
 	}
 
+	// If target version overrides is nil, let's create one so we can use it to push through
+	// target type/version information from topo Configurable to downstream controllers
+	// as part of the transaction.
+	if overrides.Overrides == nil {
+		overrides.Overrides = make(map[string]*configapi.TargetTypeVersion)
+	}
+
 	transactionStrategy, err := getTransactionStrategy(req)
 	if err != nil {
 		log.Warn(err)
@@ -68,7 +75,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, errors.Status(err).Err()
 	}
 
-	//Delete
+	// Delete
 	for _, u := range req.GetDelete() {
 		target, err := s.getTargetInfo(ctx, targets, overrides, u.GetTarget(), prefixTargetID)
 		if err != nil {
