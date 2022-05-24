@@ -30,6 +30,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 var log = logging.GetLogger("controller", "proposal")
@@ -598,6 +599,39 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			return controller.Result{}, nil
 		}
 
+		configurable := &topoapi.Configurable{}
+		_ = target.GetAspect(configurable)
+
+		if configurable.ValidateCapabilities {
+			capabilityResponse, err := conn.Capabilities(ctx, &gpb.CapabilityRequest{})
+			if err != nil {
+				log.Warnf("Cannot retrieve capabilities of the target %s", proposal.TargetID)
+				return controller.Result{}, err
+			}
+			targetDataModels := capabilityResponse.SupportedModels
+			modelPlugin, ok := r.pluginRegistry.GetPlugin(proposal.TargetType, proposal.TargetVersion)
+			if !ok {
+				proposal.Status.Phases.Apply.State = configapi.ProposalApplyPhase_FAILED
+				proposal.Status.Phases.Apply.Failure = &configapi.Failure{
+					Type:        configapi.Failure_INVALID,
+					Description: fmt.Sprintf("model plugin '%s/%s' not found", proposal.TargetType, proposal.TargetVersion),
+				}
+				proposal.Status.Phases.Apply.End = getCurrentTimestamp()
+				if err := r.updateProposalStatus(ctx, proposal); err != nil {
+					return controller.Result{}, err
+				}
+				return controller.Result{}, nil
+			}
+			pluginCapability := modelPlugin.Capabilities(ctx)
+			pluginDataModels := pluginCapability.SupportedModels
+
+			if !isModelDataCompatible(pluginDataModels, targetDataModels) {
+				err = errors.NewNotSupported("plugin data models %v are not supported in the target %s", pluginDataModels, proposal.TargetID)
+				log.Warn(err)
+				return controller.Result{}, err
+			}
+		}
+
 		// Get the set of changes. If the Proposal is a change, use the change values.
 		// If the proposal is a rollback, use the rollback values.
 		var changeValues map[string]*configapi.PathValue
@@ -765,4 +799,22 @@ func (r *Reconciler) updateProposalStatus(ctx context.Context, proposal *configa
 func getCurrentTimestamp() *time.Time {
 	t := time.Now()
 	return &t
+}
+
+func isModelDataCompatible(pluginDataModels []*gpb.ModelData, targetDataModels []*gpb.ModelData) bool {
+	if len(pluginDataModels) > len(targetDataModels) {
+		return false
+	}
+	for _, pluginDataModel := range pluginDataModels {
+		modelDataCompatible := false
+		for _, targetDataModel := range targetDataModels {
+			if pluginDataModel.Name == targetDataModel.Name && pluginDataModel.Version == targetDataModel.Version && pluginDataModel.Organization == targetDataModel.Organization {
+				modelDataCompatible = true
+			}
+		}
+		if !modelDataCompatible {
+			return false
+		}
+	}
+	return true
 }
