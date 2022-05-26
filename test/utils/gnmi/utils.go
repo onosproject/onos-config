@@ -98,6 +98,45 @@ func AddTargetToTopo(ctx context.Context, targetEntity *topo.Object) error {
 	return err
 }
 
+// GetTargetFromTopo retrieves the specified target entity
+func GetTargetFromTopo(ctx context.Context, id topo.ID) (*topo.Object, error) {
+	client, err := NewTopoClient()
+	if err != nil {
+		return nil, err
+	}
+	return client.Get(ctx, id)
+}
+
+// UpdateTargetInTopo updates the target
+func UpdateTargetInTopo(ctx context.Context, targetEntity *topo.Object) error {
+	client, err := NewTopoClient()
+	if err != nil {
+		return err
+	}
+	err = client.Update(ctx, targetEntity)
+	return err
+}
+
+// UpdateTargetTypeVersion updates the target type and version information in the Configurable aspect
+func UpdateTargetTypeVersion(ctx context.Context, id topo.ID, targetType configapi.TargetType, targetVersion configapi.TargetVersion) error {
+	entity, err := GetTargetFromTopo(ctx, id)
+	if err != nil {
+		return err
+	}
+	configurable := topo.Configurable{}
+	err = entity.GetAspect(&configurable)
+	if err != nil {
+		return err
+	}
+	configurable.Type = string(targetType)
+	configurable.Version = string(targetVersion)
+	err = entity.SetAspect(&configurable)
+	if err != nil {
+		return err
+	}
+	return UpdateTargetInTopo(ctx, entity)
+}
+
 func getKindFilter(kind string) *topo.Filters {
 	kindFilter := &topo.Filters{
 		KindFilter: &topo.Filter{
