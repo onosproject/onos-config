@@ -58,6 +58,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
 	}
+
 	// If the request data type is STATE or OPERATIONAL, get it from the target directly
 	if req.Type == gnmi.GetRequest_STATE || req.Type == gnmi.GetRequest_OPERATIONAL {
 		log.Debugf("Process request with data type: %s", req.Type.String())
@@ -80,6 +81,13 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 	notifications := make([]*gnmi.Notification, 0)
 	prefix := req.GetPrefix()
 	targets := make(map[configapi.TargetID]*targetInfo)
+
+	overrides, err := getTargetVersionOverrides(req)
+	if err != nil {
+		log.Warn(err)
+		return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
+	}
+
 	var paths []*pathInfo
 	// Get configuration for each target and forms targets info map
 	// and process paths in the request and forms a map of paths info
@@ -98,7 +106,7 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 		}
 
 		if _, ok := targets[targetID]; !ok {
-			err := s.addTarget(ctx, targetID, targets)
+			err := s.addTarget(ctx, targetID, targets, overrides.Overrides)
 			if err != nil {
 				log.Warn(err)
 				return nil, err
@@ -124,7 +132,7 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 			return nil, errors.NewInvalid("has no target")
 		}
 		if _, ok := targets[targetID]; !ok {
-			err := s.addTarget(ctx, targetID, targets)
+			err := s.addTarget(ctx, targetID, targets, overrides.Overrides)
 			if err != nil {
 				return nil, errors.NewInvalid(err.Error())
 			}
@@ -307,16 +315,26 @@ func (s *Server) processStateOrOperationalRequest(ctx context.Context, req *gnmi
 
 }
 
-func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, targets map[configapi.TargetID]*targetInfo) error {
+func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, targets map[configapi.TargetID]*targetInfo,
+	overrides map[string]*configapi.TargetTypeVersion) error {
 	configurable, err := s.getTargetConfigurable(ctx, topoapi.ID(targetID))
 	if err != nil {
 		log.Warn(err)
 		return err
 	}
 
-	modelPlugin, ok := s.pluginRegistry.GetPlugin(configapi.TargetType(configurable.Type), configapi.TargetVersion(configurable.Version))
+	targetType := configapi.TargetType(configurable.Type)
+	targetVersion := configapi.TargetVersion(configurable.Version)
+
+	// If the target is present in the overrides, use its type/version information to lookup the plugin
+	if ttv, ok := overrides[string(targetID)]; ok {
+		targetType = ttv.TargetType
+		targetVersion = ttv.TargetVersion
+	}
+
+	modelPlugin, ok := s.pluginRegistry.GetPlugin(targetType, targetVersion)
 	if !ok {
-		err = errors.NewNotFound("model %s (v%s) plugin not found", configurable.Type, configurable.Version)
+		err = errors.NewNotFound("model %s (v%s) plugin not found", targetType, targetVersion)
 		log.Warn(err)
 		return err
 	}
