@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2022-present Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -22,13 +22,11 @@ func (s *TestSuite) TestVersionOverride(t *testing.T) {
 	const (
 		value1 = "test-motd-banner"
 		path1  = "/system/config/motd-banner"
-		value2 = "test-login-banner"
-		path2  = "/system/config/login-banner"
 	)
 
 	var (
-		paths  = []string{path1, path2}
-		values = []string{value1, value2}
+		paths  = []string{path1}
+		values = []string{value1}
 	)
 
 	ctx, cancel := gnmiutils.MakeContext()
@@ -78,8 +76,16 @@ func (s *TestSuite) TestVersionOverride(t *testing.T) {
 		Encoding:   gnmiapi.Encoding_JSON,
 		Extensions: gnmiutils.SyncExtension(t),
 	}
-	targetGetReq.Paths = targetPathsForGet[0:1]
+	targetGetReq.Paths = targetPathsForGet
 	targetGetReq.CheckValues(t, value1)
-	targetGetReq.Paths = targetPathsForGet[1:2]
-	targetGetReq.CheckValues(t, value2)
+
+	// Make sure the configuration has been received by onos-config
+	var getReq = &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Encoding:   gnmiapi.Encoding_PROTO,
+		Extensions: extensions,
+	}
+	getReq.Paths = targetPathsForGet
+	getReq.CheckValues(t, value1)
 }

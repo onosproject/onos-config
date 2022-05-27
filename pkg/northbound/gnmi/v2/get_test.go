@@ -12,6 +12,7 @@ import (
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/proposal"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"os"
 	"strings"
 	"sync"
@@ -228,6 +229,50 @@ func Test_BasicGet(t *testing.T) {
 	request := gnmi.GetRequest{
 		Path:     []*gnmi.Path{targetPath(t, targetID, "foo")},
 		Encoding: gnmi.Encoding_JSON,
+	}
+
+	result, err := test.server.Get(context.TODO(), &request)
+	assert.NoError(t, err)
+	assert.Len(t, result.Notification, 1)
+	assert.Len(t, result.Notification[0].Update, 1)
+	assert.Equal(t, "{\n  \"foo\": \"Hello world!\"\n}",
+		string(result.Notification[0].Update[0].GetVal().GetJsonVal()))
+}
+
+func Test_BasicGetUpdateWithOverride(t *testing.T) {
+	test := createServer(t)
+	defer test.atomix.Stop()
+	defer test.mctl.Finish()
+
+	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
+
+	targetConfigValues := make(map[string]*configapi.PathValue)
+	targetConfigValues["/foo"] = &configapi.PathValue{
+		Path: "/foo",
+		Value: configapi.TypedValue{
+			Bytes: []byte("Hello world!"),
+			Type:  configapi.ValueType_STRING,
+		},
+	}
+
+	targetID := configapi.TargetID("target-1")
+
+	tvoext, err := utils.TargetVersionOverrideExtension(targetID, "devicesim", "1.0.0")
+	assert.NoError(t, err)
+
+	targetConfig := &configapi.Configuration{
+		ID:       configuration.NewID(targetID, "devicesim", "1.0.0"),
+		TargetID: targetID,
+		Values:   targetConfigValues,
+	}
+
+	err = test.server.configurations.Create(context.TODO(), targetConfig)
+	assert.NoError(t, err)
+
+	request := gnmi.GetRequest{
+		Path:      []*gnmi.Path{targetPath(t, targetID, "foo")},
+		Encoding:  gnmi.Encoding_JSON,
+		Extension: []*gnmi_ext.Extension{tvoext},
 	}
 
 	result, err := test.server.Get(context.TODO(), &request)
