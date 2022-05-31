@@ -77,10 +77,11 @@ func NewTargetEntity(name string, targetType string, targetVersion string, servi
 
 	timeout := defaultGNMITimeout
 	if err := o.SetAspect(&topo.Configurable{
-		Type:    targetType,
-		Address: serviceAddress,
-		Version: targetVersion,
-		Timeout: &timeout,
+		Type:                 targetType,
+		Address:              serviceAddress,
+		Version:              targetVersion,
+		Timeout:              &timeout,
+		ValidateCapabilities: true,
 	}); err != nil {
 		return nil, err
 	}
