@@ -194,7 +194,7 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, proposal *configap
 			config.Status.Proposed.Index = proposal.TransactionIndex
 			err := r.configurations.UpdateStatus(ctx, config)
 			if err != nil {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 				return controller.Result{}, err
 			}
 			return controller.Result{
@@ -396,7 +396,7 @@ func (r *Reconciler) reconcileAbort(ctx context.Context, proposal *configapi.Pro
 			config.Status.Committed.Index = proposal.TransactionIndex
 			config.Status.Applied.Index = proposal.TransactionIndex
 			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 				return controller.Result{}, err
 			}
 			proposal.Status.Phases.Abort.End = getCurrentTimestamp()
@@ -407,14 +407,14 @@ func (r *Reconciler) reconcileAbort(ctx context.Context, proposal *configapi.Pro
 		} else if config.Status.Committed.Index == proposal.Status.PrevIndex {
 			config.Status.Committed.Index = proposal.TransactionIndex
 			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 				return controller.Result{}, err
 			}
 		} else if config.Status.Applied.Index == proposal.Status.PrevIndex &&
 			config.Status.Committed.Index >= proposal.TransactionIndex {
 			config.Status.Committed.Index = proposal.TransactionIndex
 			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 				return controller.Result{}, err
 			}
 			proposal.Status.Phases.Abort.End = getCurrentTimestamp()
@@ -464,7 +464,7 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 			config.Status.Committed.Index = proposal.TransactionIndex
 			err = r.configurations.Update(ctx, config)
 			if err != nil {
-				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 				return controller.Result{}, err
 			}
 		}
@@ -722,7 +722,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 				config.Status.Applied.Mastership.Master = mastership.NodeId
 				config.Status.Applied.Mastership.Term = mastershipTerm
 				if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-					log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+					log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 					return controller.Result{}, err
 				}
 
@@ -757,7 +757,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		config.Status.Applied.Values = tree.PrunePathMap(config.Status.Applied.Values, true)
 
 		if err := r.configurations.UpdateStatus(ctx, config); err != nil {
-			log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+			log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 			return controller.Result{}, err
 		}
 
