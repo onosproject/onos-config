@@ -58,6 +58,10 @@ func createUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*configapi.
 			if prefix != nil {
 				prefixPath = utils.StrPathElem(prefix.Elem)
 			}
+			if len(prefixPath) > len(cv.Path) {
+				//  If prefix is longer than the path, it can't possibly match
+				continue
+			}
 			pathCv, err := utils.ParseGNMIElements(strings.Split(cv.Path[len(prefixPath)+1:], "/"))
 			if err != nil {
 				return nil, err
