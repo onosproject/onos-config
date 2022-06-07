@@ -181,8 +181,22 @@ func (r *pluginRegistry) loadPluginInfo(client api.ModelPluginServiceClient, plu
 func getRoPathMap(resp *api.ModelInfoResponse) path.ReadOnlyPathMap {
 	pm := make(map[string]path.ReadOnlySubPathMap)
 	for _, pe := range resp.ModelInfo.ReadOnlyPath {
-		// TODO: Implement conversion
-		pm[pe.Path] = path.ReadOnlySubPathMap{}
+		roSubPathMap := path.ReadOnlySubPathMap{}
+		for _, subPath := range pe.SubPath {
+			typeOpts8 := make([]uint8, 0, len(subPath.TypeOpts))
+			for _, typeOpt := range subPath.TypeOpts {
+				typeOpts8 = append(typeOpts8, uint8(typeOpt))
+			}
+			roSubPathMap[subPath.SubPath] = path.ReadOnlyAttrib{
+				ValueType:   subPath.ValueType,
+				TypeOpts:    typeOpts8,
+				Description: subPath.Description,
+				Units:       subPath.Units,
+				IsAKey:      subPath.IsAKey,
+				AttrName:    subPath.AttrName,
+			}
+		}
+		pm[pe.Path] = roSubPathMap
 	}
 	return pm
 }

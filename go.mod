@@ -11,7 +11,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/onosproject/config-models/models/testdevice-2.0.x v0.5.12
+	github.com/onosproject/config-models/models/testdevice-2.0.x v0.5.14
 	github.com/onosproject/helmit v0.6.19
 	github.com/onosproject/onos-api/go v0.9.16
 	github.com/onosproject/onos-lib-go v0.8.13
@@ -19,7 +19,6 @@ require (
 	github.com/onosproject/onos-test v0.6.6
 	github.com/onosproject/onos-topo v0.9.3
 	github.com/openconfig/gnmi v0.0.0-20210914185457-51254b657b7d
-	github.com/openconfig/goyang v0.4.0
 	github.com/prometheus/common v0.26.0
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
