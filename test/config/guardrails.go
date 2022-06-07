@@ -70,7 +70,7 @@ func (s *TestSuite) TestGuardRails(t *testing.T) {
 	const (
 		testTargetName         = "test1"
 		testDeviceModelName    = "testdevice"
-		testDeviceModelVersion = "1.0.0"
+		testDeviceModelVersion = "1.0.x"
 	)
 
 	testCases := map[string]struct {
