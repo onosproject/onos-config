@@ -16,7 +16,7 @@ import (
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 )
 
-func checkForPath(paths []proto.TargetPath, wantedPath string) bool {
+func checkForPath(paths []proto.GNMIPath, wantedPath string) bool {
 	for _, p := range paths {
 		if p.Path == wantedPath {
 			return true
@@ -103,7 +103,7 @@ func (s *TestSuite) TestDeleteRoot(t *testing.T) {
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Create new interface tree using gNMI client
-	setNamePath := []proto.TargetPath{
+	setNamePath := []proto.GNMIPath{
 		{TargetName: target.Name(), Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 	}
 	setReq := &gnmiutils.SetRequest{
@@ -116,7 +116,7 @@ func (s *TestSuite) TestDeleteRoot(t *testing.T) {
 	setReq.SetOrFail(t)
 
 	// Set the description field of the new interface
-	setDescriptionPath := []proto.TargetPath{
+	setDescriptionPath := []proto.GNMIPath{
 		{TargetName: target.Name(), Path: descriptionPath, PathDataValue: "123", PathDataType: proto.StringVal},
 	}
 	setReq = &gnmiutils.SetRequest{
@@ -142,7 +142,7 @@ func (s *TestSuite) TestDeleteRoot(t *testing.T) {
 	assert.True(t, checkForPath(paths, namePath))
 
 	// Now delete the interface
-	rootTargetPath := []proto.TargetPath{
+	rootTargetPath := []proto.GNMIPath{
 		{TargetName: target.Name(), Path: rootPath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 	}
 	setReq.UpdatePaths = nil

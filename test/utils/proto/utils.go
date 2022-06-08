@@ -20,9 +20,9 @@ const (
 	BoolVal = "bool_val"
 )
 
-// TargetPath describes the results of a get operation for a single Path
+// GNMIPath describes the results of a get operation for a single Path
 // It specifies the target, Path, and value
-type TargetPath struct {
+type GNMIPath struct {
 	TargetName    string
 	Path          string
 	PathDataType  string
@@ -34,9 +34,13 @@ func MakeProtoTarget(target string, path string) string {
 	var protoBuilder strings.Builder
 	var pathElements []string
 
-	protoBuilder.WriteString("<target: '")
-	protoBuilder.WriteString(target)
-	protoBuilder.WriteString("', ")
+	protoBuilder.WriteString("<")
+
+	if target != "" {
+		protoBuilder.WriteString("target: '")
+		protoBuilder.WriteString(target)
+		protoBuilder.WriteString("', ")
+	}
 
 	pathElements = utils.SplitPath(path)
 
@@ -59,6 +63,29 @@ func MakeProtoPath(target string, path string) string {
 	return protoBuilder.String()
 }
 
+// MakeProtoPrefix returns a prefix: element for a given target and path
+func MakeProtoPrefix(target string, path string) string {
+	var protoBuilder strings.Builder
+
+	protoBuilder.WriteString("prefix: <")
+
+	if target != "" {
+		protoBuilder.WriteString("target: '")
+		protoBuilder.WriteString(target)
+		protoBuilder.WriteString("',")
+	}
+
+	pathElements := utils.SplitPath(path)
+
+	for _, pathElement := range pathElements {
+		protoBuilder.WriteString("elem: <name: '")
+		protoBuilder.WriteString(pathElement)
+		protoBuilder.WriteString("'>")
+	}
+	protoBuilder.WriteString(">")
+	return protoBuilder.String()
+}
+
 func makeProtoValue(value string, valueType string) string {
 	var protoBuilder strings.Builder
 
@@ -78,7 +105,7 @@ func makeProtoValue(value string, valueType string) string {
 }
 
 // MakeProtoUpdatePath returns an update: element for a target, path, and new value
-func MakeProtoUpdatePath(targetPath TargetPath) string {
+func MakeProtoUpdatePath(targetPath GNMIPath) string {
 	var protoBuilder strings.Builder
 
 	protoBuilder.WriteString("update: <")

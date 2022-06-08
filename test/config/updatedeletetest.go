@@ -40,7 +40,7 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Create interface tree using gNMI client
-	setNamePath := []proto.TargetPath{
+	setNamePath := []proto.GNMIPath{
 		{TargetName: simulator.Name(), Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
@@ -61,7 +61,7 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	getConfigReq.CheckValues(t, udtestNameValue)
 
 	// Set initial values for Enabled and Description using gNMI client
-	setInitialValuesPath := []proto.TargetPath{
+	setInitialValuesPath := []proto.GNMIPath{
 		{TargetName: simulator.Name(), Path: udtestEnabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
 		{TargetName: simulator.Name(), Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
 	}
@@ -69,10 +69,10 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	setReq.SetOrFail(t)
 
 	// Update Enabled, delete Description using gNMI client
-	updateEnabledPath := []proto.TargetPath{
+	updateEnabledPath := []proto.GNMIPath{
 		{TargetName: simulator.Name(), Path: udtestEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
-	deleteDescriptionPath := []proto.TargetPath{
+	deleteDescriptionPath := []proto.GNMIPath{
 		{TargetName: simulator.Name(), Path: udtestDescriptionPath},
 	}
 	setReq.UpdatePaths = updateEnabledPath

@@ -42,7 +42,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	getPath := gnmiutils.GetTargetPath(simulator.Name(), newRootEnabledPath)
 
 	// Set name of new root using gNMI client
-	setNamePath := []proto.TargetPath{
+	setNamePath := []proto.GNMIPath{
 		{TargetName: simulator.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
@@ -54,7 +54,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	setReq.SetOrFail(t)
 
 	// Set values using gNMI client
-	setPath := []proto.TargetPath{
+	setPath := []proto.GNMIPath{
 		{TargetName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
 		{TargetName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}

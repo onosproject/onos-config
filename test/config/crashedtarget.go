@@ -103,7 +103,7 @@ func (s *TestSuite) TestCrashedTarget(t *testing.T) {
 }
 
 // Check that the crashedTargetValues are set on the target
-func checkTarget(ctx context.Context, t *testing.T, target *helm.HelmRelease, targetPathsForGet []proto.TargetPath, enforce bool) bool {
+func checkTarget(ctx context.Context, t *testing.T, target *helm.HelmRelease, targetPathsForGet []proto.GNMIPath, enforce bool) bool {
 	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target)
 
 	var targetGetReq = &gnmiutils.GetRequest{

@@ -8,6 +8,7 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -28,21 +29,22 @@ import (
 type GetRequest struct {
 	Ctx        context.Context
 	Client     gnmiclient.Impl
-	Paths      []protoutils.TargetPath
+	Paths      []protoutils.GNMIPath
+	Prefix     protoutils.GNMIPath
 	Extensions []*gnmi_ext.Extension
 	Encoding   gnmiapi.Encoding
 	DataType   gnmiapi.GetRequest_DataType
 }
 
 // convertGetResults extracts path/value pairs from a GNMI get response
-func convertGetResults(response *gnmiapi.GetResponse) ([]protoutils.TargetPath, error) {
-	result := make([]protoutils.TargetPath, 0)
+func convertGetResults(response *gnmiapi.GetResponse) ([]protoutils.GNMIPath, error) {
+	result := make([]protoutils.GNMIPath, 0)
 
 	for _, notification := range response.Notification {
 		for _, update := range notification.Update {
 			value := update.Val
 
-			var targetPath protoutils.TargetPath
+			var targetPath protoutils.GNMIPath
 			targetPath.TargetName = update.Path.Target
 			pathString := ""
 
@@ -96,12 +98,17 @@ func extractSetTransactionInfo(response *gnmiapi.SetResponse) (configapi.Transac
 }
 
 // Get performs a Get operation
-func (req *GetRequest) Get() ([]protoutils.TargetPath, error) {
+func (req *GetRequest) Get() ([]protoutils.GNMIPath, error) {
 	protoString := ""
+	if req.Prefix.Path != "" || req.Prefix.TargetName != "" {
+		protoString = protoString + protoutils.MakeProtoPrefix(req.Prefix.TargetName, req.Prefix.Path)
+	}
+
 	for _, targetPath := range req.Paths {
 		protoString = protoString + MakeProtoPath(targetPath.TargetName, targetPath.Path)
 	}
 	gnmiGetRequest := &gnmiapi.GetRequest{}
+	fmt.Fprintf(os.Stderr, "gnmi request is %v\n", protoString)
 	if err := proto.UnmarshalText(protoString, gnmiGetRequest); err != nil {
 		fmt.Printf("unable to parse gnmi.GetRequest from %q : %v\n", protoString, err)
 		return nil, err
@@ -144,8 +151,8 @@ func (req *GetRequest) CheckValuesDeleted(t *testing.T) {
 type SetRequest struct {
 	Ctx         context.Context
 	Client      gnmiclient.Impl
-	UpdatePaths []protoutils.TargetPath
-	DeletePaths []protoutils.TargetPath
+	UpdatePaths []protoutils.GNMIPath
+	DeletePaths []protoutils.GNMIPath
 	Extensions  []*gnmi_ext.Extension
 	Encoding    gnmiapi.Encoding
 }

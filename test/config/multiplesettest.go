@@ -16,7 +16,6 @@ import (
 )
 
 func generateTimezoneName() string {
-
 	usCity := randomdata.ProvinceForCountry("US")
 	timeZone := "US/" + usCity
 	return timeZone

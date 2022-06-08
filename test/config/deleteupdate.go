@@ -37,7 +37,7 @@ func (s *TestSuite) TestDeleteUpdate(t *testing.T) {
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
 	// Create interface tree using gNMI client
-	setNamePath := []proto.TargetPath{
+	setNamePath := []proto.GNMIPath{
 		{TargetName: simulator.Name(), Path: dutestNamePath, PathDataValue: dutestNameValue, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
@@ -58,7 +58,7 @@ func (s *TestSuite) TestDeleteUpdate(t *testing.T) {
 	getConfigReq.Paths = setNamePath
 	getConfigReq.CheckValues(t, dutestNameValue)
 
-	deleteAllPath := []proto.TargetPath{
+	deleteAllPath := []proto.GNMIPath{
 		{TargetName: simulator.Name(), Path: dutestRootPath},
 	}
 	setReq.UpdatePaths = nil

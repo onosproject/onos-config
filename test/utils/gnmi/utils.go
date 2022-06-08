@@ -273,13 +273,13 @@ func TransactionStrategyExtension(t *testing.T,
 }
 
 // GetTargetPath creates a target path
-func GetTargetPath(target string, path string) []protoutils.TargetPath {
+func GetTargetPath(target string, path string) []protoutils.GNMIPath {
 	return GetTargetPathWithValue(target, path, "", "")
 }
 
 // GetTargetPathWithValue creates a target path with a value to set
-func GetTargetPathWithValue(target string, path string, value string, valueType string) []protoutils.TargetPath {
-	targetPath := make([]protoutils.TargetPath, 1)
+func GetTargetPathWithValue(target string, path string, value string, valueType string) []protoutils.GNMIPath {
+	targetPath := make([]protoutils.GNMIPath, 1)
 	targetPath[0].TargetName = target
 	targetPath[0].Path = path
 	targetPath[0].PathDataValue = value
@@ -288,8 +288,8 @@ func GetTargetPathWithValue(target string, path string, value string, valueType 
 }
 
 // GetTargetPaths creates multiple target paths
-func GetTargetPaths(targets []string, paths []string) []protoutils.TargetPath {
-	var targetPaths = make([]protoutils.TargetPath, len(paths)*len(targets))
+func GetTargetPaths(targets []string, paths []string) []protoutils.GNMIPath {
+	var targetPaths = make([]protoutils.GNMIPath, len(paths)*len(targets))
 	pathIndex := 0
 	for _, dev := range targets {
 		for _, path := range paths {
@@ -302,7 +302,7 @@ func GetTargetPaths(targets []string, paths []string) []protoutils.TargetPath {
 }
 
 // GetTargetPathsWithValues creates multiple target paths with values to set
-func GetTargetPathsWithValues(targets []string, paths []string, values []string) []protoutils.TargetPath {
+func GetTargetPathsWithValues(targets []string, paths []string, values []string) []protoutils.GNMIPath {
 	var targetPaths = GetTargetPaths(targets, paths)
 	valueIndex := 0
 	for range targets {
@@ -319,9 +319,11 @@ func GetTargetPathsWithValues(targets []string, paths []string, values []string)
 func MakeProtoPath(target string, path string) string {
 	var protoBuilder strings.Builder
 
-	protoBuilder.WriteString("path: ")
-	gnmiPath := protoutils.MakeProtoTarget(target, path)
-	protoBuilder.WriteString(gnmiPath)
+	if target != "" || path != "" {
+		protoBuilder.WriteString("path: ")
+		gnmiPath := protoutils.MakeProtoTarget(target, path)
+		protoBuilder.WriteString(gnmiPath)
+	}
 	return protoBuilder.String()
 }
 
