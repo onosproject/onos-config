@@ -986,8 +986,8 @@ github.com/olekukonko/tablewriter v0.0.4/go.mod h1:zq6QwlOf5SlnkVbMSr5EoBv3636FW
 github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6HuIJcUGPhkA7kY=
 github.com/onosproject/config-models v0.10.16 h1:Cat1VFz0uBO5vSr7+FUFaXew0XUIGozNcIMx+Ls8bbg=
 github.com/onosproject/config-models v0.10.16/go.mod h1:RfLQAkEGYAlvgfpJTt3F3nPbfHF9+eMXaPHRA4R82cc=
-github.com/onosproject/config-models/models/testdevice-2.0.x v0.5.14 h1:iTGb1Qrs4Igbr6KlggAO8hpzAddCo2Y31BvJyr4JgNg=
-github.com/onosproject/config-models/models/testdevice-2.0.x v0.5.14/go.mod h1:vCbvcNWKShTjnIPX0nDbbWttI1W2ImxUAAtZ8QtbkNQ=
+github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.16 h1:qpQfOZlCHrv2BVdwO1gffSkFjBd/dD2wi5gSkygClZE=
+github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.16/go.mod h1:a0NPlkr1nOG+8MfecONLCkR5NMbRb/Sem5naWPTgOgY=
 github.com/onosproject/helmit v0.6.8/go.mod h1:EorNGSNGWojXGxBEuiNmPScae+R2C5WYfg/13gKEPLw=
 github.com/onosproject/helmit v0.6.19 h1:2Il7qhJhUjYFdweDaOzgPanUArDNGRs8SaLV3tx0aGQ=
 github.com/onosproject/helmit v0.6.19/go.mod h1:4LUwMtLcV0njiCEcAoVdzoiRfit+04z4Yn7z8lXSuMk=

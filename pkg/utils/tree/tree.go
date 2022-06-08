@@ -103,6 +103,7 @@ func addPathToTree(path string, value *configapi.TypedValue, nodeif *interface{}
 		var listItemMap map[string]interface{}
 		var foundkeys int
 
+	existingListItemsLoop:
 		for idx, ls := range listSliceIf {
 			lsMap, ok := ls.(map[string]interface{})
 			if !ok {
@@ -116,6 +117,9 @@ func addPathToTree(path string, value *configapi.TypedValue, nodeif *interface{}
 					if lStr == vStr {
 						foundkeys++
 						listItemMap = lsMap
+					} else {
+						foundkeys = 0
+						continue existingListItemsLoop
 					}
 				}
 			}
