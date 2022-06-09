@@ -57,9 +57,11 @@ func MakeProtoTarget(target string, path string) string {
 func MakeProtoPath(target string, path string) string {
 	var protoBuilder strings.Builder
 
-	protoBuilder.WriteString("path: ")
-	gnmiPath := MakeProtoTarget(target, path)
-	protoBuilder.WriteString(gnmiPath)
+	if path != "" {
+		protoBuilder.WriteString("path: ")
+		gnmiPath := MakeProtoTarget(target, path)
+		protoBuilder.WriteString(gnmiPath)
+	}
 	return protoBuilder.String()
 }
 

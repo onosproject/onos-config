@@ -13,7 +13,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -386,12 +385,7 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *
 
 	filteredValues := make([]*configapi.PathValue, 0)
 	pathRegexp := utils.MatchWildcardRegexp(pathInfo.pathAsString, false)
-	if prefix != nil && len(prefix.Elem) != 0 && pathInfo.path == nil {
-		pathRegexp = regexp.MustCompile(pathRegexp.String() + "($|\\/+.*$)")
-		log.Warn("New regexp with prefix %s", pathRegexp)
-	}
 	for _, cv := range configValuesAllowed {
-		log.Warnf("match regexp %v to path %s", pathRegexp, cv.Path)
 		if pathRegexp.MatchString(cv.Path) && !cv.Deleted {
 			filteredValues = append(filteredValues, cv)
 		}

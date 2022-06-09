@@ -151,6 +151,7 @@ func (req *GetRequest) CheckValuesDeleted(t *testing.T) {
 type SetRequest struct {
 	Ctx         context.Context
 	Client      gnmiclient.Impl
+	Prefix      protoutils.GNMIPath
 	UpdatePaths []protoutils.GNMIPath
 	DeletePaths []protoutils.GNMIPath
 	Extensions  []*gnmi_ext.Extension
@@ -160,6 +161,9 @@ type SetRequest struct {
 // Set performs a Set operation
 func (req *SetRequest) Set() (configapi.TransactionID, v2.Index, error) {
 	var protoBuilder strings.Builder
+	if req.Prefix.Path != "" || req.Prefix.TargetName != "" {
+		protoBuilder.WriteString(protoutils.MakeProtoPrefix(req.Prefix.TargetName, req.Prefix.Path))
+	}
 	for _, updatePath := range req.UpdatePaths {
 		protoBuilder.WriteString(protoutils.MakeProtoUpdatePath(updatePath))
 	}

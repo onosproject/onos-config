@@ -70,14 +70,6 @@ func (s *TestSuite) TestPrefixPathGet(t *testing.T) {
 			values:       []string{tzValue},
 		},
 		{
-			name:         "Prefix using multiple paths",
-			prefixTarget: "",
-			prefixPath:   clockPrefix,
-			targets:      []string{gnmiTarget, gnmiTarget},
-			paths:        []string{tzPath},
-			values:       []string{tzValue},
-		},
-		{
 			name:         "Prefix specifies the entire path",
 			prefixTarget: gnmiTarget,
 			prefixPath:   fullTzPath,
