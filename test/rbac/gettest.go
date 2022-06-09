@@ -48,7 +48,7 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 		descriptionPath := getLeafPath(interfaceName, descriptionLeafName)
 
 		// Create interface tree using gNMI client
-		setNamePath := []proto.TargetPath{
+		setNamePath := []proto.GNMIPath{
 			{TargetName: target, Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 		}
 		var setReq = &gnmiutils.SetRequest{
@@ -60,7 +60,7 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 		setReq.SetOrFail(t)
 
 		// Set initial values for Enabled and Description using gNMI client
-		setInitialValuesPath := []proto.TargetPath{
+		setInitialValuesPath := []proto.GNMIPath{
 			{TargetName: target, Path: enabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
 			{TargetName: target, Path: descriptionPath, PathDataValue: descriptionLeafValue, PathDataType: proto.StringVal},
 		}
@@ -220,7 +220,7 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 				descriptionPath := getLeafPath(testCase.interfaceName, descriptionLeafName)
 
 				// Get path for the test value
-				targetPath := []proto.TargetPath{
+				targetPath := []proto.GNMIPath{
 					{TargetName: simulator.Name(), Path: descriptionPath, PathDataValue: testCase.interfaceName, PathDataType: proto.StringVal},
 				}
 
