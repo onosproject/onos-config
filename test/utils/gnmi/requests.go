@@ -8,7 +8,6 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -108,7 +107,6 @@ func (req *GetRequest) Get() ([]protoutils.GNMIPath, error) {
 		protoString = protoString + MakeProtoPath(targetPath.TargetName, targetPath.Path)
 	}
 	gnmiGetRequest := &gnmiapi.GetRequest{}
-	fmt.Fprintf(os.Stderr, "gnmi request is %v\n", protoString)
 	if err := proto.UnmarshalText(protoString, gnmiGetRequest); err != nil {
 		fmt.Printf("unable to parse gnmi.GetRequest from %q : %v\n", protoString, err)
 		return nil, err

@@ -6,8 +6,6 @@
 package utils
 
 import (
-	"github.com/onosproject/onos-lib-go/pkg/logging"
-
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -18,8 +16,6 @@ import (
 
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 )
-
-var logg = logging.GetLogger("pathutils", "gnmi")
 
 // ParseGNMIElements builds up a gnmi path, from user-supplied text
 func ParseGNMIElements(elms []string) (*pb.Path, error) {
