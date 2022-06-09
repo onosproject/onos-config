@@ -138,8 +138,8 @@ func (s *Server) processRequest(ctx context.Context, req *gnmi.GetRequest, group
 			}
 		}
 
-		prefixRegexp := utils.StrPath(prefix)
-		updates, err := s.getUpdate(ctx, targets[targetID], prefix, &pathInfo{path: nil, pathAsString: prefixRegexp}, req.GetEncoding(), groups)
+		prefixPath := utils.StrPath(prefix)
+		updates, err := s.getUpdate(ctx, targets[targetID], prefix, &pathInfo{path: nil, pathAsString: prefixPath}, req.GetEncoding(), groups)
 		if err != nil {
 			return nil, err
 		}

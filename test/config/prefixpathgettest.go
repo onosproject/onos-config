@@ -82,7 +82,7 @@ func (s *TestSuite) TestPrefixPathGet(t *testing.T) {
 			name:         "Prefix for multiple paths",
 			prefixTarget: gnmiTarget,
 			prefixPath:   "/system",
-			targets:      []string{""},
+			targets:      []string{"", ""},
 			paths:        []string{"clock/config/timezone-name", "config/motd-banner"},
 			values:       []string{tzValue, motdValue},
 		},

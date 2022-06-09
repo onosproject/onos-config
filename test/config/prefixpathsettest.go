@@ -33,7 +33,7 @@ func (s *TestSuite) TestPrefixPathSet(t *testing.T) {
 
 	// Create a simulated device
 	simulator := gnmiutils.CreateSimulator(ctx, t)
-	//defer gnmiutils.DeleteSimulator(t, simulator)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the targets
 	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
@@ -86,7 +86,7 @@ func (s *TestSuite) TestPrefixPathSet(t *testing.T) {
 			name:         "Prefix for multiple paths",
 			prefixTarget: gnmiTarget,
 			prefixPath:   "/system",
-			targets:      []string{""},
+			targets:      []string{"", ""},
 			paths:        []string{"clock/config/timezone-name", "config/motd-banner"},
 			fullPaths:    []string{fullTzPath, fullMotdPath},
 			values:       []string{generateTimezoneName(), motdValue},
