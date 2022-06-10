@@ -45,7 +45,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 		Ctx:      ctx,
 		Client:   gnmiClient,
 		Paths:    targetPaths,
-		Encoding: gnmiapi.Encoding_PROTO,
+		Encoding: gnmiapi.Encoding_JSON,
 	}
 	var simulatorGetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,

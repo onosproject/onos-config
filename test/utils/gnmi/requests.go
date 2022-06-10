@@ -7,7 +7,9 @@ package gnmi
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -35,17 +37,46 @@ type GetRequest struct {
 	DataType   gnmiapi.GetRequest_DataType
 }
 
+func jsonPath(path string, m map[string]interface{}) (string, string, map[string]interface{}) {
+	jsonValue := ""
+	for k, v := range m {
+		path = path + "/" + k
+		if vMap, ok := v.(map[string]interface{}); ok {
+			path, jsonValue, _ = jsonPath(path, vMap)
+		} else {
+			jsonValue = v.(string)
+		}
+	}
+	return path, jsonValue, m
+}
+
 // convertGetResults extracts path/value pairs from a GNMI get response
-func convertGetResults(response *gnmiapi.GetResponse) ([]protoutils.GNMIPath, error) {
+func (req *GetRequest) convertGetResults(response *gnmiapi.GetResponse) ([]protoutils.GNMIPath, error) {
 	result := make([]protoutils.GNMIPath, 0)
 
 	for _, notification := range response.Notification {
 		for _, update := range notification.Update {
+			pathString := ""
 			value := update.Val
+			if req.Encoding == gnmiapi.Encoding_JSON {
+				switch v := value.GetValue().(type) {
+				case *gnmiapi.TypedValue_JsonIetfVal:
+				case *gnmiapi.TypedValue_JsonVal:
+					fmt.Fprintf(os.Stderr, "update %v\n\n\nvalue is %v\n", update, v)
+					var result map[string]interface{}
+					err := json.Unmarshal(value.GetJsonVal(), &result)
+					if err != nil {
+						return nil, err
+					}
+					fmt.Fprintf(os.Stderr, "unmarshalled map %v\n\n\n", result)
+
+					pathString, jsonValue, _ := jsonPath(pathString, result)
+					fmt.Fprintf(os.Stderr, "path from JSON is %v value is %v\n", pathString, jsonValue)
+				}
+			}
 
 			var targetPath protoutils.GNMIPath
 			targetPath.TargetName = update.Path.Target
-			pathString := ""
 
 			for _, elem := range update.Path.Elem {
 				pathString = pathString + "/" + elem.Name
@@ -118,7 +149,7 @@ func (req *GetRequest) Get() ([]protoutils.GNMIPath, error) {
 	if err != nil || response == nil {
 		return nil, err
 	}
-	return convertGetResults(response)
+	return req.convertGetResults(response)
 }
 
 // CheckValues checks that the correct value is read back via a gnmi get request
