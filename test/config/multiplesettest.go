@@ -21,8 +21,7 @@ func generateTimezoneName() string {
 	return timeZone
 }
 
-// TestMultipleSet tests multiple query/set/delete of a single GNMI path to a single device
-func (s *TestSuite) TestMultipleSet(t *testing.T) {
+func (s *TestSuite) testMultipleSet(t *testing.T, encoding gnmiapi.Encoding) {
 	generateTimezoneName()
 
 	ctx, cancel := gnmiutils.MakeContext()
@@ -63,7 +62,7 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 			Client:     gnmiClient,
 			Paths:      targetPath,
 			Extensions: gnmiutils.SyncExtension(t),
-			Encoding:   gnmiapi.Encoding_PROTO,
+			Encoding:   encoding,
 		}
 		getConfigReq.CheckValues(t, msValue)
 		var getTargetReq = &gnmiutils.GetRequest{
@@ -83,4 +82,16 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 		getConfigReq.CheckValuesDeleted(t)
 		getTargetReq.CheckValuesDeleted(t)
 	}
+}
+
+// TestMultipleSet tests multiple query/set/delete of a single GNMI path to a single device
+func (s *TestSuite) TestMultipleSet(t *testing.T) {
+	t.Run("TestMultipleSet PROTO",
+		func(t *testing.T) {
+			s.testMultipleSet(t, gnmiapi.Encoding_PROTO)
+		})
+	t.Run("TestMultipleSet JSON",
+		func(t *testing.T) {
+			s.testMultipleSet(t, gnmiapi.Encoding_JSON)
+		})
 }

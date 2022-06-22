@@ -9,7 +9,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -37,17 +36,45 @@ type GetRequest struct {
 	DataType   gnmiapi.GetRequest_DataType
 }
 
-func jsonPath(path string, m map[string]interface{}) (string, string, map[string]interface{}) {
-	jsonValue := ""
-	for k, v := range m {
-		path = path + "/" + k
-		if vMap, ok := v.(map[string]interface{}); ok {
-			path, jsonValue, _ = jsonPath(path, vMap)
-		} else {
-			jsonValue = v.(string)
+func extractUpdatePaths(update *gnmiapi.Update) (string, string) {
+	leaf := ""
+	path := ""
+	for _, elem := range update.Path.Elem {
+		path = path + "/" + elem.Name
+		leaf = elem.Name
+		if len(elem.GetKey()) != 0 {
+			path = path + "["
+			for key, value := range elem.GetKey() {
+				path = path + key + "=" + value
+			}
+			path = path + "]"
 		}
 	}
-	return path, jsonValue, m
+	return path, leaf
+}
+
+func findJSONValueForLeaf(leaf string, m map[string]interface{}) (string, map[string]interface{}) {
+	jsonValue := ""
+	for k, v := range m {
+		if vMap, ok := v.(map[string]interface{}); ok {
+			jsonValue, _ = findJSONValueForLeaf(leaf, vMap)
+		} else if arr, ok := v.([]interface{}); ok {
+			if vMap, ok := arr[0].(map[string]interface{}); ok {
+				jsonValue, _ = findJSONValueForLeaf(leaf, vMap)
+				if k == leaf {
+					return jsonValue, m
+				}
+			} else if s, ok := arr[0].(string); ok {
+				return s, m
+			}
+
+		} else {
+			if k == leaf {
+				jsonValue = fmt.Sprintf("%v", v)
+			}
+		}
+	}
+	return jsonValue, m
 }
 
 // convertGetResults extracts path/value pairs from a GNMI get response
@@ -56,48 +83,39 @@ func (req *GetRequest) convertGetResults(response *gnmiapi.GetResponse) ([]proto
 
 	for _, notification := range response.Notification {
 		for _, update := range notification.Update {
-			pathString := ""
-			value := update.Val
-			if req.Encoding == gnmiapi.Encoding_JSON {
-				switch v := value.GetValue().(type) {
-				case *gnmiapi.TypedValue_JsonIetfVal:
-				case *gnmiapi.TypedValue_JsonVal:
-					fmt.Fprintf(os.Stderr, "update %v\n\n\nvalue is %v\n", update, v)
-					var result map[string]interface{}
-					err := json.Unmarshal(value.GetJsonVal(), &result)
-					if err != nil {
-						return nil, err
-					}
-					fmt.Fprintf(os.Stderr, "unmarshalled map %v\n\n\n", result)
-
-					pathString, jsonValue, _ := jsonPath(pathString, result)
-					fmt.Fprintf(os.Stderr, "path from JSON is %v value is %v\n", pathString, jsonValue)
-				}
-			}
 
 			var targetPath protoutils.GNMIPath
 			targetPath.TargetName = update.Path.Target
+			value := update.Val
 
-			for _, elem := range update.Path.Elem {
-				pathString = pathString + "/" + elem.Name
-				if len(elem.GetKey()) != 0 {
-					pathString = pathString + "["
-					for key, value := range elem.GetKey() {
-						pathString = pathString + key + "=" + value
-					}
-					pathString = pathString + "]"
+			switch value.GetValue().(type) {
+			case *gnmiapi.TypedValue_JsonIetfVal:
+			case *gnmiapi.TypedValue_JsonVal:
+				path, leaf := extractUpdatePaths(update)
+				targetPath.Path = path
+
+				var jsonMap map[string]interface{}
+				err := json.Unmarshal(value.GetJsonVal(), &jsonMap)
+				if err != nil {
+					return nil, err
+				}
+
+				jsonValue, _ := findJSONValueForLeaf(leaf, jsonMap)
+				targetPath.PathDataValue = jsonValue
+
+			default:
+				path, _ := extractUpdatePaths(update)
+				targetPath.Path = path
+
+				targetPath.PathDataType = "string_val"
+				if value != nil {
+					targetPath.PathDataValue = utils.StrVal(value)
+				} else {
+					targetPath.PathDataValue = ""
 				}
 			}
-			targetPath.Path = pathString
 
-			targetPath.PathDataType = "string_val"
-			if value != nil {
-				targetPath.PathDataValue = utils.StrVal(value)
-			} else {
-				targetPath.PathDataValue = ""
-			}
 			result = append(result, targetPath)
-
 		}
 	}
 

@@ -23,8 +23,7 @@ const (
 	newDescription         = "description"
 )
 
-// TestTreePath tests create/set/delete of a tree of GNMI paths to a single device
-func (s *TestSuite) TestTreePath(t *testing.T) {
+func (s *TestSuite) testTreePath(t *testing.T, encoding gnmiapi.Encoding) {
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
 
@@ -61,10 +60,10 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	setReq.UpdatePaths = setPath
 	setReq.SetOrFail(t)
 
-	var getConfigReq = &gnmiutils.GetRequest{
+	getConfigReq := &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   gnmiClient,
-		Encoding: gnmiapi.Encoding_PROTO,
+		Encoding: encoding,
 	}
 
 	// Check that the name value was set correctly
@@ -87,4 +86,16 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	//  Make sure new root got removed
 	getConfigReq.Paths = getPath
 	getConfigReq.CheckValues(t, "")
+}
+
+// TestTreePath tests create/set/delete of a tree of GNMI paths to a single device
+func (s *TestSuite) TestTreePath(t *testing.T) {
+	t.Run("TestTreePath PROTO",
+		func(t *testing.T) {
+			s.testTreePath(t, gnmiapi.Encoding_PROTO)
+		})
+	t.Run("TestTreePath JSON",
+		func(t *testing.T) {
+			s.testTreePath(t, gnmiapi.Encoding_JSON)
+		})
 }

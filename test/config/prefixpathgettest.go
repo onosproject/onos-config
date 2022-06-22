@@ -53,38 +53,79 @@ func (s *TestSuite) TestPrefixPathGet(t *testing.T) {
 		targets      []string
 		paths        []string
 		values       []string
+		encoding     gnmiapi.Encoding
 	}{
 		{
-			name:         "Prefix using a target and a path",
+			name:         "Prefix using a target and a path - PROTO",
 			prefixTarget: gnmiTarget,
 			prefixPath:   clockPrefix,
 			targets:      []string{""},
 			paths:        []string{tzPath},
 			values:       []string{tzValue},
+			encoding:     gnmiapi.Encoding_PROTO,
 		},
 		{
-			name:         "Prefix using a path",
+			name:         "Prefix using a target and a path - JSON",
+			prefixTarget: gnmiTarget,
+			prefixPath:   clockPrefix,
+			targets:      []string{""},
+			paths:        []string{tzPath},
+			values:       []string{tzValue},
+			encoding:     gnmiapi.Encoding_JSON,
+		},
+		{
+			name:         "Prefix using a path - PROTO",
 			prefixTarget: "",
 			prefixPath:   clockPrefix,
 			targets:      []string{gnmiTarget},
 			paths:        []string{tzPath},
 			values:       []string{tzValue},
+			encoding:     gnmiapi.Encoding_PROTO,
 		},
 		{
-			name:         "Prefix specifies the entire path",
+			name:         "Prefix using a path - JSON",
+			prefixTarget: "",
+			prefixPath:   clockPrefix,
+			targets:      []string{gnmiTarget},
+			paths:        []string{tzPath},
+			values:       []string{tzValue},
+			encoding:     gnmiapi.Encoding_JSON,
+		},
+		{
+			name:         "Prefix specifies the entire path - PROTO",
 			prefixTarget: gnmiTarget,
 			prefixPath:   fullTzPath,
 			targets:      []string{""},
 			paths:        []string{""},
 			values:       []string{tzValue},
+			encoding:     gnmiapi.Encoding_PROTO,
 		},
 		{
-			name:         "Prefix for multiple paths",
+			name:         "Prefix specifies the entire path - JSON",
+			prefixTarget: gnmiTarget,
+			prefixPath:   fullTzPath,
+			targets:      []string{""},
+			paths:        []string{""},
+			values:       []string{tzValue},
+			encoding:     gnmiapi.Encoding_JSON,
+		},
+		{
+			name:         "Prefix for multiple paths - PROTO",
 			prefixTarget: gnmiTarget,
 			prefixPath:   "/system",
 			targets:      []string{"", ""},
 			paths:        []string{"clock/config/timezone-name", "config/motd-banner"},
 			values:       []string{tzValue, motdValue},
+			encoding:     gnmiapi.Encoding_PROTO,
+		},
+		{
+			name:         "Prefix for multiple paths - JSON",
+			prefixTarget: gnmiTarget,
+			prefixPath:   "/system",
+			targets:      []string{"", ""},
+			paths:        []string{"clock/config/timezone-name", "config/motd-banner"},
+			values:       []string{tzValue, motdValue},
+			encoding:     gnmiapi.Encoding_JSON,
 		},
 	}
 
