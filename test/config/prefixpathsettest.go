@@ -52,44 +52,90 @@ func (s *TestSuite) TestPrefixPathSet(t *testing.T) {
 		paths         []string
 		fullPaths     []string
 		values        []string
+		encoding      gnmiapi.Encoding
 		expectedError string
 	}{
 		{
-			name:         "Prefix using a target and a path",
+			name:         "Prefix using a target and a path - PROTO",
 			prefixTarget: gnmiTarget,
 			prefixPath:   clockPrefix,
 			targets:      []string{""},
 			paths:        []string{tzPath},
 			fullPaths:    []string{fullTzPath},
 			values:       []string{generateTimezoneName()},
+			encoding:     gnmiapi.Encoding_PROTO,
 		},
 		{
-			name:         "Prefix using a path",
+			name:         "Prefix using a target and a path - JSON",
+			prefixTarget: gnmiTarget,
+			prefixPath:   clockPrefix,
+			targets:      []string{""},
+			paths:        []string{tzPath},
+			fullPaths:    []string{fullTzPath},
+			values:       []string{generateTimezoneName()},
+			encoding:     gnmiapi.Encoding_JSON,
+		},
+		{
+			name:         "Prefix using a path - PROTO",
 			prefixTarget: "",
 			prefixPath:   clockPrefix,
 			targets:      []string{gnmiTarget},
 			paths:        []string{tzPath},
 			fullPaths:    []string{fullTzPath},
 			values:       []string{generateTimezoneName()},
+			encoding:     gnmiapi.Encoding_PROTO,
 		},
 		{
-			name:          "Prefix specifies the entire path",
+			name:         "Prefix using a path - JSON",
+			prefixTarget: "",
+			prefixPath:   clockPrefix,
+			targets:      []string{gnmiTarget},
+			paths:        []string{tzPath},
+			fullPaths:    []string{fullTzPath},
+			values:       []string{generateTimezoneName()},
+			encoding:     gnmiapi.Encoding_JSON,
+		},
+		{
+			name:          "Prefix specifies the entire path - PROTO",
 			prefixTarget:  gnmiTarget,
 			prefixPath:    fullTzPath,
 			targets:       []string{""},
 			paths:         []string{""},
 			fullPaths:     []string{fullTzPath},
 			values:        []string{generateTimezoneName()},
+			encoding:      gnmiapi.Encoding_PROTO,
 			expectedError: "unable to find exact match for RW model path /system/clock/config/timezone-name",
 		},
 		{
-			name:         "Prefix for multiple paths",
+			name:          "Prefix specifies the entire path - JSON",
+			prefixTarget:  gnmiTarget,
+			prefixPath:    fullTzPath,
+			targets:       []string{""},
+			paths:         []string{""},
+			fullPaths:     []string{fullTzPath},
+			values:        []string{generateTimezoneName()},
+			encoding:      gnmiapi.Encoding_JSON,
+			expectedError: "unable to find exact match for RW model path /system/clock/config/timezone-name",
+		},
+		{
+			name:         "Prefix for multiple paths - PROTO",
 			prefixTarget: gnmiTarget,
 			prefixPath:   "/system",
 			targets:      []string{"", ""},
 			paths:        []string{"clock/config/timezone-name", "config/motd-banner"},
 			fullPaths:    []string{fullTzPath, fullMotdPath},
 			values:       []string{generateTimezoneName(), motdValue},
+			encoding:     gnmiapi.Encoding_PROTO,
+		},
+		{
+			name:         "Prefix for multiple paths - JSON",
+			prefixTarget: gnmiTarget,
+			prefixPath:   "/system",
+			targets:      []string{"", ""},
+			paths:        []string{"clock/config/timezone-name", "config/motd-banner"},
+			fullPaths:    []string{fullTzPath, fullMotdPath},
+			values:       []string{generateTimezoneName(), motdValue},
+			encoding:     gnmiapi.Encoding_JSON,
 		},
 	}
 
@@ -107,7 +153,7 @@ func (s *TestSuite) TestPrefixPathSet(t *testing.T) {
 					Prefix:      prefixPath,
 					UpdatePaths: targetPaths,
 					Extensions:  gnmiutils.SyncExtension(t),
-					Encoding:    gnmiapi.Encoding_PROTO,
+					Encoding:    testCase.encoding,
 				}
 				_, _, err := onosConfigSetReq.Set()
 				if testCase.expectedError == "" {
@@ -123,7 +169,7 @@ func (s *TestSuite) TestPrefixPathSet(t *testing.T) {
 					Client:   gnmiClient,
 					Paths:    targetPaths,
 					Prefix:   prefixPath,
-					Encoding: gnmiapi.Encoding_PROTO,
+					Encoding: testCase.encoding,
 				}
 
 				// Check that the value was set correctly in onos-config

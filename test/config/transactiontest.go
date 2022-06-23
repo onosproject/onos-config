@@ -18,7 +18,7 @@ import (
 )
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
-func (s *TestSuite) TestTransaction(t *testing.T) {
+func (s *TestSuite) testTransaction(t *testing.T, encoding gnmiapi.Encoding) {
 	const (
 		value1     = "test-motd-banner"
 		path1      = "/system/config/motd-banner"
@@ -73,7 +73,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	var getReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
-		Encoding:   gnmiapi.Encoding_PROTO,
+		Encoding:   encoding,
 		Extensions: gnmiutils.SyncExtension(t),
 	}
 	targetPath1 := gnmiutils.GetTargetPath(target1.Name(), path1)
@@ -142,4 +142,16 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	target2GetReq.CheckValues(t, initValue1)
 	target2GetReq.Paths = targetPathsForGet[3:4]
 	target2GetReq.CheckValues(t, initValue2)
+}
+
+// TestTransaction tests setting multiple paths in a single request and rolling it back
+func (s *TestSuite) TestTransaction(t *testing.T) {
+	t.Run("TestTransaction PROTO",
+		func(t *testing.T) {
+			s.testTransaction(t, gnmiapi.Encoding_PROTO)
+		})
+	t.Run("TestTransaction JSON",
+		func(t *testing.T) {
+			s.testTransaction(t, gnmiapi.Encoding_JSON)
+		})
 }

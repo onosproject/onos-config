@@ -20,8 +20,7 @@ const (
 	tzPath  = "/system/clock/config/timezone-name"
 )
 
-// TestSinglePath tests query/set/delete of a single GNMI path to a single device
-func (s *TestSuite) TestSinglePath(t *testing.T) {
+func (s *TestSuite) testSinglePath(t *testing.T, encoding gnmiapi.Encoding) {
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
 
@@ -45,7 +44,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 		Ctx:      ctx,
 		Client:   gnmiClient,
 		Paths:    targetPaths,
-		Encoding: gnmiapi.Encoding_PROTO,
+		Encoding: encoding,
 	}
 	var simulatorGetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
@@ -76,4 +75,16 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	//  Make sure it got removed, both in onos-config and on the target
 	onosConfigGetReq.CheckValuesDeleted(t)
 	simulatorGetReq.CheckValuesDeleted(t)
+}
+
+// TestSinglePath tests query/set/delete of a single GNMI path to a single device
+func (s *TestSuite) TestSinglePath(t *testing.T) {
+	t.Run("TestSinglePath PROTO",
+		func(t *testing.T) {
+			s.testSinglePath(t, gnmiapi.Encoding_PROTO)
+		})
+	t.Run("TestSinglePath JSON",
+		func(t *testing.T) {
+			s.testSinglePath(t, gnmiapi.Encoding_JSON)
+		})
 }
