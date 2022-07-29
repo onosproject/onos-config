@@ -46,7 +46,13 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 			log.Debugf("Received topo event '%s'", event.Object.ID)
 			if relation, ok := event.Object.Obj.(*topoapi.Object_Relation); ok &&
 				relation.Relation.KindID == topoapi.CONTROLS {
-				ch <- controller.NewID(relation.Relation.TgtEntityID)
+				srcEntity, err := w.topo.Get(ctx, relation.Relation.SrcEntityID)
+				if err != nil {
+					log.Warn(err)
+				} else if srcEntity.GetEntity().KindID == topoapi.ONOS_CONFIG {
+					ch <- controller.NewID(relation.Relation.TgtEntityID)
+				}
+
 			}
 			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
 				// If the entity object has configurable aspect then the controller
