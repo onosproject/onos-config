@@ -6,6 +6,7 @@ package mastership
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/pkg/controller/utils"
 	"math/rand"
 	"time"
 
@@ -58,12 +59,10 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 	// List the objects in the topo store
 	objects, err := r.topo.List(ctx, &topoapi.Filters{
-		KindFilter: &topoapi.Filter{
-			Filter: &topoapi.Filter_Equal_{
-				Equal_: &topoapi.EqualFilter{
-					Value: topoapi.CONTROLS,
-				},
-			},
+		RelationFilter: &topoapi.RelationFilter{
+			RelationKind: topoapi.CONTROLS,
+			Scope:        topoapi.RelationFilterScope_RELATIONS_ONLY,
+			SrcId:        string(utils.GetOnosConfigID()),
 		},
 	})
 	if err != nil {
