@@ -18,13 +18,14 @@ require (
 	github.com/onosproject/onos-ric-sdk-go v0.8.9
 	github.com/onosproject/onos-test v0.6.6
 	github.com/onosproject/onos-topo v0.9.3
-	github.com/openconfig/gnmi v0.0.0-20210914185457-51254b657b7d
+	github.com/openconfig/gnmi v0.0.0-20220617175856-41246b1b3507
 	github.com/prometheus/common v0.26.0
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	google.golang.org/grpc v1.41.0
+	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.22.1

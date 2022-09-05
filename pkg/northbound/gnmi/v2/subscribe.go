@@ -7,7 +7,8 @@ package gnmi
 
 import (
 	"context"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -111,6 +112,7 @@ func (s *Server) sendSubscriptionRequest(ctx context.Context, sctx *subContext, 
 	}
 
 	query.NotificationHandler = nil
+
 	query.ProtoHandler = func(msg proto.Message) error {
 		log.Infof("Received response from target %s: %+v", target, msg)
 		resp, ok := msg.(*gnmi.SubscribeResponse)

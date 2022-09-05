@@ -40,9 +40,13 @@ func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue, modelPath *pathutils.Re
 	case *gnmi.TypedValue_BytesVal:
 		return configapi.NewTypedValueBytes(v.BytesVal), nil
 	case *gnmi.TypedValue_DecimalVal:
+		// Deprecated: Do not use
 		return configapi.NewTypedValueDecimal(v.DecimalVal.Digits, uint8(v.DecimalVal.Precision)), nil
 	case *gnmi.TypedValue_FloatVal:
+		// Deprecated: Use TypedValue_DoubleVal instead
 		return configapi.NewTypedValueFloat(float64(v.FloatVal)), nil
+	case *gnmi.TypedValue_DoubleVal:
+		return configapi.NewTypedValueFloat(v.DoubleVal), nil
 	case *gnmi.TypedValue_LeaflistVal:
 		var typeOpt0 uint8
 		if modelPath != nil && len(modelPath.TypeOpts) > 0 {
