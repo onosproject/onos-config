@@ -69,14 +69,15 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 	}
 
 	if tlsOptions.Plain {
-		log.Info("Plain (non TLS) connection to ", configurable.Address)
+		log.Infof("Plain (non TLS) connection to %s", configurable.Address)
 	} else {
+		log.Infof("TLS connection to %s", configurable.Address)
 		tlsConfig := &tls.Config{}
 		if tlsOptions.Insecure {
-			log.Info("Insecure TLS connection to ", configurable.Address)
+			log.Infof("Skipping verification of certificate chain for target %s", configurable.Address)
 			tlsConfig = &tls.Config{InsecureSkipVerify: true}
 		} else {
-			log.Info("Secure TLS connection to ", configurable.Address)
+			log.Info("Enabled verification of certificate chain for target %s", configurable.Address)
 		}
 		if tlsOptions.CaCert == "" {
 			log.Info("Loading default CA onfca")
@@ -101,6 +102,7 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 			tlsConfig.Certificates = []tls.Certificate{clientCerts}
 		} else if tlsOptions.Cert != "" && tlsOptions.Key != "" {
 			// Load certs given for device
+			log.Info("Loading the given certs for the device")
 			tlsConfig.Certificates = []tls.Certificate{setCertificate(tlsOptions.Cert, tlsOptions.Key)}
 		} else {
 			log.Errorf("Can't load Ca=%s , Cert=%s , key=%s for %v, trying with insecure connection",
