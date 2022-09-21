@@ -74,10 +74,10 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 		log.Infof("TLS connection to %s", configurable.Address)
 		tlsConfig := &tls.Config{}
 		if tlsOptions.Insecure {
-			log.Infof("Skipping verification of certificate chain for target %s", configurable.Address)
+			log.Infof("Skipping verification of TLS certificate chain for target %s", configurable.Address)
 			tlsConfig = &tls.Config{InsecureSkipVerify: true}
 		} else {
-			log.Info("Enabled verification of certificate chain for target %s", configurable.Address)
+			log.Info("Enabled verification of TLS certificate chain for target %s", configurable.Address)
 		}
 		if tlsOptions.CaCert == "" {
 			log.Info("Loading default CA onfca")
@@ -94,7 +94,7 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 			tlsConfig.RootCAs = certPool
 		}
 		if tlsOptions.Cert == "" && tlsOptions.Key == "" {
-			log.Info("Loading default certificates")
+			log.Info("Loading default TLS certificates")
 			clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
 			if err != nil {
 				return nil, err
@@ -102,7 +102,7 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 			tlsConfig.Certificates = []tls.Certificate{clientCerts}
 		} else if tlsOptions.Cert != "" && tlsOptions.Key != "" {
 			// Load certs given for device
-			log.Info("Loading the given certs for the device")
+			log.Info("Loading the given TLS certs for the device")
 			tlsConfig.Certificates = []tls.Certificate{setCertificate(tlsOptions.Cert, tlsOptions.Key)}
 		} else {
 			log.Errorf("Can't load Ca=%s , Cert=%s , key=%s for %v, trying with insecure connection",
