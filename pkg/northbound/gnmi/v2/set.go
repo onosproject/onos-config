@@ -277,6 +277,7 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 		persistent:    configurable.Persistent,
 		updates:       make(configapi.TypedValueMap),
 		removes:       make([]string, 0),
+		strippedPaths: pathutils.StrippedPathMap(modelPlugin.GetInfo().ReadWritePaths),
 	}
 	targets[targetID] = target
 
@@ -324,7 +325,7 @@ func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gn
 			target.updates[cv.Path] = &cv.Value
 		}
 	} else {
-		_, rwPathElem, err := pathutils.FindPathFromModel(path, target.plugin.GetInfo().ReadWritePaths, true)
+		_, fullPath, rwPathElem, err := pathutils.FindPathFromModel(path, target.strippedPaths, target.plugin.GetInfo().ReadWritePaths, true)
 		if err != nil {
 			return err
 		}
@@ -335,7 +336,7 @@ func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gn
 		if err = pathutils.CheckKeyValue(path, rwPathElem, updateValue); err != nil {
 			return err
 		}
-		target.updates[path] = updateValue
+		target.updates[fullPath] = updateValue
 	}
 
 	return nil
@@ -348,13 +349,13 @@ func (s *Server) doDelete(prefix *gnmi.Path, gnmiPath *gnmi.Path, target *target
 		path = fmt.Sprintf("%s%s", prefixPath, path)
 	}
 	// Checks for read only paths
-	isExactMatch, rwPath, err := pathutils.FindPathFromModel(path, target.plugin.GetInfo().ReadWritePaths, false)
+	isExactMatch, fullPath, rwPath, err := pathutils.FindPathFromModel(path, target.strippedPaths, target.plugin.GetInfo().ReadWritePaths, false)
 	if err != nil {
 		return err
 	}
 	if isExactMatch && rwPath.IsAKey && !strings.HasSuffix(path, "]") { // In case an index attribute is given - take it off
-		path = path[:strings.LastIndex(path, "/")]
+		fullPath = fullPath[:strings.LastIndex(path, "/")]
 	}
-	target.removes = append(target.removes, path)
+	target.removes = append(target.removes, fullPath)
 	return nil
 }
