@@ -19,6 +19,7 @@ type targetInfo struct {
 	updates       configapi.TypedValueMap
 	removes       []string
 	configuration *configapi.Configuration
+	strippedPaths map[string]string
 }
 
 type pathInfo struct {

@@ -29,6 +29,9 @@ const validPathRegexp = `(/[a-zA-Z0-9:=\-\._[\]]+)+`
 // IndexAllowedChars - regexp to restrict characters in index names
 const IndexAllowedChars = `^([a-zA-Z0-9\*\-\._])+$`
 
+// prefixPattern - matches path element prefixes
+const prefixPattern = `(^[a-zA-Z0-9]+:|/[a-zA-Z0-9]+:)`
+
 // ReadOnlyAttrib is the known metadata about a Read Only leaf
 type ReadOnlyAttrib struct {
 	ValueType   configapi.ValueType
@@ -48,6 +51,7 @@ type ReadOnlyPathMap map[string]ReadOnlySubPathMap
 
 var rOnIndex = regexp.MustCompile(MatchOnIndex)
 var rIndexAllowedChars = regexp.MustCompile(IndexAllowedChars)
+var prefixRegexp = regexp.MustCompile(prefixPattern)
 
 // JustPaths extracts keys from a read only path map
 func (ro ReadOnlyPathMap) JustPaths() []string {
@@ -94,6 +98,15 @@ type ReadWritePathElem struct {
 // ReadWritePathMap is a map of ReadWrite paths their metadata
 type ReadWritePathMap map[string]ReadWritePathElem
 
+// StrippedPathMap produces an auxiliary mapping of prefix-less paths to the full model paths
+func StrippedPathMap(rwPathMap ReadWritePathMap) map[string]string {
+	strippedPaths := make(map[string]string, len(rwPathMap))
+	for p := range rwPathMap {
+		strippedPaths[RemovePathPrefixes(p)] = p
+	}
+	return strippedPaths
+}
+
 // RemovePathIndices removes the index value from a path to allow it to be compared to a model path
 func RemovePathIndices(path string) string {
 	indices := rOnIndex.FindAllStringSubmatch(path, -1)
@@ -101,6 +114,15 @@ func RemovePathIndices(path string) string {
 		path = strings.Replace(path, i[0], "", 1)
 	}
 	return path
+}
+
+// RemovePathPrefixes removes prefixes from all path elements
+func RemovePathPrefixes(path string) string {
+	stripped := prefixRegexp.ReplaceAllString(path, "/$2")
+	if !strings.HasPrefix(path, "/") && strings.HasPrefix(stripped, "/") {
+		stripped = stripped[1:]
+	}
+	return stripped
 }
 
 // AnonymizePathIndices anonymizes index value in a path (replaces it with *)
@@ -137,37 +159,53 @@ func ExtractIndexNames(path string) ([]string, []string) {
 }
 
 // FindPathFromModel ...
-func FindPathFromModel(path string, rwPaths ReadWritePathMap, exact bool) (bool, *ReadWritePathElem, error) {
-	searchPathNoIndices := RemovePathIndices(path)
+func FindPathFromModel(path string, barePaths map[string]string, rwPaths ReadWritePathMap, exact bool) (bool, string, *ReadWritePathElem, error) {
+	pathWithNoPrefixes := RemovePathPrefixes(path)
 
 	// try exact match first
-	if rwPath, isExactMatch := rwPaths[AnonymizePathIndices(path)]; isExactMatch {
-		return true, &rwPath, nil
+	anonymized := AnonymizePathIndices(pathWithNoPrefixes)
+	if rwPath, isExactMatch := barePaths[anonymized]; isExactMatch {
+		rwPathElement := rwPaths[rwPath]
+		return true, RestoreIndexes(rwPath, path), &rwPathElement, nil
 	} else if exact {
-		return false, nil,
+		return false, RestoreIndexes(rwPath, path), nil,
 			status.Errorf(codes.InvalidArgument, "unable to find exact match for RW model path %s. %d paths inspected",
 				path, len(rwPaths))
 	}
 
-	if strings.HasSuffix(path, "]") { //Ends with index
-		indices, _ := ExtractIndexNames(path)
+	searchPathNoIndices := RemovePathIndices(pathWithNoPrefixes)
+	if strings.HasSuffix(pathWithNoPrefixes, "]") { //Ends with index
+		indices, _ := ExtractIndexNames(pathWithNoPrefixes)
 		// Add on the last index
 		searchPathNoIndices = fmt.Sprintf("%s/%s", searchPathNoIndices, indices[len(indices)-1])
 	}
 
 	// First search through the RW paths
-	for modelPath, modelElem := range rwPaths {
-		pathNoIndices := RemovePathIndices(modelPath)
+	for barePath, modelPath := range barePaths {
+		modelElem := rwPaths[modelPath]
+		anonymized = RemovePathIndices(barePath)
+
 		// Find a short path
-		if exact && pathNoIndices == searchPathNoIndices {
-			return false, &modelElem, nil
-		} else if !exact && strings.HasPrefix(pathNoIndices, searchPathNoIndices) {
-			return false, &modelElem, nil // returns the first thing it finds that matches the prefix
+		if exact && anonymized == searchPathNoIndices {
+			return false, RestoreIndexes(modelPath, path), &modelElem, nil
+		} else if !exact && strings.HasPrefix(anonymized, searchPathNoIndices) {
+			return false, RestoreIndexes(modelPath, path), &modelElem, nil // returns the first thing it finds that matches the prefix
 		}
 	}
 
-	return false, nil,
+	return false, path, nil,
 		errors.NewInvalid("unable to find RW model path %s ( without index %s). %d paths inspected", path, searchPathNoIndices, len(rwPaths))
+}
+
+// RestoreIndexes takes an original path and injects any indexes in place of the anonymized path
+func RestoreIndexes(anon string, indexed string) string {
+	ain, _ := ExtractIndexNames(anon)
+	iin, iiv := ExtractIndexNames(indexed)
+	result := anon
+	for i := range ain {
+		result = strings.Replace(result, fmt.Sprintf("%s=*", ain[i]), fmt.Sprintf("%s=%s", iin[i], iiv[i]), 1)
+	}
+	return result
 }
 
 // CheckKeyValue checks that if this is a Key attribute, that the value is the same as its parent's key
