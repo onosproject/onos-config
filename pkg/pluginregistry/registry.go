@@ -301,6 +301,7 @@ func (p *ModelPluginInfo) Validate(ctx context.Context, jsonData []byte) error {
 // GetPathValues extracts typed path values from the specified configuration change JSON
 func (p *ModelPluginInfo) GetPathValues(ctx context.Context, pathPrefix string, jsonData []byte) ([]*configapi.PathValue, error) {
 	resp, err := p.Client.GetPathValues(ctx, &api.PathValuesRequest{PathPrefix: pathPrefix, Json: jsonData})
+	log.Info("Test path values:", resp)
 	if err != nil {
 		return nil, err
 	}

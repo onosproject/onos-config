@@ -310,7 +310,7 @@ func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gn
 
 	jsonVal := u.GetVal().GetJsonVal()
 	if jsonVal != nil {
-		log.Debugf("Processing Json Value in set from base %s: %s", path, string(jsonVal))
+		log.Infof("Test 1 Processing Json Value in set from base %s: %s", path, string(jsonVal))
 		pathValues, err := target.plugin.GetPathValues(ctx, prefixPath, jsonVal)
 		if err != nil {
 			return err
@@ -321,6 +321,7 @@ func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gn
 		}
 
 		for _, cv := range pathValues {
+
 			target.updates[cv.Path] = &cv.Value
 		}
 	} else {
