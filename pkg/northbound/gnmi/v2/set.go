@@ -267,7 +267,7 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 		log.Warn(err)
 		return nil, err
 	}
-	
+
 	// Create and register target info using the model information
 	target := &targetInfo{
 		targetID:      targetID,
@@ -310,7 +310,7 @@ func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gn
 
 	jsonVal := u.GetVal().GetJsonVal()
 	if jsonVal != nil {
-		log.Infof("Processing Json Value in set from base %s: %s", path, string(jsonVal))
+		log.Debugf("Processing Json Value in set from base %s: %s", path, string(jsonVal))
 		pathValues, err := target.plugin.GetPathValues(ctx, prefixPath, jsonVal)
 		if err != nil {
 			return err
