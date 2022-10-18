@@ -120,7 +120,7 @@ func Test_ParseNamespace(t *testing.T) {
 	assert.NoError(t, err, "Path with NS returns error")
 	assert.NotNil(t, parsed, "path with NS returns nil")
 
-	checkElement(t, parsed, 0, "a", "x", "y")
+	checkElement(t, parsed, 0, "ns:a", "x", "y")
 }
 
 func Test_StrPath(t *testing.T) {
