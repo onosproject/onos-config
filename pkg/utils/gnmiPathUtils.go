@@ -141,11 +141,6 @@ func SplitPath(path string) []string {
 	for len(path) > 0 {
 		i := nextTokenIndex(path)
 		part := path[:i]
-		partsNs := strings.Split(part, ":")
-		if len(partsNs) == 2 {
-			// We have to discard the namespace as gNMI doesn't handle it
-			part = partsNs[1]
-		}
 		result = append(result, part)
 		path = path[i:]
 		if len(path) > 0 && path[0] == '/' {
