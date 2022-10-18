@@ -20,7 +20,6 @@ Arguments
 
 -certPath <the location of a client certificate>
 
-
 See ../../docs/run.md for how to run the application.
 */
 package main

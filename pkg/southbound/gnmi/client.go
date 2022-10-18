@@ -35,7 +35,7 @@ type client struct {
 }
 
 // Subscribe calls gNMI subscription bacc
-//sed on a given query
+// sed on a given query
 func (c *client) Subscribe(ctx context.Context, q baseClient.Query) error {
 	err := c.client.Subscribe(ctx, q)
 	go c.run(ctx)
