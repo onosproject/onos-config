@@ -156,8 +156,8 @@ github.com/atomix/go-client v0.8.3-0.20221021083831-ea50715cbb30/go.mod h1:EzvhV
 github.com/atomix/runtime/api v0.6.0/go.mod h1:tjbd3w4yij89ZHCYdQUbmvZMC0HoHQQ/3/gVzQuOCH0=
 github.com/atomix/runtime/api v0.6.1-0.20221021064604-da653ed68c8f h1:13rhP1vtix1BvufDe3IzF/XsL/9D2C560yvg+3mYJjM=
 github.com/atomix/runtime/api v0.6.1-0.20221021064604-da653ed68c8f/go.mod h1:tjbd3w4yij89ZHCYdQUbmvZMC0HoHQQ/3/gVzQuOCH0=
-github.com/atomix/runtime/primitives v0.0.0-20221021070245-0174ee96ef1a h1:gF4MxxG+OdTUNfMTqdlPgb82kd+nS7tEqOd0RpZyA1U=
-github.com/atomix/runtime/primitives v0.0.0-20221021070245-0174ee96ef1a/go.mod h1:SfS+JfBWCLgTZkfTBXHHXqNkEBgESzWSTF+dWcOaJOg=
+github.com/atomix/runtime/primitives v0.0.0-20221021084227-f6171b618554 h1:HZupC9btCLCOXAcpdG0khxMPmNt6JcxiRmIKAUi1RGw=
+github.com/atomix/runtime/primitives v0.0.0-20221021084227-f6171b618554/go.mod h1:SfS+JfBWCLgTZkfTBXHHXqNkEBgESzWSTF+dWcOaJOg=
 github.com/atomix/runtime/proxy v0.9.1-0.20221021065021-6468aada0b10 h1:TeAxwHLO3ddX3GMNoetR7BZlw5E1yEN+CaSn41UnlTs=
 github.com/atomix/runtime/proxy v0.9.1-0.20221021065021-6468aada0b10/go.mod h1:RknlDfF/3s+35lI2VY1WoeTx92XZto7MmrEHxcD/V2k=
 github.com/atomix/runtime/sdk v0.6.1-0.20221020192447-81e4e25b88d3/go.mod h1:6Y3JsDUK81Z/exjzELWj64pkSHqk5VAfgnIWmRFO6bY=
