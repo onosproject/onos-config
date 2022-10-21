@@ -17,7 +17,7 @@ import (
 
 func Test_BasicSetUpdate(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
@@ -49,7 +49,7 @@ func Test_BasicSetUpdate(t *testing.T) {
 
 func Test_BasicSetUpdateWithOverride(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
@@ -85,7 +85,7 @@ func Test_BasicSetUpdateWithOverride(t *testing.T) {
 
 func Test_SetJsonUpdate(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
@@ -117,7 +117,7 @@ func Test_SetJsonUpdate(t *testing.T) {
 
 func Test_SetUpdateReplaceDelete(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
@@ -156,7 +156,7 @@ func Test_SetUpdateReplaceDelete(t *testing.T) {
 
 func Test_NoUpdateSet(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
@@ -170,7 +170,7 @@ func Test_NoUpdateSet(t *testing.T) {
 
 func Test_NoPlugin(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", true)
@@ -192,7 +192,7 @@ func Test_NoPlugin(t *testing.T) {
 
 func Test_SetDeleteSet(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)

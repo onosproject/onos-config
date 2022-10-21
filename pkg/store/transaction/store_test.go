@@ -17,7 +17,7 @@ import (
 
 func TestTransactionStore(t *testing.T) {
 	cluster := test.NewClient()
-	defer cluster.Cleanup()
+	defer cluster.Close()
 
 	store1, err := NewAtomixStore(cluster)
 	assert.NoError(t, err)
