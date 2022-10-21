@@ -6,35 +6,23 @@ package transaction
 
 import (
 	"context"
+	"github.com/atomix/go-client/pkg/test"
 	"testing"
 	"time"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
-	"github.com/atomix/atomix-go-client/pkg/atomix/test"
-	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTransactionStore(t *testing.T) {
-	test := test.NewTest(
-		rsm.NewProtocol(),
-		test.WithReplicas(1),
-		test.WithPartitions(1),
-	)
-	assert.NoError(t, test.Start())
-	defer test.Stop()
+	cluster := test.NewClient()
+	defer cluster.Cleanup()
 
-	client1, err := test.NewClient("node-1")
+	store1, err := NewAtomixStore(cluster)
 	assert.NoError(t, err)
 
-	client2, err := test.NewClient("node-2")
-	assert.NoError(t, err)
-
-	store1, err := NewAtomixStore(client1)
-	assert.NoError(t, err)
-
-	store2, err := NewAtomixStore(client2)
+	store2, err := NewAtomixStore(cluster)
 	assert.NoError(t, err)
 
 	target1 := configapi.TargetID("target-1")
