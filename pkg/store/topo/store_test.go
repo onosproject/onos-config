@@ -7,13 +7,12 @@ package topo
 import (
 	"context"
 	"fmt"
+	"github.com/atomix/go-client/pkg/test"
 	"io/ioutil"
 	"os"
 	"testing"
 	"time"
 
-	atomix "github.com/atomix/atomix-go-client/pkg/atomix/test"
-	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	topomgr "github.com/onosproject/onos-topo/pkg/manager"
@@ -37,23 +36,14 @@ func writeFile(file string, s string) {
 var store Store
 
 func TestMain(m *testing.M) {
-	test := atomix.NewTest(rsm.NewProtocol(), atomix.WithReplicas(1), atomix.WithPartitions(1))
-	err := test.Start()
-	if err != nil {
-		os.Exit(1)
-	}
-	defer test.Stop()
-
-	atomixClient, err := test.NewClient("test")
-	if err != nil {
-		os.Exit(1)
-	}
+	atomix := test.NewClient()
+	defer atomix.Close()
 
 	writeFile(caCrtFile, certs.OnfCaCrt)
 	writeFile(crtFile, certs.DefaultOnosConfigCrt)
 	writeFile(keyFile, certs.DefaultOnosConfigKey)
 
-	config := topomgr.Config{CAPath: caCrtFile, CertPath: crtFile, KeyPath: keyFile, GRPCPort: 5150, AtomixClient: atomixClient}
+	config := topomgr.Config{CAPath: caCrtFile, CertPath: crtFile, KeyPath: keyFile, GRPCPort: 5150, AtomixClient: atomix}
 	mgr := topomgr.NewManager(config)
 	go mgr.Run()
 	defer mgr.Close()

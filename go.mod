@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
-	github.com/atomix/atomix-go-client v0.6.2
 	github.com/atomix/go-client v0.8.3-0.20221021081826-85a7ebb0243c
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
@@ -13,8 +12,8 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.16
 	github.com/onosproject/helmit v0.6.19
-	github.com/onosproject/onos-api/go v0.9.16
-	github.com/onosproject/onos-lib-go v0.8.13
+	github.com/onosproject/onos-api/go v0.9.43
+	github.com/onosproject/onos-lib-go v0.8.16
 	github.com/onosproject/onos-ric-sdk-go v0.8.9
 	github.com/onosproject/onos-test v0.6.6
 	github.com/onosproject/onos-topo v0.9.3
@@ -47,9 +46,6 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
-	github.com/atomix/atomix-api/go v0.4.9 // indirect
-	github.com/atomix/atomix-go-framework v0.10.1 // indirect
-	github.com/atomix/atomix-go-local v0.8.0 // indirect
 	github.com/atomix/runtime/api v0.6.1-0.20221021064604-da653ed68c8f // indirect
 	github.com/atomix/runtime/primitives v0.0.0-20221021070245-0174ee96ef1a // indirect
 	github.com/atomix/runtime/proxy v0.9.1-0.20221021065021-6468aada0b10 // indirect
@@ -208,3 +204,5 @@ require (
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3
 
 replace github.com/onosproject/onos-lib-go => github.com/kuujo/onos-lib-go v0.0.0-20221020215300-9ee1ced02fa6
+
+replace github.com/onosproject/onos-topo => github.com/kuujo/onos-topo v0.0.0-20221021070614-5c74e6329c27
