@@ -247,6 +247,7 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 					continue
 				}
 				transaction := entry.Value
+				transaction.Index = configapi.Index(entry.Index)
 				transaction.Version = uint64(entry.Version)
 				ch <- configapi.TransactionEvent{
 					Type:        configapi.TransactionEvent_REPLAYED,
