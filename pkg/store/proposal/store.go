@@ -227,106 +227,100 @@ func (s *proposalStore) Watch(ctx context.Context, ch chan<- configapi.ProposalE
 		opt.apply(&options)
 	}
 
+	var eventsOpts []_map.EventsOption
+	if options.proposalID != "" {
+		eventsOpts = append(eventsOpts, _map.WithKey[configapi.ProposalID](options.proposalID))
+	}
 	events, err := s.proposals.Events(ctx)
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
 	if options.replay {
-		entries, err := s.proposals.List(ctx)
-		if err != nil {
-			return errors.FromAtomix(err)
+		if options.proposalID != "" {
+			entry, err := s.proposals.Get(ctx, options.proposalID)
+			if err != nil {
+				err = errors.FromAtomix(err)
+				if !errors.IsNotFound(err) {
+					return err
+				}
+				go propagateEvents(events, ch)
+			} else {
+				go func() {
+					proposal := entry.Value
+					proposal.Version = uint64(entry.Version)
+					ch <- configapi.ProposalEvent{
+						Type:     configapi.ProposalEvent_REPLAYED,
+						Proposal: *proposal,
+					}
+					propagateEvents(events, ch)
+				}()
+			}
+		} else {
+			entries, err := s.proposals.List(ctx)
+			if err != nil {
+				return errors.FromAtomix(err)
+			}
+			go func() {
+				for {
+					entry, err := entries.Next()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					proposal := entry.Value
+					proposal.Version = uint64(entry.Version)
+					ch <- configapi.ProposalEvent{
+						Type:     configapi.ProposalEvent_REPLAYED,
+						Proposal: *proposal,
+					}
+				}
+				propagateEvents(events, ch)
+			}()
 		}
-		go func() {
-			for {
-				entry, err := entries.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				configuration := entry.Value
-				configuration.Version = uint64(entry.Version)
-				ch <- configapi.ProposalEvent{
-					Type:     configapi.ProposalEvent_REPLAYED,
-					Proposal: *configuration,
-				}
-			}
-
-			for {
-				event, err := events.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				switch e := event.(type) {
-				case *_map.Inserted[configapi.ProposalID, *configapi.Proposal]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
-					ch <- configapi.ProposalEvent{
-						Type:     configapi.ProposalEvent_CREATED,
-						Proposal: *configuration,
-					}
-				case *_map.Updated[configapi.ProposalID, *configapi.Proposal]:
-					configuration := e.NewEntry.Value
-					configuration.Version = uint64(e.NewEntry.Version)
-					ch <- configapi.ProposalEvent{
-						Type:     configapi.ProposalEvent_UPDATED,
-						Proposal: *configuration,
-					}
-				case *_map.Removed[configapi.ProposalID, *configapi.Proposal]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
-					ch <- configapi.ProposalEvent{
-						Type:     configapi.ProposalEvent_DELETED,
-						Proposal: *configuration,
-					}
-				}
-			}
-		}()
 	} else {
-		go func() {
-			for {
-				event, err := events.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				switch e := event.(type) {
-				case *_map.Inserted[configapi.ProposalID, *configapi.Proposal]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
-					ch <- configapi.ProposalEvent{
-						Type:     configapi.ProposalEvent_CREATED,
-						Proposal: *configuration,
-					}
-				case *_map.Updated[configapi.ProposalID, *configapi.Proposal]:
-					configuration := e.NewEntry.Value
-					configuration.Version = uint64(e.NewEntry.Version)
-					ch <- configapi.ProposalEvent{
-						Type:     configapi.ProposalEvent_UPDATED,
-						Proposal: *configuration,
-					}
-				case *_map.Removed[configapi.ProposalID, *configapi.Proposal]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
-					ch <- configapi.ProposalEvent{
-						Type:     configapi.ProposalEvent_DELETED,
-						Proposal: *configuration,
-					}
-				}
-			}
-		}()
+		go propagateEvents(events, ch)
 	}
 	return nil
+}
+
+func propagateEvents(events _map.EventStream[configapi.ProposalID, *configapi.Proposal], ch chan<- configapi.ProposalEvent) {
+	for {
+		event, err := events.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		switch e := event.(type) {
+		case *_map.Inserted[configapi.ProposalID, *configapi.Proposal]:
+			proposal := e.Entry.Value
+			proposal.Version = uint64(e.Entry.Version)
+			ch <- configapi.ProposalEvent{
+				Type:     configapi.ProposalEvent_CREATED,
+				Proposal: *proposal,
+			}
+		case *_map.Updated[configapi.ProposalID, *configapi.Proposal]:
+			proposal := e.NewEntry.Value
+			proposal.Version = uint64(e.NewEntry.Version)
+			ch <- configapi.ProposalEvent{
+				Type:     configapi.ProposalEvent_UPDATED,
+				Proposal: *proposal,
+			}
+		case *_map.Removed[configapi.ProposalID, *configapi.Proposal]:
+			proposal := e.Entry.Value
+			proposal.Version = uint64(e.Entry.Version)
+			ch <- configapi.ProposalEvent{
+				Type:     configapi.ProposalEvent_DELETED,
+				Proposal: *proposal,
+			}
+		}
+	}
 }
 
 func (s *proposalStore) Close(ctx context.Context) error {

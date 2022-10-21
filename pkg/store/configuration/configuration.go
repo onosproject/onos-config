@@ -224,106 +224,100 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 		opt.apply(&options)
 	}
 
+	var eventsOpts []_map.EventsOption
+	if options.configurationID != "" {
+		eventsOpts = append(eventsOpts, _map.WithKey[configapi.ConfigurationID](options.configurationID))
+	}
 	events, err := s.configurations.Events(ctx)
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
 	if options.replay {
-		entries, err := s.configurations.List(ctx)
-		if err != nil {
-			return errors.FromAtomix(err)
+		if options.configurationID != "" {
+			entry, err := s.configurations.Get(ctx, options.configurationID)
+			if err != nil {
+				err = errors.FromAtomix(err)
+				if !errors.IsNotFound(err) {
+					return err
+				}
+				go propagateEvents(events, ch)
+			} else {
+				go func() {
+					configuration := entry.Value
+					configuration.Version = uint64(entry.Version)
+					ch <- configapi.ConfigurationEvent{
+						Type:          configapi.ConfigurationEvent_REPLAYED,
+						Configuration: *configuration,
+					}
+					propagateEvents(events, ch)
+				}()
+			}
+		} else {
+			entries, err := s.configurations.List(ctx)
+			if err != nil {
+				return errors.FromAtomix(err)
+			}
+			go func() {
+				for {
+					entry, err := entries.Next()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					configuration := entry.Value
+					configuration.Version = uint64(entry.Version)
+					ch <- configapi.ConfigurationEvent{
+						Type:          configapi.ConfigurationEvent_REPLAYED,
+						Configuration: *configuration,
+					}
+				}
+				propagateEvents(events, ch)
+			}()
 		}
-		go func() {
-			for {
-				entry, err := entries.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				configuration := entry.Value
-				configuration.Version = uint64(entry.Version)
-				ch <- configapi.ConfigurationEvent{
-					Type:          configapi.ConfigurationEvent_REPLAYED,
-					Configuration: *configuration,
-				}
-			}
-
-			for {
-				event, err := events.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				switch e := event.(type) {
-				case *_map.Inserted[configapi.ConfigurationID, *configapi.Configuration]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
-					ch <- configapi.ConfigurationEvent{
-						Type:          configapi.ConfigurationEvent_CREATED,
-						Configuration: *configuration,
-					}
-				case *_map.Updated[configapi.ConfigurationID, *configapi.Configuration]:
-					configuration := e.NewEntry.Value
-					configuration.Version = uint64(e.NewEntry.Version)
-					ch <- configapi.ConfigurationEvent{
-						Type:          configapi.ConfigurationEvent_UPDATED,
-						Configuration: *configuration,
-					}
-				case *_map.Removed[configapi.ConfigurationID, *configapi.Configuration]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
-					ch <- configapi.ConfigurationEvent{
-						Type:          configapi.ConfigurationEvent_DELETED,
-						Configuration: *configuration,
-					}
-				}
-			}
-		}()
 	} else {
-		go func() {
-			for {
-				event, err := events.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				switch e := event.(type) {
-				case *_map.Inserted[configapi.ConfigurationID, *configapi.Configuration]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
-					ch <- configapi.ConfigurationEvent{
-						Type:          configapi.ConfigurationEvent_CREATED,
-						Configuration: *configuration,
-					}
-				case *_map.Updated[configapi.ConfigurationID, *configapi.Configuration]:
-					configuration := e.NewEntry.Value
-					configuration.Version = uint64(e.NewEntry.Version)
-					ch <- configapi.ConfigurationEvent{
-						Type:          configapi.ConfigurationEvent_UPDATED,
-						Configuration: *configuration,
-					}
-				case *_map.Removed[configapi.ConfigurationID, *configapi.Configuration]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
-					ch <- configapi.ConfigurationEvent{
-						Type:          configapi.ConfigurationEvent_DELETED,
-						Configuration: *configuration,
-					}
-				}
-			}
-		}()
+		go propagateEvents(events, ch)
 	}
 	return nil
+}
+
+func propagateEvents(events _map.EventStream[configapi.ConfigurationID, *configapi.Configuration], ch chan<- configapi.ConfigurationEvent) {
+	for {
+		event, err := events.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		switch e := event.(type) {
+		case *_map.Inserted[configapi.ConfigurationID, *configapi.Configuration]:
+			configuration := e.Entry.Value
+			configuration.Version = uint64(e.Entry.Version)
+			ch <- configapi.ConfigurationEvent{
+				Type:          configapi.ConfigurationEvent_CREATED,
+				Configuration: *configuration,
+			}
+		case *_map.Updated[configapi.ConfigurationID, *configapi.Configuration]:
+			configuration := e.NewEntry.Value
+			configuration.Version = uint64(e.NewEntry.Version)
+			ch <- configapi.ConfigurationEvent{
+				Type:          configapi.ConfigurationEvent_UPDATED,
+				Configuration: *configuration,
+			}
+		case *_map.Removed[configapi.ConfigurationID, *configapi.Configuration]:
+			configuration := e.Entry.Value
+			configuration.Version = uint64(e.Entry.Version)
+			ch <- configapi.ConfigurationEvent{
+				Type:          configapi.ConfigurationEvent_DELETED,
+				Configuration: *configuration,
+			}
+		}
+	}
 }
 
 func (s *configurationStore) Close(ctx context.Context) error {

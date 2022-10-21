@@ -219,120 +219,111 @@ func (s *transactionStore) List(ctx context.Context) ([]*configapi.Transaction, 
 	}
 }
 
-// Watch watches the transaction store  for changes
 func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.TransactionEvent, opts ...WatchOption) error {
 	var options watchOptions
 	for _, opt := range opts {
 		opt.apply(&options)
 	}
 
+	var eventsOpts []indexedmap.EventsOption
+	if options.transactionID != "" {
+		eventsOpts = append(eventsOpts, indexedmap.WithKey[configapi.TransactionID](options.transactionID))
+	}
 	events, err := s.transactions.Events(ctx)
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
 	if options.replay {
-		entries, err := s.transactions.List(ctx)
-		if err != nil {
-			return errors.FromAtomix(err)
+		if options.transactionID != "" {
+			entry, err := s.transactions.Get(ctx, options.transactionID)
+			if err != nil {
+				err = errors.FromAtomix(err)
+				if !errors.IsNotFound(err) {
+					return err
+				}
+				go propagateEvents(events, ch)
+			} else {
+				go func() {
+					transaction := entry.Value
+					transaction.Index = configapi.Index(entry.Index)
+					transaction.Version = uint64(entry.Version)
+					ch <- configapi.TransactionEvent{
+						Type:        configapi.TransactionEvent_REPLAYED,
+						Transaction: *transaction,
+					}
+					propagateEvents(events, ch)
+				}()
+			}
+		} else {
+			entries, err := s.transactions.List(ctx)
+			if err != nil {
+				return errors.FromAtomix(err)
+			}
+			go func() {
+				for {
+					entry, err := entries.Next()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					transaction := entry.Value
+					transaction.Index = configapi.Index(entry.Index)
+					transaction.Version = uint64(entry.Version)
+					ch <- configapi.TransactionEvent{
+						Type:        configapi.TransactionEvent_REPLAYED,
+						Transaction: *transaction,
+					}
+				}
+				propagateEvents(events, ch)
+			}()
 		}
-		go func() {
-			for {
-				entry, err := entries.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				transaction := entry.Value
-				transaction.Index = configapi.Index(entry.Index)
-				transaction.Version = uint64(entry.Version)
-				ch <- configapi.TransactionEvent{
-					Type:        configapi.TransactionEvent_REPLAYED,
-					Transaction: *transaction,
-				}
-			}
-
-			for {
-				event, err := events.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				switch e := event.(type) {
-				case *indexedmap.Inserted[configapi.TransactionID, *configapi.Transaction]:
-					transaction := e.Entry.Value
-					transaction.Index = configapi.Index(e.Entry.Index)
-					transaction.Version = uint64(e.Entry.Version)
-					ch <- configapi.TransactionEvent{
-						Type:        configapi.TransactionEvent_CREATED,
-						Transaction: *transaction,
-					}
-				case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
-					transaction := e.NewEntry.Value
-					transaction.Index = configapi.Index(e.NewEntry.Index)
-					transaction.Version = uint64(e.NewEntry.Version)
-					ch <- configapi.TransactionEvent{
-						Type:        configapi.TransactionEvent_UPDATED,
-						Transaction: *transaction,
-					}
-				case *indexedmap.Removed[configapi.TransactionID, *configapi.Transaction]:
-					transaction := e.Entry.Value
-					transaction.Index = configapi.Index(e.Entry.Index)
-					transaction.Version = uint64(e.Entry.Version)
-					ch <- configapi.TransactionEvent{
-						Type:        configapi.TransactionEvent_DELETED,
-						Transaction: *transaction,
-					}
-				}
-			}
-		}()
 	} else {
-		go func() {
-			for {
-				event, err := events.Next()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				switch e := event.(type) {
-				case *indexedmap.Inserted[configapi.TransactionID, *configapi.Transaction]:
-					transaction := e.Entry.Value
-					transaction.Index = configapi.Index(e.Entry.Index)
-					transaction.Version = uint64(e.Entry.Version)
-					ch <- configapi.TransactionEvent{
-						Type:        configapi.TransactionEvent_CREATED,
-						Transaction: *transaction,
-					}
-				case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
-					transaction := e.NewEntry.Value
-					transaction.Index = configapi.Index(e.NewEntry.Index)
-					transaction.Version = uint64(e.NewEntry.Version)
-					ch <- configapi.TransactionEvent{
-						Type:        configapi.TransactionEvent_UPDATED,
-						Transaction: *transaction,
-					}
-				case *indexedmap.Removed[configapi.TransactionID, *configapi.Transaction]:
-					transaction := e.Entry.Value
-					transaction.Index = configapi.Index(e.Entry.Index)
-					transaction.Version = uint64(e.Entry.Version)
-					ch <- configapi.TransactionEvent{
-						Type:        configapi.TransactionEvent_DELETED,
-						Transaction: *transaction,
-					}
-				}
-			}
-		}()
+		go propagateEvents(events, ch)
 	}
 	return nil
+}
+
+func propagateEvents(events indexedmap.EventStream[configapi.TransactionID, *configapi.Transaction], ch chan<- configapi.TransactionEvent) {
+	for {
+		event, err := events.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		switch e := event.(type) {
+		case *indexedmap.Inserted[configapi.TransactionID, *configapi.Transaction]:
+			transaction := e.Entry.Value
+			transaction.Index = configapi.Index(e.Entry.Index)
+			transaction.Version = uint64(e.Entry.Version)
+			ch <- configapi.TransactionEvent{
+				Type:        configapi.TransactionEvent_CREATED,
+				Transaction: *transaction,
+			}
+		case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
+			transaction := e.NewEntry.Value
+			transaction.Index = configapi.Index(e.NewEntry.Index)
+			transaction.Version = uint64(e.NewEntry.Version)
+			ch <- configapi.TransactionEvent{
+				Type:        configapi.TransactionEvent_UPDATED,
+				Transaction: *transaction,
+			}
+		case *indexedmap.Removed[configapi.TransactionID, *configapi.Transaction]:
+			transaction := e.Entry.Value
+			transaction.Index = configapi.Index(e.Entry.Index)
+			transaction.Version = uint64(e.Entry.Version)
+			ch <- configapi.TransactionEvent{
+				Type:        configapi.TransactionEvent_DELETED,
+				Transaction: *transaction,
+			}
+		}
+	}
 }
 
 // Close closes the store
