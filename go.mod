@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
-	github.com/atomix/go-client v0.8.3-0.20221021081826-85a7ebb0243c
+	github.com/atomix/go-client v0.8.3-0.20221021083831-ea50715cbb30
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2

@@ -151,8 +151,8 @@ github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 h1:4daAzAu0
 github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
 github.com/atomix/atomix-api/go v0.4.9/go.mod h1:N6gtApjoC9bRS9m7dksdVQIWSKaNArAl5EiOoaTHnmw=
 github.com/atomix/atomix-go-framework v0.10.1/go.mod h1:436lsH1qD1xMSb2achfp5171UESMc2ycFNO15EVxB3I=
-github.com/atomix/go-client v0.8.3-0.20221021081826-85a7ebb0243c h1:iERLhXWfYK3ak7dhfvMLaRUNx91y9YdzTuTr9dg+WaU=
-github.com/atomix/go-client v0.8.3-0.20221021081826-85a7ebb0243c/go.mod h1:EzvhVazOkKQZf6UFupq+2zuXvf5xYHX7s1EyBXzX2/4=
+github.com/atomix/go-client v0.8.3-0.20221021083831-ea50715cbb30 h1:UcHuE9qEcYjyy+RqHsIqLqcXO1ck3rP79MDeip0zmeo=
+github.com/atomix/go-client v0.8.3-0.20221021083831-ea50715cbb30/go.mod h1:EzvhVazOkKQZf6UFupq+2zuXvf5xYHX7s1EyBXzX2/4=
 github.com/atomix/runtime/api v0.6.0/go.mod h1:tjbd3w4yij89ZHCYdQUbmvZMC0HoHQQ/3/gVzQuOCH0=
 github.com/atomix/runtime/api v0.6.1-0.20221021064604-da653ed68c8f h1:13rhP1vtix1BvufDe3IzF/XsL/9D2C560yvg+3mYJjM=
 github.com/atomix/runtime/api v0.6.1-0.20221021064604-da653ed68c8f/go.mod h1:tjbd3w4yij89ZHCYdQUbmvZMC0HoHQQ/3/gVzQuOCH0=
