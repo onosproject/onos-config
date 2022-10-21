@@ -47,7 +47,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/atomix/runtime/api v0.6.1-0.20221021064604-da653ed68c8f // indirect
-	github.com/atomix/runtime/primitives v0.0.0-20221021084227-f6171b618554 // indirect
+	github.com/atomix/runtime/primitives v0.0.0-20221021085523-e6b823157851 // indirect
 	github.com/atomix/runtime/proxy v0.9.1-0.20221021065021-6468aada0b10 // indirect
 	github.com/atomix/runtime/sdk v0.6.1-0.20221021064604-da653ed68c8f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

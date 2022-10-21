@@ -157,10 +157,10 @@ func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Tr
 // Update updates an existing transaction
 func (s *transactionStore) Update(ctx context.Context, transaction *configapi.Transaction) error {
 	if transaction.Revision == 0 {
-		return errors.NewInvalid("configuration must contain a revision on update")
+		return errors.NewInvalid("transaction must contain a revision on update")
 	}
 	if transaction.Version == 0 {
-		return errors.NewInvalid("configuration must contain a version on update")
+		return errors.NewInvalid("transaction must contain a version on update")
 	}
 	transaction.Revision++
 	transaction.Updated = time.Now()
@@ -178,10 +178,10 @@ func (s *transactionStore) Update(ctx context.Context, transaction *configapi.Tr
 // UpdateStatus updates an existing transaction status
 func (s *transactionStore) UpdateStatus(ctx context.Context, transaction *configapi.Transaction) error {
 	if transaction.Revision == 0 {
-		return errors.NewInvalid("configuration must contain a revision on update")
+		return errors.NewInvalid("transaction must contain a revision on update")
 	}
 	if transaction.Version == 0 {
-		return errors.NewInvalid("configuration must contain a version on update")
+		return errors.NewInvalid("transaction must contain a version on update")
 	}
 	transaction.Updated = time.Now()
 
@@ -246,11 +246,11 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 					log.Error(err)
 					continue
 				}
-				configuration := entry.Value
-				configuration.Version = uint64(entry.Version)
+				transaction := entry.Value
+				transaction.Version = uint64(entry.Version)
 				ch <- configapi.TransactionEvent{
 					Type:        configapi.TransactionEvent_REPLAYED,
-					Transaction: *configuration,
+					Transaction: *transaction,
 				}
 			}
 
@@ -265,25 +265,28 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 				}
 				switch e := event.(type) {
 				case *indexedmap.Inserted[configapi.TransactionID, *configapi.Transaction]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
+					transaction := e.Entry.Value
+					transaction.Index = configapi.Index(e.Entry.Index)
+					transaction.Version = uint64(e.Entry.Version)
 					ch <- configapi.TransactionEvent{
 						Type:        configapi.TransactionEvent_CREATED,
-						Transaction: *configuration,
+						Transaction: *transaction,
 					}
 				case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
-					configuration := e.NewEntry.Value
-					configuration.Version = uint64(e.NewEntry.Version)
+					transaction := e.NewEntry.Value
+					transaction.Index = configapi.Index(e.NewEntry.Index)
+					transaction.Version = uint64(e.NewEntry.Version)
 					ch <- configapi.TransactionEvent{
 						Type:        configapi.TransactionEvent_UPDATED,
-						Transaction: *configuration,
+						Transaction: *transaction,
 					}
 				case *indexedmap.Removed[configapi.TransactionID, *configapi.Transaction]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
+					transaction := e.Entry.Value
+					transaction.Index = configapi.Index(e.Entry.Index)
+					transaction.Version = uint64(e.Entry.Version)
 					ch <- configapi.TransactionEvent{
 						Type:        configapi.TransactionEvent_DELETED,
-						Transaction: *configuration,
+						Transaction: *transaction,
 					}
 				}
 			}
@@ -301,25 +304,28 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 				}
 				switch e := event.(type) {
 				case *indexedmap.Inserted[configapi.TransactionID, *configapi.Transaction]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
+					transaction := e.Entry.Value
+					transaction.Index = configapi.Index(e.Entry.Index)
+					transaction.Version = uint64(e.Entry.Version)
 					ch <- configapi.TransactionEvent{
 						Type:        configapi.TransactionEvent_CREATED,
-						Transaction: *configuration,
+						Transaction: *transaction,
 					}
 				case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
-					configuration := e.NewEntry.Value
-					configuration.Version = uint64(e.NewEntry.Version)
+					transaction := e.NewEntry.Value
+					transaction.Index = configapi.Index(e.NewEntry.Index)
+					transaction.Version = uint64(e.NewEntry.Version)
 					ch <- configapi.TransactionEvent{
 						Type:        configapi.TransactionEvent_UPDATED,
-						Transaction: *configuration,
+						Transaction: *transaction,
 					}
 				case *indexedmap.Removed[configapi.TransactionID, *configapi.Transaction]:
-					configuration := e.Entry.Value
-					configuration.Version = uint64(e.Entry.Version)
+					transaction := e.Entry.Value
+					transaction.Index = configapi.Index(e.Entry.Index)
+					transaction.Version = uint64(e.Entry.Version)
 					ch <- configapi.TransactionEvent{
 						Type:        configapi.TransactionEvent_DELETED,
-						Transaction: *configuration,
+						Transaction: *transaction,
 					}
 				}
 			}
