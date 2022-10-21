@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
-	github.com/atomix/go-client v0.8.3-0.20221021083831-ea50715cbb30
+	github.com/atomix/go-client v0.9.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
@@ -46,10 +46,10 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
-	github.com/atomix/runtime/api v0.6.1-0.20221021064604-da653ed68c8f // indirect
-	github.com/atomix/runtime/primitives v0.0.0-20221021093549-88a0bd9f40d8 // indirect
-	github.com/atomix/runtime/proxy v0.9.1-0.20221021065021-6468aada0b10 // indirect
-	github.com/atomix/runtime/sdk v0.6.1-0.20221021064604-da653ed68c8f // indirect
+	github.com/atomix/runtime/api v0.7.0 // indirect
+	github.com/atomix/runtime/primitives v0.7.0 // indirect
+	github.com/atomix/runtime/proxy v0.10.0 // indirect
+	github.com/atomix/runtime/sdk v0.7.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.2.0 // indirect
