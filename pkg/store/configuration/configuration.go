@@ -228,7 +228,7 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 	if options.configurationID != "" {
 		eventsOpts = append(eventsOpts, _map.WithKey[configapi.ConfigurationID](options.configurationID))
 	}
-	events, err := s.configurations.Events(ctx)
+	events, err := s.configurations.Events(ctx, eventsOpts...)
 	if err != nil {
 		return errors.FromAtomix(err)
 	}

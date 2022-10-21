@@ -231,7 +231,7 @@ func (s *proposalStore) Watch(ctx context.Context, ch chan<- configapi.ProposalE
 	if options.proposalID != "" {
 		eventsOpts = append(eventsOpts, _map.WithKey[configapi.ProposalID](options.proposalID))
 	}
-	events, err := s.proposals.Events(ctx)
+	events, err := s.proposals.Events(ctx, eventsOpts...)
 	if err != nil {
 		return errors.FromAtomix(err)
 	}

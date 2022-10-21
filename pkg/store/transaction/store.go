@@ -229,7 +229,7 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 	if options.transactionID != "" {
 		eventsOpts = append(eventsOpts, indexedmap.WithKey[configapi.TransactionID](options.transactionID))
 	}
-	events, err := s.transactions.Events(ctx)
+	events, err := s.transactions.Events(ctx, eventsOpts...)
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
