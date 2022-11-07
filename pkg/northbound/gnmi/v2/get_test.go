@@ -6,6 +6,7 @@ package gnmi
 
 import (
 	"context"
+	"github.com/atomix/go-client/pkg/test"
 	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration"
 	proposalcontroller "github.com/onosproject/onos-config/pkg/controller/proposal"
 	transactioncontroller "github.com/onosproject/onos-config/pkg/controller/transaction"
@@ -22,8 +23,6 @@ import (
 
 	adminapi "github.com/onosproject/onos-api/go/onos/config/admin"
 
-	atomixtest "github.com/atomix/atomix-go-client/pkg/atomix/test"
-	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -38,7 +37,7 @@ import (
 
 type testContext struct {
 	mctl                    *gomock.Controller
-	atomix                  *atomixtest.Test
+	atomix                  *test.Client
 	topo                    *gnmitest.MockStore
 	registry                *gnmitest.MockPluginRegistry
 	conns                   sb.ConnManager
@@ -93,23 +92,19 @@ func (test *testContext) stopControllers() {
 	test.configurationController.Stop()
 }
 
-func testStores(t *testing.T) (*atomixtest.Test, configuration.Store, proposal.Store, transaction.Store) {
-	test := atomixtest.NewTest(rsm.NewProtocol(), atomixtest.WithReplicas(1), atomixtest.WithPartitions(1))
-	assert.NoError(t, test.Start())
+func testStores(t *testing.T) (*test.Client, configuration.Store, proposal.Store, transaction.Store) {
+	cluster := test.NewClient()
 
-	client1, err := test.NewClient("node-1")
+	cfgStore, err := configuration.NewAtomixStore(cluster)
 	assert.NoError(t, err)
 
-	cfgStore, err := configuration.NewAtomixStore(client1)
+	propStore, err := proposal.NewAtomixStore(cluster)
 	assert.NoError(t, err)
 
-	propStore, err := proposal.NewAtomixStore(client1)
+	txStore, err := transaction.NewAtomixStore(cluster)
 	assert.NoError(t, err)
 
-	txStore, err := transaction.NewAtomixStore(client1)
-	assert.NoError(t, err)
-
-	return test, cfgStore, propStore, txStore
+	return cluster, cfgStore, propStore, txStore
 }
 
 func targetPath(t *testing.T, target configapi.TargetID, elms ...string) *gnmi.Path {
@@ -170,7 +165,7 @@ func setupTopoAndRegistry(test *testContext, id string, model string, version st
 
 func Test_GetNoTarget(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	noTargetPath1 := gnmi.Path{Elem: make([]*gnmi.PathElem, 0)}
@@ -187,7 +182,7 @@ func Test_GetNoTarget(t *testing.T) {
 
 func Test_GetUnsupportedEncoding(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	request := gnmi.GetRequest{
@@ -202,7 +197,7 @@ func Test_GetUnsupportedEncoding(t *testing.T) {
 
 func Test_BasicGet(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
@@ -241,7 +236,7 @@ func Test_BasicGet(t *testing.T) {
 
 func Test_BasicGetUpdateWithOverride(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
@@ -285,7 +280,7 @@ func Test_BasicGetUpdateWithOverride(t *testing.T) {
 
 func Test_GetWithPrefixOnly(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
@@ -325,7 +320,7 @@ func Test_GetWithPrefixOnly(t *testing.T) {
 
 func Test_ReportAllTargetsNoSecurityAndJson(t *testing.T) {
 	test := createServer(t)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 
 	topo1 := topoEntity("target-1", "devicesim", "1.0.0")
@@ -363,7 +358,7 @@ func Test_ReportAllTargetsWithSecurityAndProto(t *testing.T) {
 	oldValue := os.Getenv(OIDCServerURL)
 	err := os.Setenv(OIDCServerURL, "test-value")
 	assert.NoError(t, err)
-	defer test.atomix.Stop()
+	defer test.atomix.Close()
 	defer test.mctl.Finish()
 	defer func(key, value string) {
 		err := os.Setenv(key, value)

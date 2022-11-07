@@ -6,7 +6,7 @@
 package manager
 
 import (
-	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/go-client/pkg/client"
 	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration"
 	"github.com/onosproject/onos-config/pkg/controller/connection"
 	mastershipcontroller "github.com/onosproject/onos-config/pkg/controller/mastership"
@@ -161,7 +161,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	atomixClient := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
+	atomixClient := client.NewClient()
 
 	// Create new topo store
 	topoStore, err := topo.NewStore(m.Config.TopoAddress, opts...)

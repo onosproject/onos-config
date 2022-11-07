@@ -7,24 +7,20 @@ package proposal
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
-	"sync"
+	"github.com/atomix/go-client/pkg/generic"
+	"github.com/atomix/go-client/pkg/primitive"
+	"io"
 	"time"
-
-	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
-
-	"github.com/golang/protobuf/proto"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
-	"github.com/atomix/atomix-go-client/pkg/atomix"
-	_map "github.com/atomix/atomix-go-client/pkg/atomix/map"
+	_map "github.com/atomix/go-client/pkg/primitive/map"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 )
 
-var log = logging.GetLogger("store", "proposal")
+var log = logging.GetLogger()
 
 // NewID returns a new Proposal ID for the given target/type/version
 func NewID(targetID configapi.TargetID, index configapi.Index) configapi.ProposalID {
@@ -91,127 +87,31 @@ func WithProposalID(id configapi.ProposalID) WatchOption {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore(client atomix.Client) (Store, error) {
-	proposals, err := client.GetMap(context.Background(), "onos-config-proposals")
+func NewAtomixStore(client primitive.Client) (Store, error) {
+	proposals, err := _map.NewBuilder[configapi.ProposalID, *configapi.Proposal](client, "proposals").
+		Tag("onos-config", "proposal").
+		Codec(generic.Proto[*configapi.Proposal](&configapi.Proposal{})).
+		Get(context.Background())
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	store := &proposalStore{
+	return &proposalStore{
 		proposals: proposals,
-		cache:     make(map[configapi.ProposalID]*_map.Entry),
-		watchers:  make(map[uuid.UUID]chan<- configapi.ProposalEvent),
-		eventCh:   make(chan configapi.ProposalEvent, 1000),
-	}
-	if err := store.open(context.Background()); err != nil {
-		return nil, err
-	}
-	return store, nil
+	}, nil
 }
 
 type proposalStore struct {
-	proposals  _map.Map
-	cache      map[configapi.ProposalID]*_map.Entry
-	cacheMu    sync.RWMutex
-	watchers   map[uuid.UUID]chan<- configapi.ProposalEvent
-	watchersMu sync.RWMutex
-	eventCh    chan configapi.ProposalEvent
-}
-
-func (s *proposalStore) open(ctx context.Context) error {
-	ch := make(chan _map.Event)
-	if err := s.proposals.Watch(ctx, ch, _map.WithReplay()); err != nil {
-		return err
-	}
-	go func() {
-		for event := range ch {
-			entry := event.Entry
-			s.updateCache(&entry)
-		}
-	}()
-	go s.processEvents()
-	return nil
-}
-
-func (s *proposalStore) processEvents() {
-	for event := range s.eventCh {
-		s.watchersMu.RLock()
-		for _, watcher := range s.watchers {
-			watcher <- event
-		}
-		s.watchersMu.RUnlock()
-	}
-}
-
-func (s *proposalStore) updateCache(newEntry *_map.Entry) {
-	proposalID := configapi.ProposalID(newEntry.Key)
-
-	// Use a double-checked lock when updating the cache.
-	// First, check for a more recent version of the proposal already in the cache.
-	s.cacheMu.RLock()
-	entry, ok := s.cache[proposalID]
-	s.cacheMu.RUnlock()
-	if ok && entry.Revision >= newEntry.Revision {
-		return
-	}
-
-	// The cache needs to be updated. Acquire a write lock and check once again
-	// for a more recent version of the proposal.
-	s.cacheMu.Lock()
-	defer s.cacheMu.Unlock()
-	entry, ok = s.cache[proposalID]
-	if !ok {
-		s.cache[proposalID] = newEntry
-		var proposal configapi.Proposal
-		if err := decodeProposal(newEntry, &proposal); err != nil {
-			log.Error(err)
-		} else {
-			s.eventCh <- configapi.ProposalEvent{
-				Type:     configapi.ProposalEvent_CREATED,
-				Proposal: proposal,
-			}
-		}
-	} else if newEntry.Revision > entry.Revision {
-		// Add the proposal to the ID and index caches and publish an event.
-		s.cache[proposalID] = newEntry
-		var proposal configapi.Proposal
-		if err := decodeProposal(newEntry, &proposal); err != nil {
-			log.Error(err)
-		} else {
-			s.eventCh <- configapi.ProposalEvent{
-				Type:     configapi.ProposalEvent_UPDATED,
-				Proposal: proposal,
-			}
-		}
-	}
+	proposals _map.Map[configapi.ProposalID, *configapi.Proposal]
 }
 
 func (s *proposalStore) Get(ctx context.Context, id configapi.ProposalID) (*configapi.Proposal, error) {
-	// Check the ID cache for the latest version of the proposal.
-	s.cacheMu.RLock()
-	cachedEntry, ok := s.cache[id]
-	s.cacheMu.RUnlock()
-	if ok {
-		proposal := &configapi.Proposal{}
-		if err := decodeProposal(cachedEntry, proposal); err != nil {
-			return nil, errors.NewInvalid("proposal decoding failed: %v", err)
-		}
-		return proposal, nil
-	}
-
 	// If the proposal is not already in the cache, get it from the underlying primitive.
-	entry, err := s.proposals.Get(ctx, string(id))
+	entry, err := s.proposals.Get(ctx, id)
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-
-	// Decode the proposal bytes.
-	proposal := &configapi.Proposal{}
-	if err := decodeProposal(entry, proposal); err != nil {
-		return nil, errors.NewInvalid("proposal decoding failed: %v", err)
-	}
-
-	// Update the cache before returning the proposal.
-	s.updateCache(entry)
+	proposal := entry.Value
+	proposal.Version = uint64(entry.Version)
 	return proposal, nil
 }
 
@@ -232,25 +132,12 @@ func (s *proposalStore) Create(ctx context.Context, proposal *configapi.Proposal
 	proposal.Created = time.Now()
 	proposal.Updated = time.Now()
 
-	// Encode the proposal bytes.
-	bytes, err := proto.Marshal(proposal)
-	if err != nil {
-		return errors.NewInvalid("proposal encoding failed: %v", err)
-	}
-
 	// Create the entry in the underlying map primitive.
-	entry, err := s.proposals.Put(ctx, string(proposal.ID), bytes, _map.IfNotSet())
+	entry, err := s.proposals.Insert(ctx, proposal.ID, proposal)
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
-
-	// Decode the proposal from the returned entry bytes.
-	if err := decodeProposal(entry, proposal); err != nil {
-		return errors.NewInvalid("proposal decoding failed: %v", err)
-	}
-
-	// Update the cache.
-	s.updateCache(entry)
+	proposal.Version = uint64(entry.Version)
 	return nil
 }
 
@@ -273,26 +160,13 @@ func (s *proposalStore) Update(ctx context.Context, proposal *configapi.Proposal
 	proposal.Revision++
 	proposal.Updated = time.Now()
 
-	// Encode the proposal bytes.
-	bytes, err := proto.Marshal(proposal)
-	if err != nil {
-		return errors.NewInvalid("proposal encoding failed: %v", err)
-	}
-
 	// Update the entry in the underlying map primitive using the proposal version
 	// as an optimistic lock.
-	entry, err := s.proposals.Put(ctx, string(proposal.ID), bytes, _map.IfMatch(meta.NewRevision(meta.Revision(proposal.Version))))
+	entry, err := s.proposals.Update(ctx, proposal.ID, proposal, _map.IfVersion(primitive.Version(proposal.Version)))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
-
-	// Decode the proposal from the returned entry bytes.
-	if err := decodeProposal(entry, proposal); err != nil {
-		return errors.NewInvalid("proposal decoding failed: %v", err)
-	}
-
-	// Update the cache.
-	s.updateCache(entry)
+	proposal.Version = uint64(entry.Version)
 	return nil
 }
 
@@ -314,47 +188,37 @@ func (s *proposalStore) UpdateStatus(ctx context.Context, proposal *configapi.Pr
 	}
 	proposal.Updated = time.Now()
 
-	// Encode the proposal bytes.
-	bytes, err := proto.Marshal(proposal)
-	if err != nil {
-		return errors.NewInvalid("proposal encoding failed: %v", err)
-	}
-
 	// Update the entry in the underlying map primitive using the proposal version
 	// as an optimistic lock.
-	entry, err := s.proposals.Put(ctx, string(proposal.ID), bytes, _map.IfMatch(meta.NewRevision(meta.Revision(proposal.Version))))
+	entry, err := s.proposals.Update(ctx, proposal.ID, proposal, _map.IfVersion(primitive.Version(proposal.Version)))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
-
-	// Decode the proposal from the returned entry bytes.
-	if err := decodeProposal(entry, proposal); err != nil {
-		return errors.NewInvalid("proposal decoding failed: %v", err)
-	}
-
-	// Update the cache.
-	s.updateCache(entry)
+	proposal.Version = uint64(entry.Version)
 	return nil
 }
 
 func (s *proposalStore) List(ctx context.Context) ([]*configapi.Proposal, error) {
 	log.Debugf("Listing proposals")
-	mapCh := make(chan _map.Entry)
-	if err := s.proposals.Entries(ctx, mapCh); err != nil {
+	stream, err := s.proposals.List(ctx)
+	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
 
-	proposals := make([]*configapi.Proposal, 0)
-
-	for entry := range mapCh {
-		proposal := &configapi.Proposal{}
-		if err := decodeProposal(&entry, proposal); err != nil {
-			log.Error(err)
-		} else {
-			proposals = append(proposals, proposal)
+	var proposals []*configapi.Proposal
+	for {
+		entry, err := stream.Next()
+		if err == io.EOF {
+			return proposals, nil
 		}
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		proposal := entry.Value
+		proposal.Version = uint64(entry.Version)
+		proposals = append(proposals, proposal)
 	}
-	return proposals, nil
 }
 
 func (s *proposalStore) Watch(ctx context.Context, ch chan<- configapi.ProposalEvent, opts ...WatchOption) error {
@@ -363,69 +227,100 @@ func (s *proposalStore) Watch(ctx context.Context, ch chan<- configapi.ProposalE
 		opt.apply(&options)
 	}
 
-	watchCh := make(chan configapi.ProposalEvent, 10)
-	id := uuid.New()
-	s.watchersMu.Lock()
-	s.watchers[id] = watchCh
-	s.watchersMu.Unlock()
-
-	var replay []configapi.ProposalEvent
-	if options.replay {
-		if options.proposalID == "" {
-			s.cacheMu.RLock()
-			replay = make([]configapi.ProposalEvent, 0, len(s.cache))
-			for _, entry := range s.cache {
-				var proposal configapi.Proposal
-				if err := decodeProposal(entry, &proposal); err != nil {
-					log.Error(err)
-				} else {
-					replay = append(replay, configapi.ProposalEvent{
-						Type:     configapi.ProposalEvent_REPLAYED,
-						Proposal: proposal,
-					})
-				}
-			}
-			s.cacheMu.RUnlock()
-		} else {
-			s.cacheMu.RLock()
-			entry, ok := s.cache[options.proposalID]
-			if ok {
-				var proposal configapi.Proposal
-				if err := decodeProposal(entry, &proposal); err != nil {
-					log.Error(err)
-				} else {
-					replay = []configapi.ProposalEvent{
-						{
-							Type:     configapi.ProposalEvent_REPLAYED,
-							Proposal: proposal,
-						},
-					}
-				}
-			}
-			s.cacheMu.RUnlock()
-		}
+	var eventsOpts []_map.EventsOption
+	if options.proposalID != "" {
+		eventsOpts = append(eventsOpts, _map.WithKey[configapi.ProposalID](options.proposalID))
+	}
+	events, err := s.proposals.Events(ctx, eventsOpts...)
+	if err != nil {
+		return errors.FromAtomix(err)
 	}
 
-	go func() {
-		defer close(ch)
-		for _, event := range replay {
-			ch <- event
+	if options.replay {
+		if options.proposalID != "" {
+			entry, err := s.proposals.Get(ctx, options.proposalID)
+			if err != nil {
+				err = errors.FromAtomix(err)
+				if !errors.IsNotFound(err) {
+					return err
+				}
+				go propagateEvents(events, ch)
+			} else {
+				go func() {
+					proposal := entry.Value
+					proposal.Version = uint64(entry.Version)
+					ch <- configapi.ProposalEvent{
+						Type:     configapi.ProposalEvent_REPLAYED,
+						Proposal: *proposal,
+					}
+					propagateEvents(events, ch)
+				}()
+			}
+		} else {
+			entries, err := s.proposals.List(ctx)
+			if err != nil {
+				return errors.FromAtomix(err)
+			}
+			go func() {
+				for {
+					entry, err := entries.Next()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					proposal := entry.Value
+					proposal.Version = uint64(entry.Version)
+					ch <- configapi.ProposalEvent{
+						Type:     configapi.ProposalEvent_REPLAYED,
+						Proposal: *proposal,
+					}
+				}
+				propagateEvents(events, ch)
+			}()
 		}
-		for event := range watchCh {
-			if options.proposalID == "" || event.Proposal.ID == options.proposalID {
-				ch <- event
+	} else {
+		go propagateEvents(events, ch)
+	}
+	return nil
+}
+
+func propagateEvents(events _map.EventStream[configapi.ProposalID, *configapi.Proposal], ch chan<- configapi.ProposalEvent) {
+	for {
+		event, err := events.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		switch e := event.(type) {
+		case *_map.Inserted[configapi.ProposalID, *configapi.Proposal]:
+			proposal := e.Entry.Value
+			proposal.Version = uint64(e.Entry.Version)
+			ch <- configapi.ProposalEvent{
+				Type:     configapi.ProposalEvent_CREATED,
+				Proposal: *proposal,
+			}
+		case *_map.Updated[configapi.ProposalID, *configapi.Proposal]:
+			proposal := e.NewEntry.Value
+			proposal.Version = uint64(e.NewEntry.Version)
+			ch <- configapi.ProposalEvent{
+				Type:     configapi.ProposalEvent_UPDATED,
+				Proposal: *proposal,
+			}
+		case *_map.Removed[configapi.ProposalID, *configapi.Proposal]:
+			proposal := e.Entry.Value
+			proposal.Version = uint64(e.Entry.Version)
+			ch <- configapi.ProposalEvent{
+				Type:     configapi.ProposalEvent_DELETED,
+				Proposal: *proposal,
 			}
 		}
-	}()
-
-	go func() {
-		<-ctx.Done()
-		s.watchersMu.Lock()
-		delete(s.watchers, id)
-		s.watchersMu.Unlock()
-		close(watchCh)
-	}()
-	return nil
+	}
 }
 
 func (s *proposalStore) Close(ctx context.Context) error {
@@ -433,15 +328,5 @@ func (s *proposalStore) Close(ctx context.Context) error {
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
-	return nil
-}
-
-func decodeProposal(entry *_map.Entry, proposal *configapi.Proposal) error {
-	if err := proto.Unmarshal(entry.Value, proposal); err != nil {
-		return err
-	}
-	proposal.ID = configapi.ProposalID(entry.Key)
-	proposal.Key = entry.Key
-	proposal.Version = uint64(entry.Revision)
 	return nil
 }
