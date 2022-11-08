@@ -13,10 +13,10 @@ require (
 	github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.16
 	github.com/onosproject/helmit v0.6.19
 	github.com/onosproject/onos-api/go v0.9.43
-	github.com/onosproject/onos-lib-go v0.8.16
+	github.com/onosproject/onos-lib-go v0.9.5
 	github.com/onosproject/onos-ric-sdk-go v0.8.9
 	github.com/onosproject/onos-test v0.6.6
-	github.com/onosproject/onos-topo v0.9.3
+	github.com/onosproject/onos-topo v0.10.3
 	github.com/openconfig/gnmi v0.0.0-20210914185457-51254b657b7d
 	github.com/prometheus/common v0.26.0
 	github.com/spf13/cobra v1.4.0
@@ -46,10 +46,11 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
+	github.com/atomix/go-sdk v0.10.0 // indirect
 	github.com/atomix/runtime/api v0.7.0 // indirect
-	github.com/atomix/runtime/primitives v0.7.0 // indirect
-	github.com/atomix/runtime/proxy v0.10.0 // indirect
-	github.com/atomix/runtime/sdk v0.7.0 // indirect
+	github.com/atomix/runtime/primitives v0.7.2 // indirect
+	github.com/atomix/runtime/proxy v0.12.0 // indirect
+	github.com/atomix/runtime/sdk v0.7.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.2.0 // indirect
@@ -202,7 +203,3 @@ require (
 )
 
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3
-
-replace github.com/onosproject/onos-lib-go => github.com/kuujo/onos-lib-go v0.0.0-20221020215300-9ee1ced02fa6
-
-replace github.com/onosproject/onos-topo => github.com/kuujo/onos-topo v0.0.0-20221021070614-5c74e6329c27
