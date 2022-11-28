@@ -23,6 +23,8 @@ import (
 	"sync"
 )
 
+//go:generate mockgen -source registry.go -destination test/mock-registry.go -package test ModelPlugin
+
 var log = logging.GetLogger("registry")
 
 type modelPluginStatus int
@@ -72,6 +74,7 @@ type ModelPluginInfo struct {
 	Client         api.ModelPluginServiceClient
 	ReadOnlyPaths  path.ReadOnlyPathMap
 	ReadWritePaths path.ReadWritePathMap
+	NamespaceMap   path.NamespaceMap
 	// Status indicates whether a plugin was correctly loaded
 	Status modelPluginStatus
 	// Error is an optional field populated only if the plugin failed to be correctly discovered
@@ -90,20 +93,25 @@ type PluginRegistry interface {
 
 	// GetPlugins returns list of all registered plugins
 	GetPlugins() []ModelPlugin
+
+	// NewClientFn -
+	NewClientFn(func(endpoint string) (api.ModelPluginServiceClient, error))
 }
 
 type pluginRegistry struct {
-	endpoints []string
-	plugins   map[string]*ModelPluginInfo
-	lock      sync.RWMutex
+	endpoints   []string
+	plugins     map[string]*ModelPluginInfo
+	lock        sync.RWMutex
+	newClientFn func(endpoint string) (api.ModelPluginServiceClient, error)
 }
 
 // NewPluginRegistry creates a plugin registry that will search the specified gRPC ports to look for model plugins
 func NewPluginRegistry(endpoints ...string) PluginRegistry {
 	registry := &pluginRegistry{
-		endpoints: endpoints,
-		plugins:   make(map[string]*ModelPluginInfo),
-		lock:      sync.RWMutex{},
+		endpoints:   endpoints,
+		plugins:     make(map[string]*ModelPluginInfo),
+		lock:        sync.RWMutex{},
+		newClientFn: newClient,
 	}
 	log.Infof("Created configuration plugin registry with ports: %+v", endpoints)
 	return registry
@@ -135,7 +143,7 @@ func (r *pluginRegistry) discoverPlugin(endpoint string) {
 		ID:       endpoint, // we assign the ID as Endpoint as we don't know the Model Name and Version yet.
 	}
 
-	client, err := newClient(plugin.Endpoint)
+	client, err := r.newClientFn(plugin.Endpoint)
 	if err != nil {
 		plugin.Status = loadingError
 		plugin.Error = fmt.Sprintf("Unable to create model plugin client: %+v", err)
@@ -171,6 +179,7 @@ func (r *pluginRegistry) loadPluginInfo(client api.ModelPluginServiceClient, plu
 	// Reconstitute the r/o and r/w path map variables from the model data.
 	plugin.ReadOnlyPaths = getRoPathMap(resp)
 	plugin.ReadWritePaths = getRWPathMap(resp)
+	plugin.NamespaceMap = getNamespaceMap(resp)
 
 	r.lock.Lock()
 	r.plugins[plugin.ID] = plugin
@@ -225,12 +234,25 @@ func getRWPathMap(resp *api.ModelInfoResponse) path.ReadWritePathMap {
 	return pm
 }
 
+func getNamespaceMap(resp *api.ModelInfoResponse) path.NamespaceMap {
+	ns := make(map[string]string)
+	for _, n := range resp.ModelInfo.NamespaceMappings {
+		ns[n.Prefix] = n.Module
+	}
+
+	return ns
+}
+
 func getTypeOpts(typeOpts []uint64) []uint8 {
 	tos := make([]uint8, 0, len(typeOpts))
 	for _, to := range typeOpts {
 		tos = append(tos, uint8(to))
 	}
 	return tos
+}
+
+func (r *pluginRegistry) NewClientFn(newFunc func(endpoint string) (api.ModelPluginServiceClient, error)) {
+	r.newClientFn = newFunc
 }
 
 func newClient(endpoint string) (api.ModelPluginServiceClient, error) {

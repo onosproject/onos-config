@@ -27,6 +27,7 @@ import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	gnmitest "github.com/onosproject/onos-config/pkg/northbound/gnmi/test"
+	plugintest "github.com/onosproject/onos-config/pkg/pluginregistry/test"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -39,7 +40,7 @@ type testContext struct {
 	mctl                    *gomock.Controller
 	atomix                  *test.Client
 	topo                    *gnmitest.MockStore
-	registry                *gnmitest.MockPluginRegistry
+	registry                *plugintest.MockPluginRegistry
 	conns                   sb.ConnManager
 	configuration           configuration.Store
 	configurationController *controller.Controller
@@ -52,7 +53,7 @@ type testContext struct {
 
 func createServer(t *testing.T) *testContext {
 	mctl := gomock.NewController(t)
-	registryMock := gnmitest.NewMockPluginRegistry(mctl)
+	registryMock := plugintest.NewMockPluginRegistry(mctl)
 	topoMock := gnmitest.NewMockStore(mctl)
 	atomixTest, cfgStore, propStore, txStore := testStores(t)
 
@@ -132,7 +133,7 @@ func topoEntity(id topoapi.ID, targetType string, targetVersion string) *topoapi
 }
 
 func setupTopoAndRegistry(test *testContext, id string, model string, version string, noPlugin bool) {
-	plugin := gnmitest.NewMockModelPlugin(test.mctl)
+	plugin := plugintest.NewMockModelPlugin(test.mctl)
 	rwPaths := path.ReadWritePathMap{}
 	for _, p := range []string{"/foo", "/bar", "/goo", "/some/nested/path"} {
 		rwPaths[p] = path.ReadWritePathElem{

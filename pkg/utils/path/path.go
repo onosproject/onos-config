@@ -94,6 +94,9 @@ type ReadWritePathElem struct {
 // ReadWritePathMap is a map of ReadWrite paths their metadata
 type ReadWritePathMap map[string]ReadWritePathElem
 
+// NamespaceMap is a map of namespace prefixes to full names
+type NamespaceMap map[string]string
+
 // RemovePathIndices removes the index value from a path to allow it to be compared to a model path
 func RemovePathIndices(path string) string {
 	indices := rOnIndex.FindAllStringSubmatch(path, -1)

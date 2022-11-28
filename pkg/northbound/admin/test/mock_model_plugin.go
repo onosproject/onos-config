@@ -8,7 +8,7 @@
 // Source: ../onos-api/go/onos/config/admin/admin.pb.go
 
 // Package test is a generated GoMock package.
-package test_plugin
+package test
 
 import (
 	context "context"
