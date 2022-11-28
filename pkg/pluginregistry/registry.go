@@ -53,6 +53,9 @@ type ModelPlugin interface {
 
 	// GetPathValues extracts typed path values from the specified configuration change JSON
 	GetPathValues(ctx context.Context, pathPrefix string, jsonData []byte) ([]*configapi.PathValue, error)
+
+	// LeafValueSelection gets a list of valid options for a leaf by applying selection rules in YANG
+	LeafValueSelection(ctx context.Context, selectionPath string, jsonData []byte) ([]string, error)
 }
 
 // ModelPluginInfo is a record of information compiled from the configuration model plugin
@@ -293,7 +296,7 @@ func (p *ModelPluginInfo) Validate(ctx context.Context, jsonData []byte) error {
 		return err
 	}
 	if !resp.Valid {
-		return errors.NewInvalid("configuration is not valid")
+		return errors.NewInvalid("configuration is not valid: %s", resp.Message)
 	}
 	return nil
 }
@@ -305,6 +308,18 @@ func (p *ModelPluginInfo) GetPathValues(ctx context.Context, pathPrefix string, 
 		return nil, err
 	}
 	return resp.PathValues, nil
+}
+
+// LeafValueSelection gets a list of valid options for a leaf by applying selection rules in YANG
+func (p *ModelPluginInfo) LeafValueSelection(ctx context.Context, selectionPath string, jsonData []byte) ([]string, error) {
+	resp, err := p.Client.GetValueSelection(ctx, &api.ValueSelectionRequest{
+		SelectionPath: selectionPath,
+		ConfigJson:    jsonData,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Selection, nil
 }
 
 func getClientCredentials() (*tls.Config, error) {

@@ -6,13 +6,13 @@ package config
 
 import (
 	"context"
-	"github.com/golang/protobuf/proto"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	baseClient "github.com/openconfig/gnmi/client"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 	"testing"
 	"time"
 )

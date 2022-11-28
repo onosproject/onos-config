@@ -80,6 +80,21 @@ func (mr *MockModelPluginMockRecorder) GetPathValues(ctx, pathPrefix, jsonData i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPathValues", reflect.TypeOf((*MockModelPlugin)(nil).GetPathValues), ctx, pathPrefix, jsonData)
 }
 
+// LeafValueSelection mocks base method.
+func (m *MockModelPlugin) LeafValueSelection(ctx context.Context, selectionPath string, jsonData []byte) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LeafValueSelection", ctx, selectionPath, jsonData)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LeafValueSelection indicates an expected call of LeafValueSelection.
+func (mr *MockModelPluginMockRecorder) LeafValueSelection(ctx, selectionPath, jsonData interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeafValueSelection", reflect.TypeOf((*MockModelPlugin)(nil).LeafValueSelection), ctx, selectionPath, jsonData)
+}
+
 // Validate mocks base method.
 func (m *MockModelPlugin) Validate(ctx context.Context, jsonData []byte) error {
 	m.ctrl.T.Helper()

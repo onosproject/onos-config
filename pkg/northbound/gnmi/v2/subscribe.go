@@ -7,12 +7,12 @@ package gnmi
 
 import (
 	"context"
-	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	baseClient "github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"google.golang.org/protobuf/proto"
 	"io"
 	"strings"
 )
@@ -164,7 +164,6 @@ func splitSubscribeRequest(sctx *subContext, req *gnmi.SubscribeRequest) error {
 						Subscribe: &gnmi.SubscriptionList{
 							Prefix:           copyPrefix(subs.Prefix, target),
 							Subscription:     make([]*gnmi.Subscription, 0, 1),
-							UseAliases:       subs.UseAliases,
 							Qos:              subs.Qos,
 							Mode:             subs.Mode,
 							AllowAggregation: subs.AllowAggregation,

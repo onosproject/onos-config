@@ -7,11 +7,12 @@ package pluginregistry
 import (
 	"context"
 	"fmt"
+	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	test_plugin "github.com/onosproject/onos-config/pkg/northbound/gnmi/test-plugin"
+	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"strings"
 	"testing"
 )
 
@@ -20,39 +21,58 @@ const testEndpoint2 = "testmodel2:5153"
 
 var pr = NewPluginRegistry(testEndpoint1, testEndpoint2).(*pluginRegistry)
 
-type MockModelPluginServiceClient struct {
-	getModelInfoResponse *admin.ModelInfoResponse
-}
-
-func (m MockModelPluginServiceClient) GetModelInfo(ctx context.Context, in *admin.ModelInfoRequest, opts ...grpc.CallOption) (*admin.ModelInfoResponse, error) {
-	return m.getModelInfoResponse, nil
-}
-
-func (MockModelPluginServiceClient) ValidateConfig(ctx context.Context, in *admin.ValidateConfigRequest, opts ...grpc.CallOption) (*admin.ValidateConfigResponse, error) {
-	return nil, nil
-}
-
-func (MockModelPluginServiceClient) GetPathValues(ctx context.Context, in *admin.PathValuesRequest, opts ...grpc.CallOption) (*admin.PathValuesResponse, error) {
-	return nil, nil
-}
-
 func TestLoadPluginInfo(t *testing.T) {
+	mctl := gomock.NewController(t)
+	pluginClient := test_plugin.NewMockModelPluginServiceClient(mctl)
+	pluginClient.EXPECT().ValidateConfig(gomock.Any(), gomock.Any()).AnyTimes().Return(
+		&admin.ValidateConfigResponse{
+			Valid:   false,
+			Message: "just a mocked response",
+		},
+		nil,
+	)
+	pluginClient.EXPECT().GetValueSelection(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(
+		&admin.ValueSelectionResponse{
+			Selection: []string{"value1", "value2"},
+		},
+		nil,
+	)
+
 	assert.Equal(t, 0, len(pr.plugins), "Plugins list is not empty at the beginning of the test")
 
 	plugin := &ModelPluginInfo{
 		Endpoint: "localhost:5152",
-	}
-
-	modelInfo := &admin.ModelInfo{Name: "Testmodel", Version: "1.0.0"}
-	mockClient := MockModelPluginServiceClient{
-		getModelInfoResponse: &admin.ModelInfoResponse{
-			ModelInfo: modelInfo,
+		Client:   pluginClient,
+		ID:       "Testmodel:1.0.0",
+		Info: admin.ModelInfo{
+			Name:    "Testmodel",
+			Version: "1.0.0",
+			ModelData: []*gnmi.ModelData{
+				{
+					Name:         "module1",
+					Organization: "ONF",
+					Version:      "2022-11-25",
+				},
+				{
+					Name:         "module2",
+					Organization: "ONF",
+					Version:      "2022-11-25",
+				},
+			},
 		},
 	}
 
-	pr.loadPluginInfo(mockClient, plugin)
+	ctx := context.Background()
+	cap := plugin.Capabilities(ctx)
+	assert.NotNil(t, cap)
+	assert.Equal(t, 2, len(cap.SupportedModels))
 
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s-%s", modelInfo.Name, modelInfo.Version)), plugin.ID, "Plugin ID is wrong")
+	info := plugin.Validate(ctx, []byte("{}"))
+	assert.Equal(t, "configuration is not valid: just a mocked response", info.Error())
+
+	selection, err := plugin.LeafValueSelection(ctx, "/some/path", []byte("{}"))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(selection))
 }
 
 func TestGetPlugin(t *testing.T) {
