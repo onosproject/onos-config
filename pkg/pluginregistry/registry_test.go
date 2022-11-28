@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package test
+package pluginregistry
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	testplugin "github.com/onosproject/onos-config/pkg/northbound/admin/test"
-	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -38,7 +37,7 @@ func TestLoadPluginInfo(t *testing.T) {
 		nil,
 	)
 
-	plugin := &pluginregistry.ModelPluginInfo{
+	plugin := &ModelPluginInfo{
 		Endpoint: "localhost:5152",
 		Client:   pluginClient,
 		ID:       "Testmodel:1.0.0",
@@ -159,7 +158,7 @@ func TestGetPlugin(t *testing.T) {
 		nil,
 	)
 
-	pr := pluginregistry.NewPluginRegistry(testEndpoint1, testEndpoint2)
+	pr := NewPluginRegistry(testEndpoint1, testEndpoint2)
 	assert.NotNil(t, pr)
 	pr.NewClientFn(func(endpoint string) (admin.ModelPluginServiceClient, error) {
 		return pluginClient, nil
@@ -184,4 +183,30 @@ func TestGetPlugin(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, pv)
 	assert.Equal(t, 2, len(pv))
+
+	pi, ok := plugin.(*ModelPluginInfo)
+	assert.True(t, ok)
+	assert.NotNil(t, pi)
+
+	assert.Equal(t, 1, len(pi.ReadOnlyPaths))
+	ro1subPaths, okRo := pi.ReadOnlyPaths["/a/b"]
+	assert.True(t, okRo)
+	assert.NotNil(t, ro1subPaths)
+	assert.Equal(t, 1, len(ro1subPaths))
+	ro1sub1, okRoSub := ro1subPaths["/c"]
+	assert.True(t, okRoSub)
+	assert.NotNil(t, ro1sub1)
+	assert.Equal(t, "c", ro1sub1.AttrName)
+	assert.Equal(t, configapi.ValueType_INT, ro1sub1.ValueType)
+
+	assert.Equal(t, 2, len(pi.ReadWritePaths))
+	leafD, okLeafD := pi.ReadWritePaths["/a/b/d"]
+	assert.True(t, okLeafD)
+	assert.Equal(t, "d", leafD.AttrName)
+	assert.Equal(t, configapi.ValueType_INT, leafD.ValueType)
+
+	leafE, okLeafE := pi.ReadWritePaths["/a/b/e"]
+	assert.True(t, okLeafE)
+	assert.Equal(t, "e", leafE.AttrName)
+	assert.Equal(t, configapi.ValueType_STRING, leafE.ValueType)
 }
