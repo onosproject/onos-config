@@ -10,20 +10,21 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.16
+	github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29
 	github.com/onosproject/helmit v0.6.19
-	github.com/onosproject/onos-api/go v0.9.43
+	github.com/onosproject/onos-api/go v0.10.4
 	github.com/onosproject/onos-lib-go v0.9.5
 	github.com/onosproject/onos-ric-sdk-go v0.8.9
 	github.com/onosproject/onos-test v0.6.6
 	github.com/onosproject/onos-topo v0.10.3
-	github.com/openconfig/gnmi v0.0.0-20210914185457-51254b657b7d
+	github.com/openconfig/gnmi v0.0.0-20220920173703-480bf53a74d2
 	github.com/prometheus/common v0.26.0
 	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.7.1
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 	google.golang.org/grpc v1.46.0
+	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.22.1
@@ -55,7 +56,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.2.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/cenkalti/backoff/v4 v4.1.0 // indirect
+	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/containerd/continuity v0.1.0 // indirect
@@ -122,7 +123,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
+	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
@@ -132,10 +133,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/onosproject/config-models v0.10.16 // indirect
-	github.com/openconfig/goyang v1.0.0 // indirect
-	github.com/openconfig/grpctunnel v0.0.0-20210610163803-fde4a9dc048d // indirect
-	github.com/openconfig/ygot v0.22.1 // indirect
+	github.com/openconfig/goyang v1.1.0 // indirect
+	github.com/openconfig/grpctunnel v0.0.0-20220819142823-6f5422b8ca70 // indirect
+	github.com/openconfig/ygot v0.24.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v1.0.2 // indirect
@@ -176,7 +176,6 @@ require (
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 	gopkg.in/gorp.v1 v1.7.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
