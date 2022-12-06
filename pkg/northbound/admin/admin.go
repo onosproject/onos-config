@@ -14,11 +14,13 @@ import (
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
+	"github.com/onosproject/onos-config/pkg/utils/tree"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/onosproject/onos-lib-go/pkg/uri"
 	"google.golang.org/grpc"
+	"strings"
 )
 
 var log = logging.GetLogger("northbound", "admin")
@@ -174,4 +176,63 @@ func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequ
 		}
 	}
 	return nil, ctx.Err()
+}
+
+// LeafSelectionQuery selects values allowable for leaf.
+func (s Server) LeafSelectionQuery(ctx context.Context, req *admin.LeafSelectionQueryRequest) (*admin.LeafSelectionQueryResponse, error) {
+	log.Debugf("Received LeafSelectionQuery %+v", req)
+	logContext(ctx, "LeafSelectionQuery()")
+	if req == nil {
+		return nil, errors.NewInvalid("request is empty")
+	}
+
+	groups := make([]string, 0)
+	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
+		groups = append(groups, strings.Split(md.Get("groups"), ";")...)
+		log.Debugf("gNMI Get() called by '%s (%s)'. Groups %v. Token %s",
+			md.Get("name"), md.Get("email"), groups, md.Get("at_hash"))
+	}
+
+	configType := configapi.TargetType(req.Type)
+	configVersion := configapi.TargetVersion(req.Version)
+
+	config, err := s.configurationsStore.Get(ctx,
+		configuration.NewID(configapi.TargetID(req.Target), configType, configVersion))
+	if err != nil {
+		return nil, errors.NewInvalid("error retrieving config for %s %s %s %v",
+			req.Target, configType, configVersion, err)
+	}
+
+	if req.ChangeContext != nil &&
+		len(req.ChangeContext.GetUpdate())+len(req.ChangeContext.GetReplace())+len(req.ChangeContext.GetDelete()) > 0 {
+
+		log.Warnf("Ignoring change context for the moment")
+		// TODO if there is something in the req.ChangeContext then
+		//   a) convert it to Path-Value format like happens in gNMI Set (Updates, Replace and Delete elements)
+		//   b) overlay it on to the Path-Values from 1) like happens in gNMI Set Proposal Controller
+	}
+
+	values := make([]*configapi.PathValue, 0, len(config.Values))
+	for _, changeValue := range config.Values {
+		values = append(values, changeValue)
+	}
+
+	jsonTree, err := tree.BuildTree(values, true)
+	if err != nil {
+		return nil, errors.NewInvalid("error converting configuration to JSON %v", err)
+	}
+
+	modelPlugin, ok := s.pluginRegistry.GetPlugin(configType, configVersion)
+	if !ok {
+		return nil, errors.NewInvalid("error getting plugin for %s %s", configType, configVersion)
+	}
+
+	selection, err := modelPlugin.LeafValueSelection(ctx, req.SelectionPath, jsonTree)
+	if err != nil {
+		return nil, errors.NewInvalid("error getting leaf selection for '%s'. %v", req.SelectionPath, err)
+	}
+
+	return &admin.LeafSelectionQueryResponse{
+		Selection: selection,
+	}, nil
 }
