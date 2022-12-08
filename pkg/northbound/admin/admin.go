@@ -189,7 +189,7 @@ func (s Server) LeafSelectionQuery(ctx context.Context, req *admin.LeafSelection
 	groups := make([]string, 0)
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
 		groups = append(groups, strings.Split(md.Get("groups"), ";")...)
-		log.Debugf("gNMI Get() called by '%s (%s)'. Groups %v. Token %s",
+		log.Debugf("gNMI LeafSelectionQuery() called by '%s (%s)'. Groups %v. Token %s",
 			md.Get("name"), md.Get("email"), groups, md.Get("at_hash"))
 	}
 
