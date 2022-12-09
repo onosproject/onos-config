@@ -125,7 +125,7 @@ func TestServer_LeafSelectionQuery_NoChange(t *testing.T) {
 		name      string
 		req       adminapi.LeafSelectionQueryRequest
 		expected  []string
-		expectErr error
+		expectErr string
 	}
 
 	test := createServer(t)
@@ -194,8 +194,7 @@ func TestServer_LeafSelectionQuery_NoChange(t *testing.T) {
 				Version:       "1.0.0",
 				SelectionPath: "/foo",
 			},
-			expectErr: errors.NewInvalid("error retrieving config for target-2 " +
-				"devicesim 1.0.0 key target-2-devicesim-1.0.0 not found"),
+			expectErr: "rpc error: code = NotFound desc = key target-2-devicesim-1.0.0 not found",
 		},
 		{
 			name: "invalid type",
@@ -205,8 +204,7 @@ func TestServer_LeafSelectionQuery_NoChange(t *testing.T) {
 				Version:       "1.0.0",
 				SelectionPath: "/foo",
 			},
-			expectErr: errors.NewInvalid("error retrieving config for target-1 " +
-				"device-wrong 1.0.0 key target-1-device-wrong-1.0.0 not found"),
+			expectErr: "rpc error: code = NotFound desc = key target-1-device-wrong-1.0.0 not found",
 		},
 		{
 			name: "selection path empty",
@@ -215,25 +213,28 @@ func TestServer_LeafSelectionQuery_NoChange(t *testing.T) {
 				Type:    "devicesim",
 				Version: "1.0.0",
 			},
-			expectErr: errors.NewInvalid("error getting leaf selection for ''. navigatedValue path cannot be empty"),
+			expectErr: "rpc error: code = InvalidArgument desc = error getting leaf selection for ''. navigatedValue path cannot be empty",
 		},
 		{
-			name: "selection path no values",
+			name: "selection path no values - not an error",
 			req: adminapi.LeafSelectionQueryRequest{
 				Target:        "target-1",
 				Type:          "devicesim",
 				Version:       "1.0.0",
 				SelectionPath: "/bar",
 			},
-			expectErr: errors.NewInvalid("request SelectionPath is empty"),
 		},
 	}
 
 	for _, tc := range testCases {
 		resp, err1 := test.server.LeafSelectionQuery(context.TODO(), &tc.req)
-		if tc.expectErr != nil && err1 != nil {
-			assert.Equal(t, err1, tc.expectErr, tc.name)
-			continue
+		if tc.expectErr != "" {
+			if err1 != nil {
+				assert.Equal(t, tc.expectErr, err1.Error(), tc.name)
+				continue
+			}
+			t.Logf("%s Expected error %s", tc.name, tc.expectErr)
+			t.FailNow()
 		}
 		assert.NoError(t, err1, tc.name)
 		assert.NotNil(t, resp, tc.name)

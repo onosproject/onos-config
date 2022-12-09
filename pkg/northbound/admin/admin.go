@@ -183,7 +183,7 @@ func (s Server) LeafSelectionQuery(ctx context.Context, req *admin.LeafSelection
 	log.Debugf("Received LeafSelectionQuery %+v", req)
 	logContext(ctx, "LeafSelectionQuery()")
 	if req == nil {
-		return nil, errors.NewInvalid("request is empty")
+		return nil, errors.Status(errors.NewInvalid("request is empty")).Err()
 	}
 
 	groups := make([]string, 0)
@@ -199,14 +199,13 @@ func (s Server) LeafSelectionQuery(ctx context.Context, req *admin.LeafSelection
 	config, err := s.configurationsStore.Get(ctx,
 		configuration.NewID(configapi.TargetID(req.Target), configType, configVersion))
 	if err != nil {
-		return nil, errors.NewInvalid("error retrieving config for %s %s %s %v",
-			req.Target, configType, configVersion, err)
+		return nil, errors.Status(err).Err()
 	}
 
 	if req.ChangeContext != nil &&
 		len(req.ChangeContext.GetUpdate())+len(req.ChangeContext.GetReplace())+len(req.ChangeContext.GetDelete()) > 0 {
 
-		log.Warnf("Ignoring change context for the moment")
+		log.Warn("Ignoring change context for the moment")
 		// TODO if there is something in the req.ChangeContext then
 		//   a) convert it to Path-Value format like happens in gNMI Set (Updates, Replace and Delete elements)
 		//   b) overlay it on to the Path-Values from 1) like happens in gNMI Set Proposal Controller
@@ -219,17 +218,17 @@ func (s Server) LeafSelectionQuery(ctx context.Context, req *admin.LeafSelection
 
 	jsonTree, err := tree.BuildTree(values, true)
 	if err != nil {
-		return nil, errors.NewInvalid("error converting configuration to JSON %v", err)
+		return nil, errors.Status(errors.NewInternal("error converting configuration to JSON %v", err)).Err()
 	}
 
 	modelPlugin, ok := s.pluginRegistry.GetPlugin(configType, configVersion)
 	if !ok {
-		return nil, errors.NewInvalid("error getting plugin for %s %s", configType, configVersion)
+		return nil, errors.Status(errors.NewInvalid("error getting plugin for %s %s", configType, configVersion)).Err()
 	}
 
 	selection, err := modelPlugin.LeafValueSelection(ctx, req.SelectionPath, jsonTree)
 	if err != nil {
-		return nil, errors.NewInvalid("error getting leaf selection for '%s'. %v", req.SelectionPath, err)
+		return nil, errors.Status(errors.NewInvalid("error getting leaf selection for '%s'. %v", req.SelectionPath, err)).Err()
 	}
 
 	return &admin.LeafSelectionQueryResponse{
