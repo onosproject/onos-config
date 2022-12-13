@@ -8,15 +8,14 @@ package values
 import (
 	"fmt"
 
-	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
-
+	adminapi "github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
 	gnmi "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 // GnmiTypedValueToNativeType converts gnmi type based values in to native byte array changes
-func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue, modelPath *pathutils.ReadWritePathElem) (*configapi.TypedValue, error) {
+func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue, modelPath *adminapi.ReadWritePath) (*configapi.TypedValue, error) {
 
 	switch v := gnmiTv.GetValue().(type) {
 	case *gnmi.TypedValue_StringVal:
@@ -44,11 +43,11 @@ func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue, modelPath *pathutils.Re
 	case *gnmi.TypedValue_FloatVal:
 		return configapi.NewTypedValueFloat(float64(v.FloatVal)), nil
 	case *gnmi.TypedValue_LeaflistVal:
-		var typeOpt0 uint8
+		var typeOpt0 uint64
 		if modelPath != nil && len(modelPath.TypeOpts) > 0 {
 			typeOpt0 = modelPath.TypeOpts[0]
 		}
-		return handleLeafList(v, typeOpt0)
+		return handleLeafList(v, uint8(typeOpt0))
 	default:
 		return nil, fmt.Errorf("not yet supported %v", v)
 	}

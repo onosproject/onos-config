@@ -14,6 +14,7 @@ import (
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
+	"github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
@@ -29,19 +30,8 @@ const validPathRegexp = `(/[a-zA-Z0-9:=\-\._[\]]+)+`
 // IndexAllowedChars - regexp to restrict characters in index names
 const IndexAllowedChars = `^([a-zA-Z0-9\*\-\._])+$`
 
-// ReadOnlyAttrib is the known metadata about a Read Only leaf
-type ReadOnlyAttrib struct {
-	ValueType   configapi.ValueType
-	TypeOpts    []uint8
-	Description string
-	Units       string
-	Enum        map[int]string
-	IsAKey      bool
-	AttrName    string
-}
-
 // ReadOnlySubPathMap abstracts the read only subpath
-type ReadOnlySubPathMap map[string]ReadOnlyAttrib
+type ReadOnlySubPathMap map[string]admin.ReadOnlySubPath
 
 // ReadOnlyPathMap abstracts the read only path
 type ReadOnlyPathMap map[string]ReadOnlySubPathMap
@@ -82,17 +72,8 @@ func (ro ReadOnlyPathMap) TypeForPath(path string) (configapi.ValueType, error) 
 	return configapi.ValueType_EMPTY, fmt.Errorf("path %s not found in RO paths of model", path)
 }
 
-// ReadWritePathElem holds data about a leaf or container
-type ReadWritePathElem struct {
-	ReadOnlyAttrib
-	Mandatory bool
-	Default   string
-	Range     []string
-	Length    []string
-}
-
 // ReadWritePathMap is a map of ReadWrite paths their metadata
-type ReadWritePathMap map[string]ReadWritePathElem
+type ReadWritePathMap map[string]admin.ReadWritePath
 
 // NamespaceMap is a map of namespace prefixes to full names
 type NamespaceMap map[string]string
@@ -140,7 +121,7 @@ func ExtractIndexNames(path string) ([]string, []string) {
 }
 
 // FindPathFromModel ...
-func FindPathFromModel(path string, rwPaths ReadWritePathMap, exact bool) (bool, *ReadWritePathElem, error) {
+func FindPathFromModel(path string, rwPaths ReadWritePathMap, exact bool) (bool, *admin.ReadWritePath, error) {
 	searchPathNoIndices := RemovePathIndices(path)
 
 	// try exact match first
@@ -174,7 +155,7 @@ func FindPathFromModel(path string, rwPaths ReadWritePathMap, exact bool) (bool,
 }
 
 // CheckKeyValue checks that if this is a Key attribute, that the value is the same as its parent's key
-func CheckKeyValue(path string, rwPath *ReadWritePathElem, val *configapi.TypedValue) error {
+func CheckKeyValue(path string, rwPath *admin.ReadWritePath, val *configapi.TypedValue) error {
 	indexNames, indexValues := ExtractIndexNames(path)
 	if len(indexNames) == 0 {
 		return nil
