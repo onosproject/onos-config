@@ -33,6 +33,7 @@ import (
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	log.Infof("Received gNMI Set Request %+v", req)
 	var userName string
+	var allowedGroups string
 	if md := metautils.ExtractIncoming(ctx); md != nil {
 		log.Infof("gNMI Set() called by '%s (%s) (%s)'. Groups [%v]",
 			md.Get("preferred_username"), md.Get("name"), md.Get("email"), md.Get("groups"))
@@ -44,6 +45,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		if err := utils.TemporaryEvaluate(md); err != nil {
 			log.Warn(err)
 			return nil, errors.Status(errors.NewUnauthorized(err.Error())).Err()
+		}
+		allowedGroups = utils.GetAllowedAdminGroups(md)
+	}
+
+	if !(allowedGroups == "AllGroups") {
+		if !(utils.IsAllowToDoSet(allowedGroups, req.GetPrefix().String(), req.GetDelete(), req.GetUpdate(), req.GetReplace())) {
+			return nil, errors.Status(errors.NewUnauthorized("you are only allowed to perform action on %s", allowedGroups)).Err()
 		}
 	}
 
