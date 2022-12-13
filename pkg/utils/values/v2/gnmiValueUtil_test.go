@@ -8,12 +8,10 @@ package values
 
 import (
 	"fmt"
+	adminapi "github.com/onosproject/onos-api/go/onos/config/admin"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"reflect"
 	"testing"
-
-	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
-
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -40,11 +38,9 @@ func Test_GnmiStringToNative(t *testing.T) {
 }
 
 func Test_GnmiIntToNative(t *testing.T) {
-	pathElem := pathutils.ReadWritePathElem{
-		ReadOnlyAttrib: pathutils.ReadOnlyAttrib{
-			ValueType: configapi.ValueType_INT,
-			TypeOpts:  []uint8{uint8(configapi.WidthThirtyTwo)},
-		},
+	pathElem := adminapi.ReadWritePath{
+		ValueType: configapi.ValueType_INT,
+		TypeOpts:  []uint64{uint64(configapi.WidthThirtyTwo)},
 	}
 	gnmiValue := gnmi.TypedValue_IntVal{IntVal: testNegativeInt}
 	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue}, &pathElem)
@@ -55,11 +51,9 @@ func Test_GnmiIntToNative(t *testing.T) {
 }
 
 func Test_GnmiUintToNative(t *testing.T) {
-	pathElem := pathutils.ReadWritePathElem{
-		ReadOnlyAttrib: pathutils.ReadOnlyAttrib{
-			ValueType: configapi.ValueType_UINT,
-			TypeOpts:  []uint8{uint8(configapi.WidthSixtyFour)},
-		},
+	pathElem := adminapi.ReadWritePath{
+		ValueType: configapi.ValueType_UINT,
+		TypeOpts:  []uint64{uint64(configapi.WidthSixtyFour)},
 	}
 	gnmiValue := gnmi.TypedValue_UintVal{UintVal: uint64(testMaxUint)}
 	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue}, &pathElem)

@@ -195,18 +195,7 @@ func getRoPathMap(resp *api.ModelInfoResponse) path.ReadOnlyPathMap {
 	for _, pe := range resp.ModelInfo.ReadOnlyPath {
 		roSubPathMap := path.ReadOnlySubPathMap{}
 		for _, subPath := range pe.SubPath {
-			typeOpts8 := make([]uint8, 0, len(subPath.TypeOpts))
-			for _, typeOpt := range subPath.TypeOpts {
-				typeOpts8 = append(typeOpts8, uint8(typeOpt))
-			}
-			roSubPathMap[subPath.SubPath] = path.ReadOnlyAttrib{
-				ValueType:   subPath.ValueType,
-				TypeOpts:    typeOpts8,
-				Description: subPath.Description,
-				Units:       subPath.Units,
-				IsAKey:      subPath.IsAKey,
-				AttrName:    subPath.AttrName,
-			}
+			roSubPathMap[subPath.SubPath] = *subPath
 		}
 		pm[pe.Path] = roSubPathMap
 	}
@@ -214,22 +203,9 @@ func getRoPathMap(resp *api.ModelInfoResponse) path.ReadOnlyPathMap {
 }
 
 func getRWPathMap(resp *api.ModelInfoResponse) path.ReadWritePathMap {
-	pm := make(map[string]path.ReadWritePathElem)
+	pm := make(map[string]api.ReadWritePath)
 	for _, pe := range resp.ModelInfo.ReadWritePath {
-		pm[pe.Path] = path.ReadWritePathElem{
-			ReadOnlyAttrib: path.ReadOnlyAttrib{
-				ValueType:   pe.ValueType,
-				TypeOpts:    getTypeOpts(pe.TypeOpts),
-				Description: pe.Description,
-				Units:       pe.Units,
-				IsAKey:      pe.IsAKey,
-				AttrName:    pe.AttrName,
-			},
-			Mandatory: pe.Mandatory,
-			Default:   pe.Default,
-			Range:     pe.Range,
-			Length:    pe.Length,
-		}
+		pm[pe.Path] = *pe
 	}
 	return pm
 }

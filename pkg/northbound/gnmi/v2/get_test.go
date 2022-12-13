@@ -136,10 +136,8 @@ func setupTopoAndRegistry(test *testContext, id string, model string, version st
 	plugin := plugintest.NewMockModelPlugin(test.mctl)
 	rwPaths := path.ReadWritePathMap{}
 	for _, p := range []string{"/foo", "/bar", "/goo", "/some/nested/path"} {
-		rwPaths[p] = path.ReadWritePathElem{
-			ReadOnlyAttrib: path.ReadOnlyAttrib{
-				ValueType: configapi.ValueType_STRING,
-			},
+		rwPaths[p] = adminapi.ReadWritePath{
+			ValueType: configapi.ValueType_STRING,
 		}
 	}
 	plugin.EXPECT().GetInfo().AnyTimes().
