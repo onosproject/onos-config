@@ -11,6 +11,7 @@ import (
 	_map "github.com/atomix/go-sdk/pkg/primitive/map"
 	"github.com/atomix/go-sdk/pkg/types"
 	"io"
+	"sync"
 	"time"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
@@ -60,7 +61,10 @@ func NewAtomixStore(client primitive.Client) (Store, error) {
 		return nil, errors.FromAtomix(err)
 	}
 	return &configurationStore{
+		client:         client,
 		configurations: configurations,
+		committed:      make(map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue]),
+		applied:        make(map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue]),
 	}, nil
 }
 
@@ -102,6 +106,10 @@ func WithConfigurationID(id configapi.ConfigurationID) WatchOption {
 
 type configurationStore struct {
 	configurations _map.Map[configapi.ConfigurationID, *configapi.Configuration]
+	client         primitive.Client
+	committed      map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue]
+	applied        map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue]
+	mu             sync.RWMutex
 }
 
 func (s *configurationStore) Get(ctx context.Context, id configapi.ConfigurationID) (*configapi.Configuration, error) {
@@ -114,6 +122,50 @@ func (s *configurationStore) Get(ctx context.Context, id configapi.Configuration
 	configuration := entry.Value
 	configuration.Key = string(entry.Key)
 	configuration.Version = uint64(entry.Version)
+
+	committed, err := s.getCommitted(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	stream, err := committed.List(ctx)
+	if err != nil {
+		return nil, errors.FromAtomix(err)
+	}
+	for {
+		entry, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, errors.FromAtomix(err)
+		}
+		if configuration.Values == nil {
+			configuration.Values = make(map[string]*configapi.PathValue)
+		}
+		configuration.Values[entry.Key] = &entry.Value.PathValue
+	}
+
+	applied, err := s.getApplied(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	stream, err = applied.List(ctx)
+	if err != nil {
+		return nil, errors.FromAtomix(err)
+	}
+	for {
+		entry, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, errors.FromAtomix(err)
+		}
+		if configuration.Status.Applied.Values == nil {
+			configuration.Status.Applied.Values = make(map[string]*configapi.PathValue)
+		}
+		configuration.Status.Applied.Values[entry.Key] = &entry.Value.PathValue
+	}
 	return configuration, nil
 }
 
@@ -131,10 +183,51 @@ func (s *configurationStore) Create(ctx context.Context, configuration *configap
 		return errors.NewInvalid("cannot create configuration with version")
 	}
 
+	if configuration.Values != nil {
+		committed, err := s.getCommitted(ctx, configuration.ID)
+		if err != nil {
+			return err
+		}
+		for _, pv := range configuration.Values {
+			entry, err := committed.Get(ctx, pv.Path)
+			if err != nil {
+				err = errors.FromAtomix(err)
+				if !errors.IsNotFound(err) {
+					return err
+				}
+
+				cpv := &configapi.ConfigurationPathValue{
+					ObjectMeta: configapi.ObjectMeta{
+						Key: pv.Path,
+					},
+					Index:     configuration.Index,
+					PathValue: *pv,
+				}
+				if _, err := committed.Insert(ctx, pv.Path, cpv); err != nil {
+					err = errors.FromAtomix(err)
+					if errors.IsAlreadyExists(err) {
+						return errors.NewConflict(err.Error())
+					}
+				}
+			} else {
+				cpv := entry.Value
+				cpv.Index = configuration.Index
+				cpv.PathValue = *pv
+				if _, err := committed.Update(ctx, pv.Path, cpv, _map.IfVersion(entry.Version)); err != nil {
+					err = errors.FromAtomix(err)
+					if errors.IsNotFound(err) || errors.IsConflict(err) {
+						return errors.NewConflict(err.Error())
+					}
+				}
+			}
+		}
+	}
+
 	configuration.Key = string(configuration.ID)
 	configuration.Revision = 1
 	configuration.Created = time.Now()
 	configuration.Updated = time.Now()
+	configuration.Values = nil
 
 	// Create the entry in the underlying map primitive.
 	entry, err := s.configurations.Insert(ctx, configuration.ID, configuration)
@@ -158,8 +251,50 @@ func (s *configurationStore) Update(ctx context.Context, configuration *configap
 	if configuration.Version == 0 {
 		return errors.NewInvalid("configuration must contain a version on update")
 	}
+
+	if configuration.Values != nil {
+		committed, err := s.getCommitted(ctx, configuration.ID)
+		if err != nil {
+			return err
+		}
+		for _, pv := range configuration.Values {
+			entry, err := committed.Get(ctx, pv.Path)
+			if err != nil {
+				err = errors.FromAtomix(err)
+				if !errors.IsNotFound(err) {
+					return err
+				}
+
+				cpv := &configapi.ConfigurationPathValue{
+					ObjectMeta: configapi.ObjectMeta{
+						Key: pv.Path,
+					},
+					Index:     configuration.Index,
+					PathValue: *pv,
+				}
+				if _, err := committed.Insert(ctx, pv.Path, cpv); err != nil {
+					err = errors.FromAtomix(err)
+					if errors.IsAlreadyExists(err) {
+						return errors.NewConflict(err.Error())
+					}
+				}
+			} else {
+				cpv := entry.Value
+				cpv.Index = configuration.Index
+				cpv.PathValue = *pv
+				if _, err := committed.Update(ctx, pv.Path, cpv, _map.IfVersion(entry.Version)); err != nil {
+					err = errors.FromAtomix(err)
+					if errors.IsNotFound(err) || errors.IsConflict(err) {
+						return errors.NewConflict(err.Error())
+					}
+				}
+			}
+		}
+	}
+
 	configuration.Revision++
 	configuration.Updated = time.Now()
+	configuration.Values = nil
 
 	// Update the entry in the underlying map primitive using the configuration version
 	// as an optimistic lock.
@@ -184,7 +319,49 @@ func (s *configurationStore) UpdateStatus(ctx context.Context, configuration *co
 	if configuration.Version == 0 {
 		return errors.NewInvalid("configuration must contain a version on update")
 	}
+
+	if configuration.Status.Applied.Values != nil {
+		applied, err := s.getApplied(ctx, configuration.ID)
+		if err != nil {
+			return err
+		}
+		for _, pv := range configuration.Status.Applied.Values {
+			entry, err := applied.Get(ctx, pv.Path)
+			if err != nil {
+				err = errors.FromAtomix(err)
+				if !errors.IsNotFound(err) {
+					return err
+				}
+
+				cpv := &configapi.ConfigurationPathValue{
+					ObjectMeta: configapi.ObjectMeta{
+						Key: pv.Path,
+					},
+					Index:     configuration.Index,
+					PathValue: *pv,
+				}
+				if _, err := applied.Insert(ctx, pv.Path, cpv); err != nil {
+					err = errors.FromAtomix(err)
+					if errors.IsAlreadyExists(err) {
+						return errors.NewConflict(err.Error())
+					}
+				}
+			} else {
+				cpv := entry.Value
+				cpv.Index = configuration.Index
+				cpv.PathValue = *pv
+				if _, err := applied.Update(ctx, pv.Path, cpv, _map.IfVersion(entry.Version)); err != nil {
+					err = errors.FromAtomix(err)
+					if errors.IsNotFound(err) || errors.IsConflict(err) {
+						return errors.NewConflict(err.Error())
+					}
+				}
+			}
+		}
+	}
+
 	configuration.Updated = time.Now()
+	configuration.Status.Applied.Values = nil
 
 	// Update the entry in the underlying map primitive using the configuration version
 	// as an optimistic lock.
@@ -215,6 +392,50 @@ func (s *configurationStore) List(ctx context.Context) ([]*configapi.Configurati
 		configuration := entry.Value
 		configuration.Version = uint64(entry.Version)
 		configurations = append(configurations, configuration)
+
+		committed, err := s.getCommitted(ctx, entry.Key)
+		if err != nil {
+			return nil, err
+		}
+		stream, err := committed.List(ctx)
+		if err != nil {
+			return nil, errors.FromAtomix(err)
+		}
+		for {
+			entry, err := stream.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return nil, errors.FromAtomix(err)
+			}
+			if configuration.Values == nil {
+				configuration.Values = make(map[string]*configapi.PathValue)
+			}
+			configuration.Values[entry.Key] = &entry.Value.PathValue
+		}
+
+		applied, err := s.getApplied(ctx, entry.Key)
+		if err != nil {
+			return nil, err
+		}
+		stream, err = applied.List(ctx)
+		if err != nil {
+			return nil, errors.FromAtomix(err)
+		}
+		for {
+			entry, err := stream.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return nil, errors.FromAtomix(err)
+			}
+			if configuration.Status.Applied.Values == nil {
+				configuration.Status.Applied.Values = make(map[string]*configapi.PathValue)
+			}
+			configuration.Status.Applied.Values[entry.Key] = &entry.Value.PathValue
+		}
 	}
 }
 
@@ -270,6 +491,57 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 					}
 					configuration := entry.Value
 					configuration.Version = uint64(entry.Version)
+
+					committed, err := s.getCommitted(ctx, entry.Key)
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					stream, err := committed.List(ctx)
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					for {
+						entry, err := stream.Next()
+						if err == io.EOF {
+							break
+						}
+						if err != nil {
+							log.Error(err)
+							continue
+						}
+						if configuration.Values == nil {
+							configuration.Values = make(map[string]*configapi.PathValue)
+						}
+						configuration.Values[entry.Key] = &entry.Value.PathValue
+					}
+
+					applied, err := s.getApplied(ctx, entry.Key)
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					stream, err = applied.List(ctx)
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					for {
+						entry, err := stream.Next()
+						if err == io.EOF {
+							break
+						}
+						if err != nil {
+							log.Error(err)
+							continue
+						}
+						if configuration.Status.Applied.Values == nil {
+							configuration.Status.Applied.Values = make(map[string]*configapi.PathValue)
+						}
+						configuration.Status.Applied.Values[entry.Key] = &entry.Value.PathValue
+					}
+
 					ch <- configapi.ConfigurationEvent{
 						Type:          configapi.ConfigurationEvent_REPLAYED,
 						Configuration: *configuration,
@@ -318,6 +590,45 @@ func propagateEvents(events _map.EventStream[configapi.ConfigurationID, *configa
 			}
 		}
 	}
+}
+
+func (s *configurationStore) getCommitted(ctx context.Context, id configapi.ConfigurationID) (_map.Map[string, *configapi.ConfigurationPathValue], error) {
+	return s.getTarget(ctx, s.committed, id)
+}
+
+func (s *configurationStore) getApplied(ctx context.Context, id configapi.ConfigurationID) (_map.Map[string, *configapi.ConfigurationPathValue], error) {
+	return s.getTarget(ctx, s.applied, id)
+}
+
+func (s *configurationStore) getTarget(
+	ctx context.Context,
+	targets map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue],
+	id configapi.ConfigurationID) (_map.Map[string, *configapi.ConfigurationPathValue], error) {
+	s.mu.RLock()
+	target, ok := targets[id]
+	s.mu.RUnlock()
+	if ok {
+		return target, nil
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	target, ok = targets[id]
+	if ok {
+		return target, nil
+	}
+
+	var err error
+	target, err = _map.NewBuilder[string, *configapi.ConfigurationPathValue](s.client, fmt.Sprintf("configurations-%s", id)).
+		Tag("onos-config", "path-value").
+		Codec(types.Proto[*configapi.ConfigurationPathValue](&configapi.ConfigurationPathValue{})).
+		Get(ctx)
+	if err != nil {
+		return nil, errors.FromAtomix(err)
+	}
+	targets[id] = target
+	return target, nil
 }
 
 func (s *configurationStore) Close(ctx context.Context) error {
