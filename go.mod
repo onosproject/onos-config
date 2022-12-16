@@ -18,6 +18,7 @@ require (
 	github.com/onosproject/onos-test v0.6.6
 	github.com/onosproject/onos-topo v0.10.3
 	github.com/openconfig/gnmi v0.0.0-20220920173703-480bf53a74d2
+	github.com/openconfig/goyang v1.1.0
 	github.com/prometheus/common v0.26.0
 	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.7.1
@@ -133,7 +134,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/openconfig/goyang v1.1.0 // indirect
 	github.com/openconfig/grpctunnel v0.0.0-20220819142823-6f5422b8ca70 // indirect
 	github.com/openconfig/ygot v0.24.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
