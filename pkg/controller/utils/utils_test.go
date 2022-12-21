@@ -2,13 +2,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package proposal
+package utils
 
 import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"gotest.tools/assert"
 	"testing"
 )
+
+var log = logging.GetLogger("controller", "proposal")
 
 func Test_CascadingDeleteAlgorithm(t *testing.T) {
 	// defining store here
@@ -107,7 +110,7 @@ func Test_CascadingDeleteAlgorithm(t *testing.T) {
 	log.Infof("changeValues is\n%v", changeValues)
 
 	// cascading delete algorithm
-	updatedChangeValues := addDeleteChildren(changeValues, store)
+	updatedChangeValues := AddDeleteChildren(changeValues, store)
 	log.Infof("updChangeValues is\n%v", updatedChangeValues)
 	assert.Equal(t, 5, len(updatedChangeValues))
 	log.Infof("updChangeValues has %d PathValues to delete", len(updatedChangeValues))

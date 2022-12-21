@@ -456,7 +456,7 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 			if config.Values == nil {
 				config.Values = make(map[string]*configapi.PathValue)
 			}
-			updatedChangeValues := addDeleteChildren(changeValues, config.Values)
+			updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
 			for path, changeValue := range updatedChangeValues {
 				_, _ = applyChangeToConfig(config.Values, path, changeValue)
 			}
@@ -643,7 +643,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			changeValues = proposal.Status.RollbackValues
 		}
 
-		updatedChangeValues := addDeleteChildren(changeValues, config.Values)
+		updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
 		// Create a list of PathValue pairs from which to construct a gNMI Set for the Proposal.
 		pathValues := make([]*configapi.PathValue, 0, len(updatedChangeValues))
 		for _, changeValue := range updatedChangeValues {
@@ -819,22 +819,4 @@ func isModelDataCompatible(pluginDataModels []*gpb.ModelData, targetDataModels [
 		}
 	}
 	return true
-}
-
-func addDeleteChildren(changeValues map[string]*configapi.PathValue, configStore map[string]*configapi.PathValue) map[string]*configapi.PathValue {
-	// defining new changeValues map, where we will include old changeValues map and new pathValues to be cascading deleted
-	var updChangeValues = make(map[string]*configapi.PathValue)
-	for prefix, changeValue := range changeValues {
-		// if this pathValue has to be deleted, then we need to search for all children of this pathValue
-		if changeValue.Deleted {
-			for path, value := range configStore {
-				if strings.HasPrefix(path, prefix) {
-					updChangeValues[path] = value
-				}
-			}
-		} else {
-			updChangeValues[prefix] = changeValue
-		}
-	}
-	return updChangeValues
 }
