@@ -186,7 +186,7 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 
 	// setting path-value for ../agent/config/backoff-interval banner
 	// Creating the GNMI path
-	targetPath5 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigBOIntervalPath, ofAgentConfigBOIntervalValue, proto.StringVal)
+	targetPath5 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigBOIntervalPath, ofAgentConfigBOIntervalValue, proto.IntVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -282,7 +282,7 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 
 	// setting path-value for ../agent/config/inactivity-probe banner
 	// Creating the GNMI path
-	targetPath8 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigInactivityProbePath, ofAgentConfigInactivityProbeValue, proto.StringVal)
+	targetPath8 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigInactivityProbePath, ofAgentConfigInactivityProbeValue, proto.IntVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -314,7 +314,7 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 
 	// setting path-value for ../agent/config/max-backoff banner
 	// Creating the GNMI path
-	targetPath9 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigMaxBOPath, ofAgentConfigMaxBOValue, proto.StringVal)
+	targetPath9 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigMaxBOPath, ofAgentConfigMaxBOValue, proto.IntVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
