@@ -456,7 +456,11 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 			if config.Values == nil {
 				config.Values = make(map[string]*configapi.PathValue)
 			}
+			// ToDo - remove before merging
+			log.Infof("Commit phase - Following paths are required to be updated:\n%v", changeValues)
 			updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
+			// ToDo - remove before merging
+			log.Infof("Commit phase - Following paths were reconciled to be updated:\n%v", updatedChangeValues)
 			for path, changeValue := range updatedChangeValues {
 				_, _ = applyChangeToConfig(config.Values, path, changeValue)
 			}
@@ -643,7 +647,11 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			changeValues = proposal.Status.RollbackValues
 		}
 
+		// ToDo - remove before merging
+		log.Infof("Apply phase - Following paths are required to be updated:\n%v", changeValues)
 		updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
+		// ToDo - remove before merging
+		log.Infof("Apply phase - Following paths were reconciled to be updated:\n%v", updatedChangeValues)
 		// Create a list of PathValue pairs from which to construct a gNMI Set for the Proposal.
 		pathValues := make([]*configapi.PathValue, 0, len(updatedChangeValues))
 		for _, changeValue := range updatedChangeValues {
