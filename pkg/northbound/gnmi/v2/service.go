@@ -66,9 +66,9 @@ func NewService(
 // Register registers the GNMI server with grpc
 func (s Service) Register(r *grpc.Server) {
 	setSizeLimitStr := os.Getenv("GNMI_SET_SIZE_LIMIT")
-	var setSizeLimit int64
+	var setSizeLimit int
 	var err error
-	if setSizeLimit, err = strconv.ParseInt(setSizeLimitStr, 10, 64); err != nil {
+	if setSizeLimit, err = strconv.Atoi(setSizeLimitStr); err != nil {
 		log.Errorf("Ignoring GNMI_SET_SIZE_LIMIT: %s %v", setSizeLimitStr, err)
 	}
 
@@ -80,7 +80,7 @@ func (s Service) Register(r *grpc.Server) {
 			proposals:        s.proposals,
 			configurations:   s.configurations,
 			conns:            s.conns,
-			gnmiSetSizeLimit: int(setSizeLimit),
+			gnmiSetSizeLimit: setSizeLimit,
 		})
 }
 

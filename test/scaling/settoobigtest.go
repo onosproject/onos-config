@@ -22,7 +22,6 @@ const (
 	newRootEnabledPath         = newRootPath + "/config/enabled"
 	newRootDescriptionPath     = newRootPath + "/config/description"
 	newRootMtuPath             = newRootPath + "/config/mtu"
-	newRootTypePath            = newRootPath + "/config/type"
 	newRootHoldTimeUpPath      = newRootPath + "/hold-time/config/up"
 	newRootHoldTimeDownPath    = newRootPath + "/hold-time/config/down"
 	subInterface1              = "/subinterfaces/subinterface[index=1]"
@@ -79,7 +78,6 @@ func (s *TestSuite) testSetTooBig(t *testing.T, encoding gnmiapi.Encoding) {
 		{TargetName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
 		{TargetName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 		{TargetName: simulator.Name(), Path: newRootMtuPath, PathDataValue: "1000", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootTypePath, PathDataValue: "ethernet", PathDataType: proto.StringVal},
 		{TargetName: simulator.Name(), Path: newRootHoldTimeUpPath, PathDataValue: "30", PathDataType: proto.IntVal},
 		{TargetName: simulator.Name(), Path: newRootHoldTimeDownPath, PathDataValue: "31", PathDataType: proto.IntVal},
 		{TargetName: simulator.Name(), Path: newRootSubIf1ConfigIdx, PathDataValue: "1", PathDataType: proto.IntVal},
@@ -93,7 +91,7 @@ func (s *TestSuite) testSetTooBig(t *testing.T, encoding gnmiapi.Encoding) {
 	err := setReq.SetExpectFail(t)
 	assert.Equal(t, fmt.Sprintf("rpc error: code = InvalidArgument desc = "+
 		"number of updates and deletes in a gNMI Set must not exceed %d. Target: %s Updates: %d, Deletes %d",
-		gnmiSetLimitForTest, simulator.Name(), 12, 0), err.Error())
+		gnmiSetLimitForTest, simulator.Name(), 11, 0), err.Error())
 	t.Logf("successfully prevented gNMI set with more than %d updates", gnmiSetLimitForTest)
 }
 
