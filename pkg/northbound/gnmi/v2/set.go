@@ -114,6 +114,20 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 	}
 
+	if s.gnmiSetSizeLimit > 0 {
+		if len(targets) != 1 {
+			return nil, errors.Status(errors.NewInvalid(
+				"gNMI Set must contain only 1 target. Found: %d. GNMI_SET_SIZE_LIMIT=%d", len(targets), s.gnmiSetSizeLimit)).Err()
+		}
+		for target, chanages := range targets {
+			if len(chanages.updates)+len(chanages.removes) > s.gnmiSetSizeLimit {
+				return nil, errors.Status(errors.NewInvalid(
+					"number of updates and deletes in a gNMI Set must not exceed %d. Target: %s Updates: %d, Deletes %d",
+					s.gnmiSetSizeLimit, target, len(chanages.updates), len(chanages.removes))).Err()
+			}
+		}
+	}
+
 	transaction, err := newTransaction(targets, overrides, transactionStrategy, userName)
 	if err != nil {
 		log.Warn(err)

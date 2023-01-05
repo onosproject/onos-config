@@ -13,7 +13,6 @@ import (
 func CreateUmbrellaRelease() *helm.HelmRelease {
 	return helm.Chart("onos-umbrella", onostest.OnosChartRepo).
 		Release("onos-umbrella").
-		Set("import.onos-gui.enabled", false).
 		Set("onos-topo.image.tag", "latest").
 		Set("onos-config.image.tag", "latest").
 		Set("onos-config-model.image.tag", "latest")
