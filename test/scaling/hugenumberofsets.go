@@ -6,37 +6,37 @@ package scaling
 
 import (
 	"fmt"
+	"github.com/divan/num2words"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 	"time"
 )
 
 const (
-	newRootName                = "new-root"
-	newRootPath                = "/interfaces/interface[name=" + newRootName + "]"
-	newRootConfigNamePath      = newRootPath + "/config/name"
-	newRootEnabledPath         = newRootPath + "/config/enabled"
-	newRootDescriptionPath     = newRootPath + "/config/description"
-	newRootMtuPath             = newRootPath + "/config/mtu"
-	newRootTypePath            = newRootPath + "/config/type"
-	newRootHoldTimeUpPath      = newRootPath + "/hold-time/config/up"
-	newRootHoldTimeDownPath    = newRootPath + "/hold-time/config/down"
-	subInterface1              = "/subinterfaces/subinterface[index=1]"
-	newRootSubIf1ConfigIdx     = newRootPath + subInterface1 + "/config/index"
-	newRootSubIf1ConfigDesc    = newRootPath + subInterface1 + "/config/description"
-	newRootSubIf1ConfigEnabled = newRootPath + subInterface1 + "/config/enabled"
-	subInterface2              = "/subinterfaces/subinterface[index=2]"
-	newRootSubIf2ConfigIdx     = newRootPath + subInterface2 + "/config/index"
-	newRootSubIf2ConfigDesc    = newRootPath + subInterface2 + "/config/description"
-	newRootSubIf2ConfigEnabled = newRootPath + subInterface2 + "/config/enabled"
-	newDescription             = "description"
+	configNamePath    = "/config/name"
+	enabledPath       = "/config/enabled"
+	descriptionPath   = "/config/description"
+	mtuPath           = "/config/mtu"
+	holdTimeUpPath    = "/hold-time/config/up"
+	holdTimeDownPath  = "/hold-time/config/down"
+	longIfDescription = "this is a long description of the interface"
+	iterateCount      = 100
 )
 
-func (s *TestSuite) testSetTooBig(t *testing.T, encoding gnmiapi.Encoding) {
+func ifPath(ifIdx int, suffix string) string {
+	return fmt.Sprintf("/interfaces/interface[name=if-%d]%s", ifIdx, suffix)
+}
+
+func ifDescription(ifIdx int) string {
+	return fmt.Sprintf("if-%d (%s): %s", ifIdx, num2words.Convert(ifIdx), longIfDescription)
+}
+
+func (s *TestSuite) testHugeNumberOfSets(t *testing.T, encoding gnmiapi.Encoding) {
 	ctx, cancel := gnmiutils.MakeContext()
 	defer cancel()
 
@@ -51,17 +51,26 @@ func (s *TestSuite) testSetTooBig(t *testing.T, encoding gnmiapi.Encoding) {
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
 
-	// First do a single set path by setting the name of new root using gNMI client
-	setNamePath := []proto.GNMIPath{
-		{TargetName: simulator.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
-	}
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
-		Client:      gnmiClient,
-		Encoding:    gnmiapi.Encoding_PROTO,
-		UpdatePaths: setNamePath,
+		Ctx:      ctx,
+		Client:   gnmiClient,
+		Encoding: gnmiapi.Encoding_PROTO,
 	}
-	setReq.SetOrFail(t)
+
+	t.Logf("doing %d gNMI Sets to build up huge configuration", iterateCount)
+	for i := 0; i < iterateCount; i++ {
+
+		setReq.UpdatePaths = []proto.GNMIPath{
+			{TargetName: simulator.Name(), Path: ifPath(i, configNamePath), PathDataValue: fmt.Sprintf("if-%d", i), PathDataType: proto.StringVal},
+			{TargetName: simulator.Name(), Path: ifPath(i, descriptionPath), PathDataValue: ifDescription(i), PathDataType: proto.StringVal},
+			{TargetName: simulator.Name(), Path: ifPath(i, enabledPath), PathDataValue: "false", PathDataType: proto.BoolVal},
+			{TargetName: simulator.Name(), Path: ifPath(i, mtuPath), PathDataValue: strconv.FormatInt(int64(i), 10), PathDataType: proto.IntVal},
+			{TargetName: simulator.Name(), Path: ifPath(i, holdTimeUpPath), PathDataValue: strconv.FormatInt(int64(i*1000), 10), PathDataType: proto.IntVal},
+			{TargetName: simulator.Name(), Path: ifPath(i, holdTimeDownPath), PathDataValue: strconv.FormatInt(int64(i*1000+1), 10), PathDataType: proto.IntVal},
+		}
+
+		setReq.SetOrFail(t)
+	}
 
 	getConfigReq := &gnmiutils.GetRequest{
 		Ctx:      ctx,
@@ -70,37 +79,16 @@ func (s *TestSuite) testSetTooBig(t *testing.T, encoding gnmiapi.Encoding) {
 	}
 
 	// Check that the name value was set correctly
-	getConfigReq.Paths = setNamePath
-	getConfigReq.CheckValues(t, newRootName)
-	t.Logf("successfully allowed gNMI set with less than %d updates", gnmiSetLimitForTest)
-
-	// Now do a test of multiple paths that will exceed the limit using gNMI client
-	setPath := []proto.GNMIPath{
-		{TargetName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
-		{TargetName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
-		{TargetName: simulator.Name(), Path: newRootMtuPath, PathDataValue: "1000", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootTypePath, PathDataValue: "ethernet", PathDataType: proto.StringVal},
-		{TargetName: simulator.Name(), Path: newRootHoldTimeUpPath, PathDataValue: "30", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootHoldTimeDownPath, PathDataValue: "31", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf1ConfigIdx, PathDataValue: "1", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf1ConfigDesc, PathDataValue: "Sub if 1", PathDataType: proto.StringVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf1ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf2ConfigIdx, PathDataValue: "2", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf2ConfigDesc, PathDataValue: "Sub if 2", PathDataType: proto.StringVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf2ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
+	getConfigReq.Paths = []proto.GNMIPath{
+		{TargetName: simulator.Name(), Path: "/interfaces/interface[name=*]"},
 	}
-	setReq.UpdatePaths = setPath
-	err := setReq.SetExpectFail(t)
-	assert.Equal(t, fmt.Sprintf("rpc error: code = InvalidArgument desc = "+
-		"number of updates and deletes in a gNMI Set must not exceed %d. Target: %s Updates: %d, Deletes %d",
-		gnmiSetLimitForTest, simulator.Name(), 12, 0), err.Error())
-	t.Logf("successfully prevented gNMI set with more than %d updates", gnmiSetLimitForTest)
+	getConfigReq.CountValues(t, iterateCount*6)
 }
 
 // TestHugeNumberOfSets tests a huge number of sets to a single device, to test the limits of configuration
 func (s *TestSuite) TestHugeNumberOfSets(t *testing.T) {
 	t.Run("TestHugeNumberOfSets PROTO",
 		func(t *testing.T) {
-			s.testSetTooBig(t, gnmiapi.Encoding_PROTO)
+			s.testHugeNumberOfSets(t, gnmiapi.Encoding_PROTO)
 		})
 }

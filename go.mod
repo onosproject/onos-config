@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/atomix/go-client v0.9.0
+	github.com/divan/num2words v0.0.0-20170904212200-57dba452f942
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2

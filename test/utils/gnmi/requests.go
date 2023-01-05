@@ -180,6 +180,14 @@ func (req *GetRequest) CheckValues(t *testing.T, expectedValues ...string) {
 	}
 }
 
+// CountValues checks that the correct number of values are read back via a gnmi get request
+func (req *GetRequest) CountValues(t *testing.T, expectedCount int) {
+	t.Helper()
+	value, err := req.Get()
+	assert.NoError(t, err, "Get operation returned an unexpected error")
+	assert.Equal(t, expectedCount, len(value))
+}
+
 // CheckValuesDeleted makes sure that the specified paths have been removed
 func (req *GetRequest) CheckValuesDeleted(t *testing.T) {
 	values, err := req.Get()
