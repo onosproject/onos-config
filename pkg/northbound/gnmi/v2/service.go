@@ -7,6 +7,8 @@ package gnmi
 
 import (
 	"context"
+	"os"
+	"strconv"
 	"sync"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -63,26 +65,35 @@ func NewService(
 
 // Register registers the GNMI server with grpc
 func (s Service) Register(r *grpc.Server) {
+	setSizeLimitStr := os.Getenv("GNMI_SET_SIZE_LIMIT")
+	var setSizeLimit int64
+	var err error
+	if setSizeLimit, err = strconv.ParseInt(setSizeLimitStr, 10, 64); err != nil {
+		log.Errorf("Ignoring GNMI_SET_SIZE_LIMIT: %s %v", setSizeLimitStr, err)
+	}
+
 	gnmi.RegisterGNMIServer(r,
 		&Server{
-			pluginRegistry: s.pluginRegistry,
-			topo:           s.topo,
-			transactions:   s.transactions,
-			proposals:      s.proposals,
-			configurations: s.configurations,
-			conns:          s.conns,
+			pluginRegistry:   s.pluginRegistry,
+			topo:             s.topo,
+			transactions:     s.transactions,
+			proposals:        s.proposals,
+			configurations:   s.configurations,
+			conns:            s.conns,
+			gnmiSetSizeLimit: int(setSizeLimit),
 		})
 }
 
 // Server implements the grpc GNMI service
 type Server struct {
-	mu             sync.RWMutex
-	pluginRegistry pluginregistry.PluginRegistry
-	topo           topo.Store
-	transactions   transaction.Store
-	proposals      proposal.Store
-	configurations configuration.Store
-	conns          sb.ConnManager
+	mu               sync.RWMutex
+	pluginRegistry   pluginregistry.PluginRegistry
+	topo             topo.Store
+	transactions     transaction.Store
+	proposals        proposal.Store
+	configurations   configuration.Store
+	conns            sb.ConnManager
+	gnmiSetSizeLimit int
 }
 
 // Capabilities implements gNMI Capabilities

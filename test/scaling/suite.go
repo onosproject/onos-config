@@ -1,14 +1,16 @@
-// SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2023-present Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package config
+package scaling
 
 import (
 	"github.com/onosproject/helmit/pkg/input"
 	"github.com/onosproject/helmit/pkg/test"
 	"github.com/onosproject/onos-config/test/utils/charts"
 )
+
+const gnmiSetLimitForTest = 10
 
 type testSuite struct {
 	test.Suite
@@ -38,7 +40,7 @@ func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	r := umbrella.
 		Set("global.image.registry", registry).
 		Set("import.onos-cli.enabled", false). // not needed - can be enabled by adding '--set onos-umbrella.import.onos-cli.enabled=true' to helmit args for investigations
-		Set("onos-config.gnmiSet.sizeLimit", 0).
+		Set("onos-config.gnmiSet.sizeLimit", gnmiSetLimitForTest).
 		Install(true)
 	s.ConfigReplicaCount = getInt(umbrella.Get("onos-config.replicaCount"))
 	return r

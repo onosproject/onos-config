@@ -239,3 +239,10 @@ func (req *SetRequest) SetOrFail(t *testing.T) (configapi.TransactionID, v2.Inde
 	assert.NoError(t, err)
 	return transactionID, transactionIndex
 }
+
+// SetExpectFail performs a Set operation expects an error to occur
+func (req *SetRequest) SetExpectFail(t *testing.T) error {
+	_, _, err := req.Set()
+	assert.Error(t, err)
+	return err
+}
