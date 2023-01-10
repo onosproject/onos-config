@@ -443,6 +443,7 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 		}
 
 		if config.Status.Committed.Index == proposal.Status.PrevIndex {
+			log.Debugf("Commit phase (446) - values are:\n%v", config.Values)
 			var changeValues map[string]*configapi.PathValue
 			switch details := proposal.Details.(type) {
 			case *configapi.Proposal_Change:
@@ -457,14 +458,18 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 				config.Values = make(map[string]*configapi.PathValue)
 			}
 			// ToDo - remove before merging
-			log.Infof("Commit phase - Following paths are required to be updated:\n%v", changeValues)
+			log.Debugf("Commit phase (461) - values are:\n%v", config.Values)
+			log.Debugf("Commit phase (462) - Following paths are required to be updated:\n%v", changeValues)
 			updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
 			// ToDo - remove before merging
-			log.Infof("Commit phase - Following paths were reconciled to be updated:\n%v", updatedChangeValues)
-			for path, changeValue := range updatedChangeValues {
-				_, _ = applyChangeToConfig(config.Values, path, changeValue)
+			log.Debugf("Commit phase (465) - values are:\n%v", config.Values)
+			log.Debugf("Commit phase (466) - Following paths were reconciled to be updated:\n%v", updatedChangeValues)
+			for path, updatedChangeValue := range updatedChangeValues {
+				_, _ = applyChangeToConfig(config.Values, path, updatedChangeValue)
 			}
+			log.Debugf("Commit phase (470) - values are:\n%v", config.Values)
 			config.Values = tree.PrunePathMap(config.Values, true)
+			log.Debugf("Commit phase (472) - values are:\n%v", config.Values)
 
 			config.Status.Committed.Index = proposal.TransactionIndex
 			err = r.configurations.Update(ctx, config)
@@ -648,10 +653,10 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		}
 
 		// ToDo - remove before merging
-		log.Infof("Apply phase - Following paths are required to be updated:\n%v", changeValues)
+		log.Debugf("Apply phase - Following paths are required to be updated:\n%v", changeValues)
 		updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
 		// ToDo - remove before merging
-		log.Infof("Apply phase - Following paths were reconciled to be updated:\n%v", updatedChangeValues)
+		log.Debugf("Apply phase - Following paths were reconciled to be updated:\n%v", updatedChangeValues)
 		// Create a list of PathValue pairs from which to construct a gNMI Set for the Proposal.
 		pathValues := make([]*configapi.PathValue, 0, len(updatedChangeValues))
 		for _, changeValue := range updatedChangeValues {

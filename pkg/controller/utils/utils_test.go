@@ -6,12 +6,9 @@ package utils
 
 import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"gotest.tools/assert"
 	"testing"
 )
-
-var log = logging.GetLogger("controller", "proposal")
 
 func Test_CascadingDeleteAlgorithm(t *testing.T) {
 	// defining store here

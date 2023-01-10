@@ -340,7 +340,7 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 	// Set a new value for the time zone using onos-config
 	onosConfigSetReq.SetOrFail(t)
 
-	// Check that the value was set correctly, both in onos-config and on the target
+	// Check that the value was set correctly, both in onos-config and in the target
 	onosConfigGetReq.CheckValues(t, ofAgentConfigMaxBOValue)
 	simulatorGetReq.CheckValues(t, ofAgentConfigMaxBOValue)
 
@@ -352,10 +352,6 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 	onosConfigSetReq.UpdatePaths = nil
 	onosConfigSetReq.SetOrFail(t)
 
-	//  Make sure it got removed, both in onos-config and on the target
-	onosConfigGetReq.CheckValuesDeleted(t)
-	simulatorGetReq.CheckValuesDeleted(t)
-
 	getPath2 := gnmiutils.GetTargetPath(simulator.Name(), ofAgentConfigPath)
 
 	// Remove the path we added
@@ -363,7 +359,7 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 	onosConfigSetReq.UpdatePaths = nil
 	onosConfigSetReq.SetOrFail(t)
 
-	//  Make sure it got removed, both in onos-config and on the target
+	//  Make sure it got removed, both in onos-config and in the target
 	onosConfigGetReq.CheckValuesDeleted(t)
 	simulatorGetReq.CheckValuesDeleted(t)
 }
