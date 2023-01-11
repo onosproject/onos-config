@@ -7,6 +7,7 @@ package tree
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"reflect"
 	"sort"
 	"strings"
@@ -22,6 +23,8 @@ const (
 	bracketsq = "["
 	brktclose = "]"
 )
+
+var log = logging.GetLogger("utils", "tree")
 
 // BuildTree is a function that takes an ordered array of ConfigValues and
 // produces a structured formatted JSON tree
@@ -297,7 +300,9 @@ func PrunePathMap(pathMap map[string]*configapi.PathValue, leaveTopDeletedPaths 
 	for _, pv := range pathMap {
 		paths = append(paths, pv)
 	}
+	log.Debugf("Paths are:\n%v", paths)
 	prunedPaths := PrunePathValues(paths, leaveTopDeletedPaths)
+	log.Debugf("Pruned paths are:\n%v", prunedPaths)
 	pruneMap := make(map[string]*configapi.PathValue)
 	for _, pv := range prunedPaths {
 		pruneMap[pv.Path] = pv

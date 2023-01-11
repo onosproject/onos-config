@@ -663,6 +663,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			pathValues = append(pathValues, changeValue)
 		}
 		pathValues = tree.PrunePathValues(pathValues, true)
+		log.Debugf("Apply phase - Pruned path values are:\n%v", pathValues)
 
 		log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
 
@@ -766,10 +767,12 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		if config.Status.Applied.Values == nil {
 			config.Status.Applied.Values = make(map[string]*configapi.PathValue)
 		}
-		for path, changeValue := range changeValues {
+		for path, changeValue := range updatedChangeValues {
 			config.Status.Applied.Values[path] = changeValue
 		}
 		config.Status.Applied.Values = tree.PrunePathMap(config.Status.Applied.Values, true)
+		// ToDo - remove this comment
+		log.Debugf("Apply phase (775) - Pruned path values are:\n%v", config.Status.Applied.Values)
 
 		if err := r.configurations.UpdateStatus(ctx, config); err != nil {
 			log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
