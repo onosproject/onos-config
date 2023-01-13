@@ -8,9 +8,12 @@ import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/env"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/uri"
 	"strings"
 )
+
+var log = logging.GetLogger("controller", "utils")
 
 // GetOnosConfigID gets onos-config URI
 func GetOnosConfigID() topoapi.ID {
