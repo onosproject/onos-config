@@ -456,8 +456,9 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 			if config.Values == nil {
 				config.Values = make(map[string]*configapi.PathValue)
 			}
-			for path, changeValue := range changeValues {
-				_, _ = applyChangeToConfig(config.Values, path, changeValue)
+			updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
+			for path, updatedChangeValue := range updatedChangeValues {
+				_, _ = applyChangeToConfig(config.Values, path, updatedChangeValue)
 			}
 			config.Values = tree.PrunePathMap(config.Values, true)
 
@@ -642,9 +643,10 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			changeValues = proposal.Status.RollbackValues
 		}
 
+		updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
 		// Create a list of PathValue pairs from which to construct a gNMI Set for the Proposal.
-		pathValues := make([]*configapi.PathValue, 0, len(changeValues))
-		for _, changeValue := range changeValues {
+		pathValues := make([]*configapi.PathValue, 0, len(updatedChangeValues))
+		for _, changeValue := range updatedChangeValues {
 			pathValues = append(pathValues, changeValue)
 		}
 		pathValues = tree.PrunePathValues(pathValues, true)
@@ -751,7 +753,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		if config.Status.Applied.Values == nil {
 			config.Status.Applied.Values = make(map[string]*configapi.PathValue)
 		}
-		for path, changeValue := range changeValues {
+		for path, changeValue := range updatedChangeValues {
 			config.Status.Applied.Values[path] = changeValue
 		}
 		config.Status.Applied.Values = tree.PrunePathMap(config.Status.Applied.Values, true)
