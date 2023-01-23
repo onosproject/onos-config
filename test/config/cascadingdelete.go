@@ -362,4 +362,16 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 	//  Make sure it got removed, both in onos-config and in the target
 	onosConfigGetReq.CheckValuesDeleted(t)
 	simulatorGetReq.CheckValuesDeleted(t)
+
+	getReq := &gnmiutils.GetRequest{
+		Ctx:        ctx,
+		Client:     gnmiClient,
+		Extensions: gnmiutils.SyncExtension(t),
+		Encoding:   gnmiapi.Encoding_PROTO,
+		Paths:      gnmiutils.GetTargetPath(simulator.Name(), "/"),
+	}
+	paths, err := getReq.Get()
+	assert.NoError(t, err)
+	assert.False(t, checkForPath(paths, ofAgentConfigPath))
+	assert.False(t, checkForPath(paths, cfPath))
 }
