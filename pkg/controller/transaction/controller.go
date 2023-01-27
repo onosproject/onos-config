@@ -129,6 +129,12 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 								targetTypeVersion = *ttv
 							}
 						}
+						changeValues := change.Values
+						changeValuesWithIndex := make(map[string]*configapi.PathValue)
+						for targetID, changeValue := range changeValues {
+							changeValue.Index = transaction.Index
+							changeValuesWithIndex[targetID] = changeValue
+						}
 
 						// Create a proposal for this target
 						proposal := &configapi.Proposal{
@@ -137,7 +143,7 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 							TargetID:         targetID,
 							Details: &configapi.Proposal_Change{
 								Change: &configapi.ChangeProposal{
-									Values: change.Values,
+									Values: changeValuesWithIndex,
 								},
 							},
 							TargetTypeVersion: targetTypeVersion,
