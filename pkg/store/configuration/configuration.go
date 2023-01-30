@@ -7,9 +7,9 @@ package configuration
 import (
 	"context"
 	"fmt"
-	"github.com/atomix/go-client/pkg/generic"
-	"github.com/atomix/go-client/pkg/primitive"
-	_map "github.com/atomix/go-client/pkg/primitive/map"
+	"github.com/atomix/go-sdk/pkg/primitive"
+	_map "github.com/atomix/go-sdk/pkg/primitive/map"
+	"github.com/atomix/go-sdk/pkg/types"
 	"io"
 	"time"
 
@@ -54,7 +54,7 @@ type Store interface {
 func NewAtomixStore(client primitive.Client) (Store, error) {
 	configurations, err := _map.NewBuilder[configapi.ConfigurationID, *configapi.Configuration](client, "configurations").
 		Tag("onos-config", "configuration").
-		Codec(generic.Proto[*configapi.Configuration](&configapi.Configuration{})).
+		Codec(types.Proto[*configapi.Configuration](&configapi.Configuration{})).
 		Get(context.Background())
 	if err != nil {
 		return nil, errors.FromAtomix(err)

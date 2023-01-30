@@ -8,13 +8,15 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"github.com/prometheus/common/log"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/metadata"
 	"net/http"
 	"net/url"
 	"strings"
 )
+
+var log = logging.GetLogger()
 
 // FetchATokenViaKeyCloak Get the token via keycloak using curl
 func FetchATokenViaKeyCloak(openIDIssuer string, user string, passwd string) (string, error) {

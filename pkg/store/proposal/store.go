@@ -7,8 +7,8 @@ package proposal
 import (
 	"context"
 	"fmt"
-	"github.com/atomix/go-client/pkg/generic"
-	"github.com/atomix/go-client/pkg/primitive"
+	"github.com/atomix/go-sdk/pkg/primitive"
+	"github.com/atomix/go-sdk/pkg/types"
 	"io"
 	"time"
 
@@ -16,7 +16,7 @@ import (
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
-	_map "github.com/atomix/go-client/pkg/primitive/map"
+	_map "github.com/atomix/go-sdk/pkg/primitive/map"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 )
 
@@ -90,7 +90,7 @@ func WithProposalID(id configapi.ProposalID) WatchOption {
 func NewAtomixStore(client primitive.Client) (Store, error) {
 	proposals, err := _map.NewBuilder[configapi.ProposalID, *configapi.Proposal](client, "proposals").
 		Tag("onos-config", "proposal").
-		Codec(generic.Proto[*configapi.Proposal](&configapi.Proposal{})).
+		Codec(types.Proto[*configapi.Proposal](&configapi.Proposal{})).
 		Get(context.Background())
 	if err != nil {
 		return nil, errors.FromAtomix(err)

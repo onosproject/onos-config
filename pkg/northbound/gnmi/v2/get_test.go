@@ -6,7 +6,7 @@ package gnmi
 
 import (
 	"context"
-	"github.com/atomix/go-client/pkg/test"
+	"github.com/atomix/go-sdk/pkg/test"
 	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration"
 	proposalcontroller "github.com/onosproject/onos-config/pkg/controller/proposal"
 	transactioncontroller "github.com/onosproject/onos-config/pkg/controller/transaction"

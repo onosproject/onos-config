@@ -8,7 +8,7 @@ package admin
 
 import (
 	"context"
-	"github.com/atomix/go-client/pkg/test"
+	"github.com/atomix/go-sdk/pkg/test"
 	"github.com/golang/mock/gomock"
 	adminapi "github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
