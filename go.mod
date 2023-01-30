@@ -3,8 +3,8 @@ module github.com/onosproject/onos-config
 go 1.19
 
 require (
-
 	github.com/atomix/go-sdk v0.11.0
+	github.com/atomix/go-sdk v1.0.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
@@ -33,6 +33,7 @@ require (
 
 
 require (
+	cloud.google.com/go/compute v1.5.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd // indirect
