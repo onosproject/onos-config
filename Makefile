@@ -38,10 +38,13 @@ jenkins-test: mod-lint build linters license
 	TEST_PACKAGES=github.com/onosproject/onos-config/... ./build/build-tools/build/jenkins/make-unit
 
 helmit-config: integration-test-namespace # @HELP run helmit gnmi tests locally
-	helmit test -n test ./cmd/onos-config-tests --suite config
+	cd test
+	helmit test -n test ./onos-config-tests --suite config
+	cd ..
 
 helmit-rbac: integration-test-namespace # @HELP run helmit gnmi tests locally
-	helmit test -n test ./cmd/onos-config-tests --suite rbac --secret keycloak-password=${keycloak_password}
+	cd test
+	helmit test -n test ./onos-config-tests --suite rbac --secret keycloak-password=${keycloak_password}
 
 integration-tests: helmit-config helmit-rbac # @HELP run helmit integration tests locally
 
