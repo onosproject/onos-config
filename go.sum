@@ -57,6 +57,8 @@ github.com/atomix/atomix/sidecar v0.4.4 h1:CjLPA3p1V83Tx2yxUGz4JLyQkeyXC8/1xXaiZ
 github.com/atomix/atomix/sidecar v0.4.4/go.mod h1:psygbD10K+EdWS1XINexXP0QmiAd+yY2tGkIGqrVMHM=
 github.com/atomix/go-sdk v0.11.0 h1:/04rutbO+AxtvwS0/UhNhTFZZq8+qn/TlnjtVNp8TGI=
 github.com/atomix/go-sdk v0.11.0/go.mod h1:htrQ9mMWO1c4WXFh6DkLon1nLJWLm8BH22irOzEQ8Kk=
+github.com/atomix/go-sdk v1.0.0 h1:7A4WJCM42kCcTbIqqRjlIJx6QcFpUXY7SnmZyjk6U1A=
+github.com/atomix/go-sdk v1.0.0/go.mod h1:htrQ9mMWO1c4WXFh6DkLon1nLJWLm8BH22irOzEQ8Kk=
 github.com/atomix/runtime/sdk v0.7.4 h1:9jAAY85/pZMwejg3zhGr0/S2svebriEXlsu2QZ4+bQU=
 github.com/atomix/runtime/sdk v0.7.4/go.mod h1:CIxhWG1UkcWL82+XJ1wwynz1T5k4nYTZdwNlWp8IMd8=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=

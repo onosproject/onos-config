@@ -3,7 +3,7 @@ module github.com/onosproject/onos-config
 go 1.19
 
 require (
-	github.com/atomix/go-sdk v0.11.0
+	github.com/atomix/go-sdk v1.0.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
