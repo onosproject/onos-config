@@ -11,7 +11,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29
 	github.com/onosproject/onos-api/go v0.10.18
-	github.com/onosproject/onos-lib-go v0.10.4
+	github.com/onosproject/onos-lib-go v0.10.7
 	github.com/openconfig/gnmi v0.0.0-20220920173703-480bf53a74d2
 	github.com/openconfig/goyang v1.1.0
 	github.com/spf13/cobra v1.4.0
@@ -30,7 +30,6 @@ require (
 	github.com/atomix/atomix/protocols/rsm v0.5.2 // indirect
 	github.com/atomix/atomix/runtime v0.8.3 // indirect
 	github.com/atomix/atomix/sidecar v0.4.4 // indirect
-	github.com/atomix/runtime/sdk v0.7.4 // indirect
 	github.com/bits-and-blooms/bitset v1.3.1 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.3.1 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
@@ -83,7 +82,6 @@ require (
 	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/square/go-jose.v1 v1.1.2 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect

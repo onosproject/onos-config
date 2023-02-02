@@ -55,12 +55,8 @@ github.com/atomix/atomix/runtime v0.8.3 h1:+ZPGwolymNjkb2N+Y6+7GC3E1cjAsR1ynTEzp
 github.com/atomix/atomix/runtime v0.8.3/go.mod h1:kkAiuqqkDjSDQsGnQ9nfUz8FmVv/M6GFUjwxkoTbLC0=
 github.com/atomix/atomix/sidecar v0.4.4 h1:CjLPA3p1V83Tx2yxUGz4JLyQkeyXC8/1xXaiZVknJsY=
 github.com/atomix/atomix/sidecar v0.4.4/go.mod h1:psygbD10K+EdWS1XINexXP0QmiAd+yY2tGkIGqrVMHM=
-github.com/atomix/go-sdk v0.11.0 h1:/04rutbO+AxtvwS0/UhNhTFZZq8+qn/TlnjtVNp8TGI=
-github.com/atomix/go-sdk v0.11.0/go.mod h1:htrQ9mMWO1c4WXFh6DkLon1nLJWLm8BH22irOzEQ8Kk=
 github.com/atomix/go-sdk v1.0.0 h1:7A4WJCM42kCcTbIqqRjlIJx6QcFpUXY7SnmZyjk6U1A=
 github.com/atomix/go-sdk v1.0.0/go.mod h1:htrQ9mMWO1c4WXFh6DkLon1nLJWLm8BH22irOzEQ8Kk=
-github.com/atomix/runtime/sdk v0.7.4 h1:9jAAY85/pZMwejg3zhGr0/S2svebriEXlsu2QZ4+bQU=
-github.com/atomix/runtime/sdk v0.7.4/go.mod h1:CIxhWG1UkcWL82+XJ1wwynz1T5k4nYTZdwNlWp8IMd8=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/bits-and-blooms/bitset v1.3.1 h1:y+qrlmq3XsWi+xZqSaueaE8ry8Y127iMxlMfqcK8p0g=
 github.com/bits-and-blooms/bitset v1.3.1/go.mod h1:gIdJ4wp64HaoK2YrL1Q5/N7Y16edYb8uY+O0FJTyyDA=
@@ -238,7 +234,6 @@ github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxv
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
-github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pretty v0.3.0 h1:WgNl7dwNpEZ6jJ9k1snq4pZsg7DOEN8hP9Xw0Tsjwk0=
 github.com/kr/pretty v0.3.0/go.mod h1:640gp4NfQd8pI5XOwp5fnNeVWj67G7CFk/SaSQn7NBk=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
@@ -259,8 +254,8 @@ github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29 h1:qiNdq5jM
 github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29/go.mod h1:EErgiCOwX4CTrijcOgCKqESj2enPi7ehSfgFfD9OH/4=
 github.com/onosproject/onos-api/go v0.10.18 h1:3ztkZLOk0cxr5HAI/Xi3GHdB/JehEKwgxZnoAFVjgBA=
 github.com/onosproject/onos-api/go v0.10.18/go.mod h1:R882+8UcxQBLpCopnnbBnemXtJ77UXnL2I1y5yHbq10=
-github.com/onosproject/onos-lib-go v0.10.4 h1:YNBrFhreXo7BbNm9WUOt6sve001fgF8A5mpxp40m9xk=
-github.com/onosproject/onos-lib-go v0.10.4/go.mod h1:BW7ofxESngKlsUw6YmO/hbUrbmL3sNxdXkzZkDev/tE=
+github.com/onosproject/onos-lib-go v0.10.7 h1:fSEFis3ZX2E13s/CahK1vHJ1849tEFfQSA5LciVZWsw=
+github.com/onosproject/onos-lib-go v0.10.7/go.mod h1:7WJKZwkje6ft9vAHP+PHDsRJo4dMl5wqtIOavLJ0h6w=
 github.com/openconfig/gnmi v0.0.0-20200414194230-1597cc0f2600/go.mod h1:M/EcuapNQgvzxo1DDXHK4tx3QpYM/uG4l591v33jG2A=
 github.com/openconfig/gnmi v0.0.0-20200508230933-d19cebf5e7be/go.mod h1:M/EcuapNQgvzxo1DDXHK4tx3QpYM/uG4l591v33jG2A=
 github.com/openconfig/gnmi v0.0.0-20220617175856-41246b1b3507/go.mod h1:ycJVRtLs20E2c1WD+9oacgxbrBFwQygd8/uaOuGMlfc=
@@ -697,8 +692,7 @@ google.golang.org/protobuf v1.28.1 h1:d0NfwRgPtno5B1Wa6L2DAG+KivqkdutMf1UhdNx175
 google.golang.org/protobuf v1.28.1/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
-gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
-gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=
+gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 h1:YR8cESwS4TdDjEe65xsg0ogRM/Nc3DYOhEAlW+xobZo=
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
 gopkg.in/ini.v1 v1.66.4 h1:SsAcf+mM7mRZo2nJNGt8mZCjG8ZRaNGMURJw7BsIST4=
 gopkg.in/ini.v1 v1.66.4/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
