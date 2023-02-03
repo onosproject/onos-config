@@ -55,8 +55,8 @@ github.com/atomix/atomix/runtime v0.9.0 h1:yDViPymoOkR5gMJkk25CZP2Tjf2j1JMAWNd/I
 github.com/atomix/atomix/runtime v0.9.0/go.mod h1:abB/WaP50Fm6MVi8CHRsfIOt8urDzcpQvMDFmhhlVgY=
 github.com/atomix/atomix/sidecar v0.4.4 h1:CjLPA3p1V83Tx2yxUGz4JLyQkeyXC8/1xXaiZVknJsY=
 github.com/atomix/atomix/sidecar v0.4.4/go.mod h1:psygbD10K+EdWS1XINexXP0QmiAd+yY2tGkIGqrVMHM=
-github.com/atomix/go-sdk v0.12.6 h1:W8UfxCA5eLylBE/gxJnW/NqlYPb3dc51XWEk4mOn8DQ=
-github.com/atomix/go-sdk v0.12.6/go.mod h1:Ua1SPP/5qms2DZrpVeH+RrIvbviIEExKEijlgZHMWng=
+github.com/atomix/go-sdk v0.12.7 h1:mNj44w930GMb6Sik60LbPhcS52LLqnWvQBVmSRT4jIU=
+github.com/atomix/go-sdk v0.12.7/go.mod h1:Ua1SPP/5qms2DZrpVeH+RrIvbviIEExKEijlgZHMWng=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/bits-and-blooms/bitset v1.3.1 h1:y+qrlmq3XsWi+xZqSaueaE8ry8Y127iMxlMfqcK8p0g=
 github.com/bits-and-blooms/bitset v1.3.1/go.mod h1:gIdJ4wp64HaoK2YrL1Q5/N7Y16edYb8uY+O0FJTyyDA=
