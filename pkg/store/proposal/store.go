@@ -306,8 +306,8 @@ func propagateEvents(events _map.EventStream[configapi.ProposalID, *configapi.Pr
 				Proposal: *proposal,
 			}
 		case *_map.Updated[configapi.ProposalID, *configapi.Proposal]:
-			proposal := e.NewEntry.Value
-			proposal.Version = uint64(e.NewEntry.Version)
+			proposal := e.Entry.Value
+			proposal.Version = uint64(e.Entry.Version)
 			ch <- configapi.ProposalEvent{
 				Type:     configapi.ProposalEvent_UPDATED,
 				Proposal: *proposal,

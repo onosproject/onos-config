@@ -303,8 +303,8 @@ func propagateEvents(events _map.EventStream[configapi.ConfigurationID, *configa
 				Configuration: *configuration,
 			}
 		case *_map.Updated[configapi.ConfigurationID, *configapi.Configuration]:
-			configuration := e.NewEntry.Value
-			configuration.Version = uint64(e.NewEntry.Version)
+			configuration := e.Entry.Value
+			configuration.Version = uint64(e.Entry.Version)
 			ch <- configapi.ConfigurationEvent{
 				Type:          configapi.ConfigurationEvent_UPDATED,
 				Configuration: *configuration,

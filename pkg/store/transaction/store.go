@@ -307,9 +307,9 @@ func propagateEvents(events indexedmap.EventStream[configapi.TransactionID, *con
 				Transaction: *transaction,
 			}
 		case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
-			transaction := e.NewEntry.Value
-			transaction.Index = configapi.Index(e.NewEntry.Index)
-			transaction.Version = uint64(e.NewEntry.Version)
+			transaction := e.Entry.Value
+			transaction.Index = configapi.Index(e.Entry.Index)
+			transaction.Version = uint64(e.Entry.Version)
 			ch <- configapi.TransactionEvent{
 				Type:        configapi.TransactionEvent_UPDATED,
 				Transaction: *transaction,
