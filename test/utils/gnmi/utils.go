@@ -8,6 +8,7 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"github.com/cenkalti/backoff/v4"
 	"strings"
 	"testing"
 	"time"
@@ -120,22 +121,30 @@ func UpdateTargetInTopo(ctx context.Context, targetEntity *topo.Object) error {
 
 // UpdateTargetTypeVersion updates the target type and version information in the Configurable aspect
 func UpdateTargetTypeVersion(ctx context.Context, id topo.ID, targetType configapi.TargetType, targetVersion configapi.TargetVersion) error {
-	entity, err := GetTargetFromTopo(ctx, id)
+	updateTargetTypeVersion := func() error {
+		entity, err := GetTargetFromTopo(ctx, id)
+		if err != nil {
+			return err
+		}
+		configurable := topo.Configurable{}
+		err = entity.GetAspect(&configurable)
+		if err != nil {
+			return err
+		}
+		configurable.Type = string(targetType)
+		configurable.Version = string(targetVersion)
+		err = entity.SetAspect(&configurable)
+		if err != nil {
+			return err
+		}
+		return UpdateTargetInTopo(ctx, entity)
+	}
+
+	err := backoff.Retry(updateTargetTypeVersion, backoff.NewExponentialBackOff())
 	if err != nil {
 		return err
 	}
-	configurable := topo.Configurable{}
-	err = entity.GetAspect(&configurable)
-	if err != nil {
-		return err
-	}
-	configurable.Type = string(targetType)
-	configurable.Version = string(targetVersion)
-	err = entity.SetAspect(&configurable)
-	if err != nil {
-		return err
-	}
-	return UpdateTargetInTopo(ctx, entity)
+	return nil
 }
 
 func getKindFilter(kind string) *topo.Filters {
