@@ -5,9 +5,9 @@
 package transaction
 
 import (
-	"github.com/atomix/go-client/pkg/generic"
-	"github.com/atomix/go-client/pkg/primitive"
-	"github.com/atomix/go-client/pkg/primitive/indexedmap"
+	"github.com/atomix/go-sdk/pkg/primitive"
+	"github.com/atomix/go-sdk/pkg/primitive/indexedmap"
+	"github.com/atomix/go-sdk/pkg/types"
 	"io"
 	"time"
 
@@ -53,7 +53,7 @@ type Store interface {
 func NewAtomixStore(client primitive.Client) (Store, error) {
 	transactions, err := indexedmap.NewBuilder[configapi.TransactionID, *configapi.Transaction](client, "transactions").
 		Tag("onos-config", "transaction").
-		Codec(generic.Proto[*configapi.Transaction](&configapi.Transaction{})).
+		Codec(types.Proto[*configapi.Transaction](&configapi.Transaction{})).
 		Get(context.Background())
 	if err != nil {
 		return nil, errors.FromAtomix(err)
@@ -307,9 +307,9 @@ func propagateEvents(events indexedmap.EventStream[configapi.TransactionID, *con
 				Transaction: *transaction,
 			}
 		case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
-			transaction := e.NewEntry.Value
-			transaction.Index = configapi.Index(e.NewEntry.Index)
-			transaction.Version = uint64(e.NewEntry.Version)
+			transaction := e.Entry.Value
+			transaction.Index = configapi.Index(e.Entry.Index)
+			transaction.Version = uint64(e.Entry.Version)
 			ch <- configapi.TransactionEvent{
 				Type:        configapi.TransactionEvent_UPDATED,
 				Transaction: *transaction,

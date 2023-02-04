@@ -6,7 +6,7 @@
 package manager
 
 import (
-	"github.com/atomix/go-client/pkg/client"
+	"github.com/atomix/go-sdk/pkg/client"
 	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration"
 	"github.com/onosproject/onos-config/pkg/controller/connection"
 	mastershipcontroller "github.com/onosproject/onos-config/pkg/controller/mastership"

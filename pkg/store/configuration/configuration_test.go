@@ -6,7 +6,7 @@ package configuration
 
 import (
 	"context"
-	"github.com/atomix/go-client/pkg/test"
+	"github.com/atomix/go-sdk/pkg/test"
 	"testing"
 	"time"
 
