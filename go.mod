@@ -12,7 +12,6 @@ require (
 	github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29
 	github.com/onosproject/onos-api/go v0.10.22
 	github.com/onosproject/onos-lib-go v0.10.7
-	github.com/onosproject/onos-lib-go v0.10.4
 	github.com/openconfig/gnmi v0.0.0-20220920173703-480bf53a74d2
 	github.com/openconfig/goyang v1.1.0
 	github.com/spf13/cobra v1.4.0
