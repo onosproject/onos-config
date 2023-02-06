@@ -176,11 +176,9 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return controller.Result{}, nil
 	}
 
-	//pathValues := make([]*configapi.PathValue, 0, len(config.Status.Applied.Values))
 	indexedPathValues := make(map[configapi.Index][]*configapi.PathValue)
 	if config.Status.Applied.Values != nil {
 		for _, appliedValue := range config.Status.Applied.Values {
-			//pathValues = append(pathValues, appliedValue)
 			indexedPathValues[appliedValue.Index] = append(indexedPathValues[appliedValue.Index], appliedValue)
 		}
 	}
