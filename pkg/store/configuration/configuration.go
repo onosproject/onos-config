@@ -526,7 +526,7 @@ func (s *configurationStore) store(ctx context.Context, store _map.Map[string, *
 			}
 		} else if _, ok := prunedValues[pv.Path]; !ok {
 			transaction.Remove(pv.Path, _map.IfVersion(entry.Version))
-		} else if pv.Index > entry.Value.Index {
+		} else if pv.Index != entry.Value.Index {
 			transaction.Update(pv.Path, pv, _map.IfVersion(entry.Version))
 		}
 	}
