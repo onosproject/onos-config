@@ -25,9 +25,12 @@ const (
 
 // NewController returns a new gNMI connection  controller
 func NewController(topo topo.Store, conns gnmi.ConnManager) *controller.Controller {
-	c := controller.NewController("connection")
+	c := controller.NewController("target")
 	c.Watch(&TopoWatcher{
 		topo: topo,
+	})
+	c.Watch(&ConnWatcher{
+		conns: conns,
 	})
 	c.Reconcile(&Reconciler{
 		conns: conns,
