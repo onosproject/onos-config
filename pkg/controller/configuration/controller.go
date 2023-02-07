@@ -176,50 +176,52 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return controller.Result{}, nil
 	}
 
-	pathValues := make([]*configapi.PathValue, 0, len(config.Status.Applied.Values))
+	indexedPathValues := make(map[configapi.Index][]*configapi.PathValue)
 	if config.Status.Applied.Values != nil {
 		for _, appliedValue := range config.Status.Applied.Values {
-			pathValues = append(pathValues, appliedValue)
+			indexedPathValues[appliedValue.Index] = append(indexedPathValues[appliedValue.Index], appliedValue)
 		}
 	}
-	log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
-
-	// Create a gNMI set request
-	setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues, config.TargetID)
-	if err != nil {
-		log.Errorf("Failed constructing SetRequest for Configuration '%s'", config.ID, err)
-		return controller.Result{}, nil
-	}
-
-	// Add the master arbitration extension to provide concurrency control for multi-node controllers.
-	setRequest.Extension = append(setRequest.Extension, &gnmi_ext.Extension{
-		Ext: &gnmi_ext.Extension_MasterArbitration{
-			MasterArbitration: &gnmi_ext.MasterArbitration{
-				Role: &gnmi_ext.Role{
-					Id: "onos-config",
-				},
-				ElectionId: &gnmi_ext.Uint128{
-					Low: uint64(mastershipTerm),
-				},
-			},
-		},
-	})
-
-	// Execute the set request
-	log.Debugf("Sending SetRequest %+v", setRequest)
-	setResponse, err := conn.Set(ctx, setRequest)
-	if err != nil {
-		// The gNMI Set request can be denied if this master has been superseded by a master in a later term.
-		// Rather than reverting to the STALE state now, wait for this node to see the mastership state change
-		// to avoid flapping between states while the system converges.
-		if errors.IsForbidden(err) {
-			log.Warnf("Configuration '%s' mastership superseded for term %d", config.ID, mastershipTerm)
+	log.Infof("Updating %d paths on target '%s'", len(indexedPathValues), config.TargetID)
+	for transactionIndex, pathValues := range indexedPathValues {
+		// Create a gNMI set request
+		log.Debugw("Creating Set request for changes in transaction", "TransactionIndex", transactionIndex)
+		setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues, config.TargetID)
+		if err != nil {
+			log.Errorf("Failed constructing SetRequest for Configuration '%s'", config.ID, err)
 			return controller.Result{}, nil
 		}
-		log.Errorf("Failed sending SetRequest %+v", setRequest, err)
-		return controller.Result{}, err
+
+		// Add the master arbitration extension to provide concurrency control for multi-node controllers.
+		setRequest.Extension = append(setRequest.Extension, &gnmi_ext.Extension{
+			Ext: &gnmi_ext.Extension_MasterArbitration{
+				MasterArbitration: &gnmi_ext.MasterArbitration{
+					Role: &gnmi_ext.Role{
+						Id: "onos-config",
+					},
+					ElectionId: &gnmi_ext.Uint128{
+						Low: uint64(mastershipTerm),
+					},
+				},
+			},
+		})
+
+		// Execute the set request
+		log.Debugf("Sending SetRequest %+v", setRequest)
+		setResponse, err := conn.Set(ctx, setRequest)
+		if err != nil {
+			// The gNMI Set request can be denied if this master has been superseded by a master in a later term.
+			// Rather than reverting to the STALE state now, wait for this node to see the mastership state change
+			// to avoid flapping between states while the system converges.
+			if errors.IsForbidden(err) {
+				log.Warnf("Configuration '%s' mastership superseded for term %d", config.ID, mastershipTerm)
+				return controller.Result{}, nil
+			}
+			log.Errorf("Failed sending SetRequest %+v", setRequest, err)
+			return controller.Result{}, err
+		}
+		log.Debugf("Received SetResponse %+v", setResponse)
 	}
-	log.Debugf("Received SetResponse %+v", setResponse)
 
 	// Update the configuration state and path statuses
 	log.Infof("Configuration '%s' synchronization complete", config.ID)
