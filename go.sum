@@ -240,8 +240,6 @@ github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
-github.com/kuujo/onos-api/go v0.0.0-20221215041616-21000040626d h1:Q7eSNFmSyHS8W6m3fhMj+siisc9xtlqQ9v9oEFUsuvA=
-github.com/kuujo/onos-api/go v0.0.0-20221215041616-21000040626d/go.mod h1:R882+8UcxQBLpCopnnbBnemXtJ77UXnL2I1y5yHbq10=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/magiconair/properties v1.8.6 h1:5ibWZ6iY0NctNGWo87LalDlEZ6R41TqbbDamhfG/Qzo=
@@ -254,6 +252,8 @@ github.com/mitchellh/mapstructure v1.4.3/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/onosproject/config-models v0.10.43 h1:v8yav4VhppviEzU2kktO/FRrRQLiP87NTFiRXjA5c2U=
 github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29 h1:qiNdq5jMZaxsrM6FIpxWY0c6oo8Kllg4QHYNXSW4XoI=
 github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29/go.mod h1:EErgiCOwX4CTrijcOgCKqESj2enPi7ehSfgFfD9OH/4=
+github.com/onosproject/onos-api/go v0.10.22 h1:NUd3a2R5vxIg8Qv3wrF7gyLFXrEbl7VQG5QPU5p2Utk=
+github.com/onosproject/onos-api/go v0.10.22/go.mod h1:R882+8UcxQBLpCopnnbBnemXtJ77UXnL2I1y5yHbq10=
 github.com/onosproject/onos-lib-go v0.10.7 h1:fSEFis3ZX2E13s/CahK1vHJ1849tEFfQSA5LciVZWsw=
 github.com/onosproject/onos-lib-go v0.10.7/go.mod h1:7WJKZwkje6ft9vAHP+PHDsRJo4dMl5wqtIOavLJ0h6w=
 github.com/openconfig/gnmi v0.0.0-20200414194230-1597cc0f2600/go.mod h1:M/EcuapNQgvzxo1DDXHK4tx3QpYM/uG4l591v33jG2A=

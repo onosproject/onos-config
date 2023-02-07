@@ -63,8 +63,8 @@ func NewAtomixStore(client primitive.Client) (Store, error) {
 	return &configurationStore{
 		client:         client,
 		configurations: configurations,
-		committed:      make(map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue]),
-		applied:        make(map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue]),
+		committed:      make(map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue]),
+		applied:        make(map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue]),
 	}, nil
 }
 
@@ -107,8 +107,8 @@ func WithConfigurationID(id configapi.ConfigurationID) WatchOption {
 type configurationStore struct {
 	configurations _map.Map[configapi.ConfigurationID, *configapi.Configuration]
 	client         primitive.Client
-	committed      map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue]
-	applied        map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue]
+	committed      map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue]
+	applied        map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue]
 	mu             sync.RWMutex
 }
 
@@ -142,7 +142,7 @@ func (s *configurationStore) Get(ctx context.Context, id configapi.Configuration
 		if configuration.Values == nil {
 			configuration.Values = make(map[string]*configapi.PathValue)
 		}
-		configuration.Values[entry.Key] = &entry.Value.PathValue
+		configuration.Values[entry.Key] = entry.Value
 	}
 
 	applied, err := s.getApplied(ctx, id)
@@ -164,7 +164,7 @@ func (s *configurationStore) Get(ctx context.Context, id configapi.Configuration
 		if configuration.Status.Applied.Values == nil {
 			configuration.Status.Applied.Values = make(map[string]*configapi.PathValue)
 		}
-		configuration.Status.Applied.Values[entry.Key] = &entry.Value.PathValue
+		configuration.Status.Applied.Values[entry.Key] = entry.Value
 	}
 	return configuration, nil
 }
@@ -188,38 +188,8 @@ func (s *configurationStore) Create(ctx context.Context, configuration *configap
 		if err != nil {
 			return err
 		}
-		for _, pv := range configuration.Values {
-			entry, err := committed.Get(ctx, pv.Path)
-			if err != nil {
-				err = errors.FromAtomix(err)
-				if !errors.IsNotFound(err) {
-					return err
-				}
-
-				cpv := &configapi.ConfigurationPathValue{
-					ObjectMeta: configapi.ObjectMeta{
-						Key: pv.Path,
-					},
-					Index:     configuration.Index,
-					PathValue: *pv,
-				}
-				if _, err := committed.Insert(ctx, pv.Path, cpv); err != nil {
-					err = errors.FromAtomix(err)
-					if errors.IsAlreadyExists(err) {
-						return errors.NewConflict(err.Error())
-					}
-				}
-			} else {
-				cpv := entry.Value
-				cpv.Index = configuration.Index
-				cpv.PathValue = *pv
-				if _, err := committed.Update(ctx, pv.Path, cpv, _map.IfVersion(entry.Version)); err != nil {
-					err = errors.FromAtomix(err)
-					if errors.IsNotFound(err) || errors.IsConflict(err) {
-						return errors.NewConflict(err.Error())
-					}
-				}
-			}
+		if err := s.store(ctx, committed, configuration.Values); err != nil {
+			return err
 		}
 	}
 
@@ -257,38 +227,8 @@ func (s *configurationStore) Update(ctx context.Context, configuration *configap
 		if err != nil {
 			return err
 		}
-		for _, pv := range configuration.Values {
-			entry, err := committed.Get(ctx, pv.Path)
-			if err != nil {
-				err = errors.FromAtomix(err)
-				if !errors.IsNotFound(err) {
-					return err
-				}
-
-				cpv := &configapi.ConfigurationPathValue{
-					ObjectMeta: configapi.ObjectMeta{
-						Key: pv.Path,
-					},
-					Index:     configuration.Index,
-					PathValue: *pv,
-				}
-				if _, err := committed.Insert(ctx, pv.Path, cpv); err != nil {
-					err = errors.FromAtomix(err)
-					if errors.IsAlreadyExists(err) {
-						return errors.NewConflict(err.Error())
-					}
-				}
-			} else {
-				cpv := entry.Value
-				cpv.Index = configuration.Index
-				cpv.PathValue = *pv
-				if _, err := committed.Update(ctx, pv.Path, cpv, _map.IfVersion(entry.Version)); err != nil {
-					err = errors.FromAtomix(err)
-					if errors.IsNotFound(err) || errors.IsConflict(err) {
-						return errors.NewConflict(err.Error())
-					}
-				}
-			}
+		if err := s.store(ctx, committed, configuration.Values); err != nil {
+			return err
 		}
 	}
 
@@ -325,38 +265,8 @@ func (s *configurationStore) UpdateStatus(ctx context.Context, configuration *co
 		if err != nil {
 			return err
 		}
-		for _, pv := range configuration.Status.Applied.Values {
-			entry, err := applied.Get(ctx, pv.Path)
-			if err != nil {
-				err = errors.FromAtomix(err)
-				if !errors.IsNotFound(err) {
-					return err
-				}
-
-				cpv := &configapi.ConfigurationPathValue{
-					ObjectMeta: configapi.ObjectMeta{
-						Key: pv.Path,
-					},
-					Index:     configuration.Index,
-					PathValue: *pv,
-				}
-				if _, err := applied.Insert(ctx, pv.Path, cpv); err != nil {
-					err = errors.FromAtomix(err)
-					if errors.IsAlreadyExists(err) {
-						return errors.NewConflict(err.Error())
-					}
-				}
-			} else {
-				cpv := entry.Value
-				cpv.Index = configuration.Index
-				cpv.PathValue = *pv
-				if _, err := applied.Update(ctx, pv.Path, cpv, _map.IfVersion(entry.Version)); err != nil {
-					err = errors.FromAtomix(err)
-					if errors.IsNotFound(err) || errors.IsConflict(err) {
-						return errors.NewConflict(err.Error())
-					}
-				}
-			}
+		if err := s.store(ctx, applied, configuration.Status.Applied.Values); err != nil {
+			return err
 		}
 	}
 
@@ -412,7 +322,7 @@ func (s *configurationStore) List(ctx context.Context) ([]*configapi.Configurati
 			if configuration.Values == nil {
 				configuration.Values = make(map[string]*configapi.PathValue)
 			}
-			configuration.Values[entry.Key] = &entry.Value.PathValue
+			configuration.Values[entry.Key] = entry.Value
 		}
 
 		applied, err := s.getApplied(ctx, entry.Key)
@@ -434,7 +344,7 @@ func (s *configurationStore) List(ctx context.Context) ([]*configapi.Configurati
 			if configuration.Status.Applied.Values == nil {
 				configuration.Status.Applied.Values = make(map[string]*configapi.PathValue)
 			}
-			configuration.Status.Applied.Values[entry.Key] = &entry.Value.PathValue
+			configuration.Status.Applied.Values[entry.Key] = entry.Value
 		}
 	}
 }
@@ -514,7 +424,7 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 						if configuration.Values == nil {
 							configuration.Values = make(map[string]*configapi.PathValue)
 						}
-						configuration.Values[entry.Key] = &entry.Value.PathValue
+						configuration.Values[entry.Key] = entry.Value
 					}
 
 					applied, err := s.getApplied(ctx, entry.Key)
@@ -539,7 +449,7 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 						if configuration.Status.Applied.Values == nil {
 							configuration.Status.Applied.Values = make(map[string]*configapi.PathValue)
 						}
-						configuration.Status.Applied.Values[entry.Key] = &entry.Value.PathValue
+						configuration.Status.Applied.Values[entry.Key] = entry.Value
 					}
 
 					ch <- configapi.ConfigurationEvent{
@@ -592,18 +502,56 @@ func propagateEvents(events _map.EventStream[configapi.ConfigurationID, *configa
 	}
 }
 
-func (s *configurationStore) getCommitted(ctx context.Context, id configapi.ConfigurationID) (_map.Map[string, *configapi.ConfigurationPathValue], error) {
+func (s *configurationStore) getCommitted(ctx context.Context, id configapi.ConfigurationID) (_map.Map[string, *configapi.PathValue], error) {
 	return s.getTarget(ctx, s.committed, id)
 }
 
-func (s *configurationStore) getApplied(ctx context.Context, id configapi.ConfigurationID) (_map.Map[string, *configapi.ConfigurationPathValue], error) {
+func (s *configurationStore) getApplied(ctx context.Context, id configapi.ConfigurationID) (_map.Map[string, *configapi.PathValue], error) {
 	return s.getTarget(ctx, s.applied, id)
+}
+
+func (s *configurationStore) store(ctx context.Context, store _map.Map[string, *configapi.PathValue], values map[string]*configapi.PathValue) error {
+	var transaction _map.Transaction[string, *configapi.PathValue]
+	for _, pv := range values {
+		entry, err := store.Get(ctx, pv.Path)
+		if err != nil {
+			err = errors.FromAtomix(err)
+			if !errors.IsNotFound(err) {
+				return err
+			}
+			if transaction == nil {
+				transaction = store.Transaction(ctx)
+			}
+			transaction.Insert(pv.Path, pv)
+		} else if pv.Index > entry.Value.Index {
+			if transaction == nil {
+				transaction = store.Transaction(ctx)
+			}
+			transaction.Update(pv.Path, pv, _map.IfVersion(entry.Version))
+			if _, err := store.Update(ctx, pv.Path, pv, _map.IfVersion(entry.Version)); err != nil {
+				err = errors.FromAtomix(err)
+				if errors.IsNotFound(err) || errors.IsConflict(err) {
+					return errors.NewConflict(err.Error())
+				}
+			}
+		}
+	}
+	if transaction != nil {
+		if _, err := transaction.Commit(); err != nil {
+			err = errors.FromAtomix(err)
+			if errors.IsNotFound(err) || errors.IsAlreadyExists(err) || errors.IsConflict(err) {
+				return errors.NewConflict(err.Error())
+			}
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *configurationStore) getTarget(
 	ctx context.Context,
-	targets map[configapi.ConfigurationID]_map.Map[string, *configapi.ConfigurationPathValue],
-	id configapi.ConfigurationID) (_map.Map[string, *configapi.ConfigurationPathValue], error) {
+	targets map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue],
+	id configapi.ConfigurationID) (_map.Map[string, *configapi.PathValue], error) {
 	s.mu.RLock()
 	target, ok := targets[id]
 	s.mu.RUnlock()
@@ -620,9 +568,9 @@ func (s *configurationStore) getTarget(
 	}
 
 	var err error
-	target, err = _map.NewBuilder[string, *configapi.ConfigurationPathValue](s.client, fmt.Sprintf("configurations-%s", id)).
+	target, err = _map.NewBuilder[string, *configapi.PathValue](s.client, fmt.Sprintf("configurations-%s", id)).
 		Tag("onos-config", "path-value").
-		Codec(types.Proto[*configapi.ConfigurationPathValue](&configapi.ConfigurationPathValue{})).
+		Codec(types.Proto[*configapi.PathValue](&configapi.PathValue{})).
 		Get(ctx)
 	if err != nil {
 		return nil, errors.FromAtomix(err)
