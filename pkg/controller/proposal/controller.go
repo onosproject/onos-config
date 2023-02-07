@@ -456,12 +456,10 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, proposal *configapi.Pr
 			if config.Values == nil {
 				config.Values = make(map[string]*configapi.PathValue)
 			}
-			updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
+			updatedChangeValues := controllerutils.AddDeleteChildren(proposal.TransactionIndex, changeValues, config.Values)
 			for path, updatedChangeValue := range updatedChangeValues {
 				_, _ = applyChangeToConfig(config.Values, path, updatedChangeValue)
 			}
-			config.Values = tree.PrunePathMap(config.Values, true)
-
 			config.Status.Committed.Index = proposal.TransactionIndex
 			err = r.configurations.Update(ctx, config)
 			if err != nil {
@@ -632,7 +630,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			changeValues = proposal.Status.RollbackValues
 		}
 
-		updatedChangeValues := controllerutils.AddDeleteChildren(changeValues, config.Values)
+		updatedChangeValues := controllerutils.AddDeleteChildren(proposal.TransactionIndex, changeValues, config.Values)
 		// Create a list of PathValue pairs from which to construct a gNMI Set for the Proposal.
 		pathValues := make([]*configapi.PathValue, 0, len(updatedChangeValues))
 		for _, changeValue := range updatedChangeValues {
@@ -741,7 +739,6 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		for path, changeValue := range updatedChangeValues {
 			config.Status.Applied.Values[path] = changeValue
 		}
-		config.Status.Applied.Values = tree.PrunePathMap(config.Status.Applied.Values, true)
 
 		if err := r.configurations.UpdateStatus(ctx, config); err != nil {
 			log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)

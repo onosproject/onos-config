@@ -10,6 +10,7 @@ import (
 	"github.com/atomix/go-sdk/pkg/primitive"
 	_map "github.com/atomix/go-sdk/pkg/primitive/map"
 	"github.com/atomix/go-sdk/pkg/types"
+	"github.com/onosproject/onos-config/pkg/utils/tree"
 	"io"
 	"sync"
 	"time"
@@ -511,7 +512,8 @@ func (s *configurationStore) getApplied(ctx context.Context, id configapi.Config
 }
 
 func (s *configurationStore) store(ctx context.Context, store _map.Map[string, *configapi.PathValue], values map[string]*configapi.PathValue) error {
-	var transaction _map.Transaction[string, *configapi.PathValue]
+	prunedValues := tree.PrunePathMap(values, true)
+	transaction := store.Transaction(ctx)
 	for _, pv := range values {
 		entry, err := store.Get(ctx, pv.Path)
 		if err != nil {
@@ -519,31 +521,21 @@ func (s *configurationStore) store(ctx context.Context, store _map.Map[string, *
 			if !errors.IsNotFound(err) {
 				return err
 			}
-			if transaction == nil {
-				transaction = store.Transaction(ctx)
+			if _, ok := prunedValues[pv.Path]; ok {
+				transaction.Insert(pv.Path, pv)
 			}
-			transaction.Insert(pv.Path, pv)
+		} else if _, ok := prunedValues[pv.Path]; !ok {
+			transaction.Remove(pv.Path, _map.IfVersion(entry.Version))
 		} else if pv.Index > entry.Value.Index {
-			if transaction == nil {
-				transaction = store.Transaction(ctx)
-			}
 			transaction.Update(pv.Path, pv, _map.IfVersion(entry.Version))
-			if _, err := store.Update(ctx, pv.Path, pv, _map.IfVersion(entry.Version)); err != nil {
-				err = errors.FromAtomix(err)
-				if errors.IsNotFound(err) || errors.IsConflict(err) {
-					return errors.NewConflict(err.Error())
-				}
-			}
 		}
 	}
-	if transaction != nil {
-		if _, err := transaction.Commit(); err != nil {
-			err = errors.FromAtomix(err)
-			if errors.IsNotFound(err) || errors.IsAlreadyExists(err) || errors.IsConflict(err) {
-				return errors.NewConflict(err.Error())
-			}
-			return err
+	if _, err := transaction.Commit(); err != nil {
+		err = errors.FromAtomix(err)
+		if errors.IsNotFound(err) || errors.IsAlreadyExists(err) || errors.IsConflict(err) {
+			return errors.NewConflict(err.Error())
 		}
+		return err
 	}
 	return nil
 }

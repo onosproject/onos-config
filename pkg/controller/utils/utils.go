@@ -23,7 +23,7 @@ func GetOnosConfigID() topoapi.ID {
 }
 
 // AddDeleteChildren adds all children of the intermediate path which is required to be deleted
-func AddDeleteChildren(changeValues map[string]*configapi.PathValue, configStore map[string]*configapi.PathValue) map[string]*configapi.PathValue {
+func AddDeleteChildren(index configapi.Index, changeValues map[string]*configapi.PathValue, configStore map[string]*configapi.PathValue) map[string]*configapi.PathValue {
 	// defining new changeValues map, where we will include old changeValues map and new pathValues to be cascading deleted
 	var updChangeValues = make(map[string]*configapi.PathValue)
 	for _, changeValue := range changeValues {
@@ -32,6 +32,7 @@ func AddDeleteChildren(changeValues map[string]*configapi.PathValue, configStore
 			for _, value := range configStore {
 				if strings.HasPrefix(value.Path, changeValue.Path) && !strings.EqualFold(value.Path, changeValue.Path) {
 					updChangeValues[value.Path] = value
+					updChangeValues[value.Path].Index = index
 					updChangeValues[value.Path].Deleted = true
 				}
 			}
