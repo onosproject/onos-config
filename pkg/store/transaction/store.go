@@ -8,7 +8,9 @@ import (
 	"github.com/atomix/go-sdk/pkg/primitive"
 	"github.com/atomix/go-sdk/pkg/primitive/indexedmap"
 	"github.com/atomix/go-sdk/pkg/types"
+	"github.com/google/uuid"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -58,9 +60,15 @@ func NewAtomixStore(client primitive.Client) (Store, error) {
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return &transactionStore{
+	store := &transactionStore{
 		transactions: transactions,
-	}, nil
+		watchers:     make(map[uuid.UUID]chan<- configapi.TransactionEvent),
+		idWatchers:   make(map[configapi.TransactionID]map[uuid.UUID]chan<- configapi.TransactionEvent),
+	}
+	if err := store.open(); err != nil {
+		return nil, err
+	}
+	return store, nil
 }
 
 type watchOptions struct {
@@ -101,6 +109,74 @@ func WithTransactionID(id configapi.TransactionID) WatchOption {
 
 type transactionStore struct {
 	transactions indexedmap.IndexedMap[configapi.TransactionID, *configapi.Transaction]
+	watchers     map[uuid.UUID]chan<- configapi.TransactionEvent
+	idWatchers   map[configapi.TransactionID]map[uuid.UUID]chan<- configapi.TransactionEvent
+	mu           sync.RWMutex
+}
+
+func (s *transactionStore) open() error {
+	events, err := s.transactions.Events(context.Background())
+	if err != nil {
+		return err
+	}
+	go func() {
+		for {
+			event, err := events.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			var transactionEvent configapi.TransactionEvent
+			switch e := event.(type) {
+			case *indexedmap.Inserted[configapi.TransactionID, *configapi.Transaction]:
+				transaction := e.Entry.Value
+				transaction.Index = configapi.Index(e.Entry.Index)
+				transaction.Version = uint64(e.Entry.Version)
+				transactionEvent = configapi.TransactionEvent{
+					Type:        configapi.TransactionEvent_CREATED,
+					Transaction: *transaction,
+				}
+			case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
+				transaction := e.Entry.Value
+				transaction.Index = configapi.Index(e.Entry.Index)
+				transaction.Version = uint64(e.Entry.Version)
+				transactionEvent = configapi.TransactionEvent{
+					Type:        configapi.TransactionEvent_UPDATED,
+					Transaction: *transaction,
+				}
+			case *indexedmap.Removed[configapi.TransactionID, *configapi.Transaction]:
+				transaction := e.Entry.Value
+				transaction.Index = configapi.Index(e.Entry.Index)
+				transaction.Version = uint64(e.Entry.Version)
+				transactionEvent = configapi.TransactionEvent{
+					Type:        configapi.TransactionEvent_DELETED,
+					Transaction: *transaction,
+				}
+			}
+
+			var watchers []chan<- configapi.TransactionEvent
+			s.mu.RLock()
+			for _, ch := range s.watchers {
+				watchers = append(watchers, ch)
+			}
+			idWatchers, ok := s.idWatchers[transactionEvent.Transaction.ID]
+			if ok {
+				for _, ch := range idWatchers {
+					watchers = append(watchers, ch)
+				}
+			}
+			s.mu.RUnlock()
+
+			for _, ch := range watchers {
+				ch <- transactionEvent
+			}
+		}
+	}()
+	return nil
 }
 
 // Get gets a transaction
@@ -225,42 +301,66 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 		opt.apply(&options)
 	}
 
-	var eventsOpts []indexedmap.EventsOption
+	id := uuid.New()
+	eventCh := make(chan configapi.TransactionEvent)
+	s.mu.Lock()
 	if options.transactionID != "" {
-		eventsOpts = append(eventsOpts, indexedmap.WithKey[configapi.TransactionID](options.transactionID))
+		watchers, ok := s.idWatchers[options.transactionID]
+		if !ok {
+			watchers = make(map[uuid.UUID]chan<- configapi.TransactionEvent)
+			s.idWatchers[options.transactionID] = watchers
+		}
+		watchers[id] = eventCh
+	} else {
+		s.watchers[id] = eventCh
 	}
-	events, err := s.transactions.Events(ctx, eventsOpts...)
-	if err != nil {
-		return errors.FromAtomix(err)
-	}
+	s.mu.Unlock()
 
-	if options.replay {
-		if options.transactionID != "" {
-			entry, err := s.transactions.Get(ctx, options.transactionID)
-			if err != nil {
-				err = errors.FromAtomix(err)
-				if !errors.IsNotFound(err) {
-					return err
+	go func() {
+		defer func() {
+			s.mu.Lock()
+			if options.transactionID != "" {
+				watchers, ok := s.idWatchers[options.transactionID]
+				if ok {
+					delete(watchers, id)
+					if len(watchers) == 0 {
+						delete(s.idWatchers, options.transactionID)
+					}
 				}
-				go propagateEvents(events, ch)
 			} else {
-				go func() {
+				delete(s.watchers, id)
+			}
+			s.mu.Unlock()
+		}()
+
+		if options.replay {
+			if options.transactionID != "" {
+				entry, err := s.transactions.Get(ctx, options.transactionID)
+				if err != nil {
+					err = errors.FromAtomix(err)
+					if !errors.IsNotFound(err) {
+						log.Error(err)
+					}
+				} else {
 					transaction := entry.Value
 					transaction.Index = configapi.Index(entry.Index)
 					transaction.Version = uint64(entry.Version)
+					if ctx.Err() != nil {
+						close(ch)
+						return
+					}
 					ch <- configapi.TransactionEvent{
 						Type:        configapi.TransactionEvent_REPLAYED,
 						Transaction: *transaction,
 					}
-					propagateEvents(events, ch)
-				}()
-			}
-		} else {
-			entries, err := s.transactions.List(ctx)
-			if err != nil {
-				return errors.FromAtomix(err)
-			}
-			go func() {
+				}
+			} else {
+				entries, err := s.transactions.List(ctx)
+				if err != nil {
+					log.Error(err)
+					close(ch)
+					return
+				}
 				for {
 					entry, err := entries.Next()
 					if err == io.EOF {
@@ -270,6 +370,10 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 						log.Error(err)
 						continue
 					}
+					if ctx.Err() != nil {
+						close(ch)
+						return
+					}
 					transaction := entry.Value
 					transaction.Index = configapi.Index(entry.Index)
 					transaction.Version = uint64(entry.Version)
@@ -278,52 +382,24 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 						Transaction: *transaction,
 					}
 				}
-				propagateEvents(events, ch)
-			}()
+			}
 		}
-	} else {
-		go propagateEvents(events, ch)
-	}
-	return nil
-}
 
-func propagateEvents(events indexedmap.EventStream[configapi.TransactionID, *configapi.Transaction], ch chan<- configapi.TransactionEvent) {
-	for {
-		event, err := events.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		switch e := event.(type) {
-		case *indexedmap.Inserted[configapi.TransactionID, *configapi.Transaction]:
-			transaction := e.Entry.Value
-			transaction.Index = configapi.Index(e.Entry.Index)
-			transaction.Version = uint64(e.Entry.Version)
-			ch <- configapi.TransactionEvent{
-				Type:        configapi.TransactionEvent_CREATED,
-				Transaction: *transaction,
-			}
-		case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
-			transaction := e.Entry.Value
-			transaction.Index = configapi.Index(e.Entry.Index)
-			transaction.Version = uint64(e.Entry.Version)
-			ch <- configapi.TransactionEvent{
-				Type:        configapi.TransactionEvent_UPDATED,
-				Transaction: *transaction,
-			}
-		case *indexedmap.Removed[configapi.TransactionID, *configapi.Transaction]:
-			transaction := e.Entry.Value
-			transaction.Index = configapi.Index(e.Entry.Index)
-			transaction.Version = uint64(e.Entry.Version)
-			ch <- configapi.TransactionEvent{
-				Type:        configapi.TransactionEvent_DELETED,
-				Transaction: *transaction,
+		for {
+			select {
+			case event := <-eventCh:
+				ch <- event
+			case <-ctx.Done():
+				close(ch)
+				go func() {
+					for range eventCh {
+					}
+				}()
+				return
 			}
 		}
-	}
+	}()
+	return nil
 }
 
 // Close closes the store
