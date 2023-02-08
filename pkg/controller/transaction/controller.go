@@ -62,7 +62,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		return controller.Result{}, nil
 	}
 
-	log.Infof("Reconciling Transaction %d", transaction.Index)
+	log.Debugf("Reconciling Transaction %d", transaction.Index)
 	log.Debug(transaction)
 	return r.reconcileTransaction(ctx, transaction)
 }

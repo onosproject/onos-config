@@ -94,7 +94,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		return controller.Result{}, nil
 	}
 
-	log.Infof("Reconciling Proposal '%s'", proposal.ID)
+	log.Debugf("Reconciling Proposal '%s'", proposal.ID)
 	log.Debug(proposal)
 	return r.reconcileProposal(ctx, proposal)
 }

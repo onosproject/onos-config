@@ -88,7 +88,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	defer cancel()
 
 	onosConfigID := id.Value.(topoapi.ID)
-	log.Infof("Reconciling onos-config entity with ID: %s", onosConfigID)
+	log.Debugf("Reconciling onos-config entity with ID: %s", onosConfigID)
 	object, err := r.topo.Get(ctx, onosConfigID)
 	if err == nil {
 		//  Reconciles an onos-config entity that’s not local so the controller should requeue
