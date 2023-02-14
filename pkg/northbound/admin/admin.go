@@ -7,6 +7,7 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
@@ -14,11 +15,15 @@ import (
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
+	"github.com/onosproject/onos-config/pkg/utils"
+	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
 	"github.com/onosproject/onos-config/pkg/utils/tree"
+	valueutils "github.com/onosproject/onos-config/pkg/utils/values/v2"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/onosproject/onos-lib-go/pkg/uri"
+	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"strings"
 )
@@ -202,13 +207,55 @@ func (s Server) LeafSelectionQuery(ctx context.Context, req *admin.LeafSelection
 		return nil, errors.Status(err).Err()
 	}
 
+	modelPlugin, ok := s.pluginRegistry.GetPlugin(configType, configVersion)
+	if !ok {
+		return nil, errors.Status(errors.NewInvalid("error getting plugin for %s %s", configType, configVersion)).Err()
+	}
+
 	if req.ChangeContext != nil &&
 		len(req.ChangeContext.GetUpdate())+len(req.ChangeContext.GetReplace())+len(req.ChangeContext.GetDelete()) > 0 {
 
-		log.Warn("Ignoring change context for the moment")
-		// TODO if there is something in the req.ChangeContext then
-		//   a) convert it to Path-Value format like happens in gNMI Set (Updates, Replace and Delete elements)
-		//   b) overlay it on to the Path-Values from 1) like happens in gNMI Set Proposal Controller
+		log.Info("Getting change context from the request")
+		updates := make(configapi.TypedValueMap)
+		deletes := make([]string, 0)
+		for _, u := range req.ChangeContext.GetUpdate() {
+			if err := s.doUpdateOrReplace(ctx, req.ChangeContext.GetPrefix(), u, modelPlugin, updates); err != nil {
+				log.Warn(err)
+				return nil, errors.Status(err).Err()
+			}
+		}
+		for _, u := range req.ChangeContext.GetReplace() {
+			if err := s.doUpdateOrReplace(ctx, req.ChangeContext.GetPrefix(), u, modelPlugin, updates); err != nil {
+				log.Warn(err)
+				return nil, errors.Status(err).Err()
+			}
+		}
+		for _, u := range req.ChangeContext.GetDelete() {
+			deletedPaths, err := s.doDelete(req.ChangeContext.GetPrefix(), u, modelPlugin)
+			if err != nil {
+				log.Warn(err)
+				return nil, errors.Status(err).Err()
+			}
+			deletes = append(deletes, deletedPaths...)
+		}
+
+		// locally merge the change context into the stored configuration
+		newChanges := make(map[string]*configapi.PathValue)
+		for path, value := range updates {
+			updateValue, err := valueutils.NewChangeValue(path, *value, false)
+			if err != nil {
+				return nil, err
+			}
+			newChanges[path] = updateValue
+		}
+
+		for _, path := range deletes {
+			config.Values[path].Deleted = true
+		}
+
+		for path, value := range newChanges {
+			config.Values[path] = value
+		}
 	}
 
 	values := make([]*configapi.PathValue, 0, len(config.Values))
@@ -221,11 +268,6 @@ func (s Server) LeafSelectionQuery(ctx context.Context, req *admin.LeafSelection
 		return nil, errors.Status(errors.NewInternal("error converting configuration to JSON %v", err)).Err()
 	}
 
-	modelPlugin, ok := s.pluginRegistry.GetPlugin(configType, configVersion)
-	if !ok {
-		return nil, errors.Status(errors.NewInvalid("error getting plugin for %s %s", configType, configVersion)).Err()
-	}
-
 	selection, err := modelPlugin.LeafValueSelection(ctx, req.SelectionPath, jsonTree)
 	if err != nil {
 		return nil, errors.Status(errors.NewInvalid("error getting leaf selection for '%s'. %v", req.SelectionPath, err)).Err()
@@ -234,4 +276,65 @@ func (s Server) LeafSelectionQuery(ctx context.Context, req *admin.LeafSelection
 	return &admin.LeafSelectionQueryResponse{
 		Selection: selection,
 	}, nil
+}
+
+// This deals with either a path and a value (simple case) or a path with
+// a JSON body which implies multiple paths and values.
+func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gnmi.Update, plugin pluginregistry.ModelPlugin, updates configapi.TypedValueMap) error {
+	prefixPath := utils.StrPath(prefix)
+	path := utils.StrPath(u.Path)
+	if prefixPath != "/" {
+		path = fmt.Sprintf("%s%s", prefixPath, path)
+	}
+
+	jsonVal := u.GetVal().GetJsonVal()
+	if jsonVal != nil {
+		log.Debugf("Processing Json Value in set from base %s: %s", path, string(jsonVal))
+		pathValues, err := plugin.GetPathValues(ctx, prefixPath, jsonVal)
+		if err != nil {
+			return err
+		}
+
+		if len(pathValues) == 0 {
+			log.Warnf("no pathValues found for %s in %v", path, string(jsonVal))
+		}
+
+		for _, cv := range pathValues {
+			updates[cv.Path] = &cv.Value
+		}
+	} else {
+		_, rwPathElem, err := pathutils.FindPathFromModel(path, plugin.GetInfo().ReadWritePaths, true)
+		if err != nil {
+			return err
+		}
+		updateValue, err := valueutils.GnmiTypedValueToNativeType(u.Val, rwPathElem)
+		if err != nil {
+			return err
+		}
+		if err = pathutils.CheckKeyValue(path, rwPathElem, updateValue); err != nil {
+			return err
+		}
+		updates[path] = updateValue
+	}
+
+	return nil
+}
+
+func (s *Server) doDelete(prefix *gnmi.Path, gnmiPath *gnmi.Path, plugin pluginregistry.ModelPlugin) ([]string, error) {
+	deletes := make([]string, 0)
+	prefixPath := utils.StrPath(prefix)
+	path := utils.StrPath(gnmiPath)
+	if prefixPath != "/" {
+		path = fmt.Sprintf("%s%s", prefixPath, path)
+	}
+	// Checks for read only paths
+	isExactMatch, rwPath, err := pathutils.FindPathFromModel(path, plugin.GetInfo().ReadWritePaths, false)
+	if err != nil {
+		return nil, err
+	}
+	if isExactMatch && rwPath.IsAKey && !strings.HasSuffix(path, "]") { // In case an index attribute is given - take it off
+		path = path[:strings.LastIndex(path, "/")]
+	}
+	deletes = append(deletes, path)
+	return deletes, nil
 }
