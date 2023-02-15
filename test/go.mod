@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
+	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/divan/num2words v0.0.0-20170904212200-57dba452f942
 	github.com/golang/protobuf v1.5.2
 	github.com/onosproject/helmit v0.6.20
@@ -13,7 +14,6 @@ require (
 	github.com/onosproject/onos-ric-sdk-go v0.8.11
 	github.com/onosproject/onos-test v0.6.6
 	github.com/openconfig/gnmi v0.0.0-20220920173703-480bf53a74d2
-	github.com/prometheus/common v0.26.0
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 	google.golang.org/grpc v1.46.0
@@ -35,13 +35,10 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/Shopify/sarama v1.31.1 // indirect
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
-	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/atomix/runtime/sdk v0.7.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/containerd/continuity v0.1.0 // indirect
@@ -132,8 +129,9 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.11.0 // indirect
+	github.com/prometheus/client_golang v1.11.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rubenv/sql-migrate v0.0.0-20210614095031-55d5740dbbcc // indirect
@@ -164,7 +162,6 @@ require (
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac // indirect
-	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 	gopkg.in/gorp.v1 v1.7.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
