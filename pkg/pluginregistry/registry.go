@@ -289,7 +289,24 @@ func (p *ModelPluginInfo) Capabilities(ctx context.Context) *gnmi.CapabilityResp
 
 // Validate validates the specified JSON configuration against the plugin's schema
 func (p *ModelPluginInfo) Validate(ctx context.Context, jsonData []byte) error {
-	resp, err := p.Client.ValidateConfig(ctx, &api.ValidateConfigRequest{Json: jsonData})
+	chunkSize := 100 * 1024 // 100 KiB
+	sender, err := p.Client.ValidateConfigChunked(ctx)
+	if err != nil {
+		return err
+	}
+	//if !resp.Valid {
+	//	return errors.NewInvalid("configuration is not valid: %s", resp.Message)
+	//}
+	var chunk []byte
+	for currentByte := 0; currentByte < len(jsonData); currentByte += chunkSize {
+		if currentByte+chunkSize > len(jsonData) {
+			chunk = jsonData[currentByte:len(jsonData)]
+		} else {
+			chunk = jsonData[currentByte : currentByte+chunkSize]
+		}
+		sender.Send(chunk)
+	}
+	resp, err := sender.CloseAndRecv()
 	if err != nil {
 		return err
 	}
