@@ -250,7 +250,9 @@ func (s Server) LeafSelectionQuery(ctx context.Context, req *admin.LeafSelection
 		}
 
 		for _, path := range deletes {
-			config.Values[path].Deleted = true
+			if _, ok := config.Values[path]; ok {
+				config.Values[path].Deleted = true
+			}
 		}
 
 		for path, value := range newChanges {
