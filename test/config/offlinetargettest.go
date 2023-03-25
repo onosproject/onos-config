@@ -7,11 +7,9 @@ package config
 
 import (
 	"context"
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"time"
-
-	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -46,7 +44,7 @@ func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
 	defer s.TearDownSimulator(ctx, offlineTargetName)
 
 	// Wait for config to connect to the target
-	s.WaitForTargetAvailable(ctx, topoapi.ID(offlineTargetName), time.Minute)
+	s.WaitForTargetAvailable(ctx, topoapi.ID(offlineTargetName))
 	var getConfigReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,

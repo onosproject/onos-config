@@ -12,7 +12,6 @@ import (
 	baseClient "github.com/openconfig/gnmi/client"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/protobuf/proto"
-	"time"
 )
 
 var log = logging.GetLogger("northbound", "gnmi")
@@ -22,9 +21,9 @@ func (s *TestSuite) TestSubscribe(ctx context.Context) {
 	generateTimezoneName()
 
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1), 1*time.Minute)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
 	s.True(ready)
-	ready = s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator2), 1*time.Minute)
+	ready = s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator2))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests

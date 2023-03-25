@@ -6,11 +6,9 @@ package config
 
 import (
 	"context"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"time"
-
-	"github.com/onosproject/onos-api/go/onos/topo"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -34,10 +32,10 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 	)
 
 	// Wait for config to connect to the first simulator
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
 
 	// Wait for config to connect to the second simulator
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2))
 
 	// Set up paths for the two targets
 	targets := []string{s.simulator1, s.simulator2}

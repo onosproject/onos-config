@@ -9,11 +9,10 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
-	"time"
 )
 
 // WaitForControlRelation waits to create control relation for a given target
-func (s *Suite) WaitForControlRelation(ctx context.Context, predicate func(*topo.Relation, topo.Event) bool, timeout time.Duration) bool {
+func (s *Suite) WaitForControlRelation(ctx context.Context, predicate func(*topo.Relation, topo.Event) bool) bool {
 	cl, err := s.NewTopoClient()
 	s.NoError(err)
 	stream := make(chan topo.Event)
@@ -24,7 +23,6 @@ func (s *Suite) WaitForControlRelation(ctx context.Context, predicate func(*topo
 			return true
 		} // Otherwise, loop and wait for the next topo event
 	}
-
 	return false
 }
 
@@ -39,7 +37,6 @@ func (s *Suite) getKindFilter(kind string) *topo.Filters {
 		},
 	}
 	return kindFilter
-
 }
 
 func (s *Suite) getControlRelationFilter() *topo.Filters {
@@ -47,7 +44,7 @@ func (s *Suite) getControlRelationFilter() *topo.Filters {
 }
 
 // WaitForTargetAvailable waits for a target to become available
-func (s *Suite) WaitForTargetAvailable(ctx context.Context, objectID topo.ID, timeout time.Duration) bool {
+func (s *Suite) WaitForTargetAvailable(ctx context.Context, objectID topo.ID) bool {
 	return s.WaitForControlRelation(ctx, func(rel *topo.Relation, event topo.Event) bool {
 		if rel.TgtEntityID != objectID {
 			s.T().Logf("Topo %v event from %s (expected %s). Discarding\n", event.Type, rel.TgtEntityID, objectID)
@@ -65,11 +62,11 @@ func (s *Suite) WaitForTargetAvailable(ctx context.Context, objectID topo.ID, ti
 		}
 
 		return false
-	}, timeout)
+	})
 }
 
 // WaitForTargetUnavailable waits for a target to become available
-func (s *Suite) WaitForTargetUnavailable(ctx context.Context, objectID topo.ID, timeout time.Duration) bool {
+func (s *Suite) WaitForTargetUnavailable(ctx context.Context, objectID topo.ID) bool {
 	return s.WaitForControlRelation(ctx, func(rel *topo.Relation, event topo.Event) bool {
 		if rel.TgtEntityID != objectID {
 			s.T().Logf("Topo %v event from %s (expected %s). Discarding\n", event, rel.TgtEntityID, objectID)
@@ -86,19 +83,17 @@ func (s *Suite) WaitForTargetUnavailable(ctx context.Context, objectID topo.ID, 
 			}
 		}
 		return false
-	}, timeout)
+	})
 }
 
 // WaitForRollback waits for a COMPLETED status on the most recent rollback transaction
-func (s *Suite) WaitForRollback(ctx context.Context, transactionIndex configapi.Index, wait time.Duration) bool {
+func (s *Suite) WaitForRollback(ctx context.Context, transactionIndex configapi.Index) bool {
 	client, err := s.NewTransactionServiceClient(ctx)
 	s.NoError(err)
 
 	stream, err := client.WatchTransactions(ctx, &admin.WatchTransactionsRequest{})
 	s.NoError(err)
 	s.NotNil(stream)
-
-	start := time.Now()
 
 	for {
 		resp, err := stream.Recv()
@@ -113,10 +108,6 @@ func (s *Suite) WaitForRollback(ctx context.Context, transactionIndex configapi.
 			if rt.RollbackIndex == transactionIndex {
 				return true
 			}
-		}
-
-		if time.Since(start) > wait {
-			return false
 		}
 	}
 }

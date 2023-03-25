@@ -9,11 +9,9 @@ import (
 	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
-	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"time"
-
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 // TestPrefixPathGet tests GNMI queries using a prefix + path
@@ -31,7 +29,7 @@ func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the targets
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1), 1*time.Minute)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests

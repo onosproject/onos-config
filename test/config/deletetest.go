@@ -6,11 +6,9 @@ package config
 
 import (
 	"context"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"time"
-
-	"github.com/onosproject/onos-api/go/onos/topo"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
@@ -25,7 +23,7 @@ func (s *TestSuite) TestDeleteAndRollback(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the target
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), 10*time.Second)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)

@@ -11,7 +11,6 @@ import (
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"time"
 )
 
 const (
@@ -26,7 +25,7 @@ const (
 // TestUpdateDelete tests update and delete paths in a single GNMI request
 func (s *TestSuite) TestUpdateDelete(ctx context.Context) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1), 1*time.Minute)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests

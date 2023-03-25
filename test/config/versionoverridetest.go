@@ -7,12 +7,10 @@ package config
 import (
 	"context"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/test"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"time"
-
-	"github.com/onosproject/onos-api/go/onos/topo"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 )
@@ -34,7 +32,7 @@ func (s *TestSuite) TestVersionOverride(ctx context.Context) {
 	s.NoError(err)
 
 	// Wait for config to connect to the first simulator
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)

@@ -6,12 +6,10 @@ package config
 
 import (
 	"context"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"strings"
-	"time"
-
-	"github.com/onosproject/onos-api/go/onos/topo"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 )
@@ -19,8 +17,8 @@ import (
 // TestGetAllTargets tests retrieval of all target IDs via path.Target="*"
 func (s *TestSuite) TestGetAllTargets(ctx context.Context) {
 	// Wait for config to connect to both simulators
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), time.Minute)
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2))
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)

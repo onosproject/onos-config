@@ -33,7 +33,7 @@ var (
 // TestCrashedTarget tests that a crashed target receives proper configuration restoration
 func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 	// Wait for the simulator to become available
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
 
 	// Set up crashedTargetPaths to configure
 	targets := []string{s.simulator1}
@@ -84,10 +84,10 @@ func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 	err = s.CoreV1().Pods(s.Namespace()).Delete(ctx, pods.Items[0].Name, metav1.DeleteOptions{})
 	s.NoError(err)
 
-	s.WaitForTargetUnavailable(ctx, topo.ID(s.simulator1), time.Minute)
+	s.WaitForTargetUnavailable(ctx, topo.ID(s.simulator1))
 
 	// Wait for it to become available
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
 
 	// Settle the race between reapplying the changes to the freshly restarted target and the subsequent checks.
 	for i := 0; i < 30; i++ {

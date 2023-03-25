@@ -6,8 +6,6 @@ package config
 
 import (
 	"context"
-	"time"
-
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
 )
@@ -71,7 +69,7 @@ func (s *TestSuite) TestTopoIntegration(ctx context.Context) {
 	// Create simulated targets
 	targetID := "test-topo-integration-target-1"
 	s.SetupSimulator(ctx, targetID, true)
-	s.WaitForTargetAvailable(ctx, topoapi.ID(targetID), 2*time.Minute)
+	s.WaitForTargetAvailable(ctx, topoapi.ID(targetID))
 	defer s.TearDownSimulator(ctx, targetID)
 	s.checkTopo(ctx, topoapi.ID(targetID))
 }

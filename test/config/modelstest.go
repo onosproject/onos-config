@@ -8,11 +8,9 @@ import (
 	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
-	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"time"
-
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/status"
 )
 
@@ -26,7 +24,7 @@ func (s *TestSuite) TestModels(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1), 1*time.Minute)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
 	s.True(ready)
 
 	// Data to run the test cases

@@ -9,11 +9,9 @@ import (
 	"context"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
-	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"time"
-
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 const (
@@ -25,7 +23,7 @@ const (
 // TestCreatedRemovedTarget tests set/query of a single GNMI path to a single target that is created, removed, then created again
 func (s *TestSuite) TestCreatedRemovedTarget(ctx context.Context) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), 1*time.Minute)
+	ready := s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
 	s.True(ready)
 
 	targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
@@ -63,7 +61,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(ctx context.Context) {
 
 	//  Shut down the simulator
 	s.TearDownSimulator(ctx, s.simulator1)
-	unavailable := s.WaitForTargetUnavailable(ctx, topo.ID(s.simulator1), 2*time.Minute)
+	unavailable := s.WaitForTargetUnavailable(ctx, topo.ID(s.simulator1))
 	s.True(unavailable)
 
 	// Set a value using gNMI client - target is down
@@ -77,7 +75,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(ctx context.Context) {
 	s.SetupSimulator(ctx, s.simulator1, false)
 
 	// Wait for config to connect to the target
-	ready = s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), 2*time.Minute)
+	ready = s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
 	s.True(ready)
 	// Check that the value was set correctly
 	getReq.CheckValues(s.T(), createRemoveTargetModValue2)
