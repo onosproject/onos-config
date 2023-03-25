@@ -68,7 +68,7 @@ func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
 }
 
 func (s *TestSuite) createOfflineTarget(targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {
-	topoClient, err := gnmiutils.NewTopoClient()
+	topoClient, err := s.NewTopoClient()
 	s.NotNil(topoClient)
 	s.Nil(err)
 

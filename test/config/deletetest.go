@@ -61,7 +61,7 @@ func (s *TestSuite) TestDeleteAndRollback(ctx context.Context) {
 	getTargetReq.CheckValues(s.T(), newValue)
 
 	// Now rollback the change
-	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
+	adminClient, err := s.NewAdminServiceClient(ctx)
 	s.NoError(err)
 	rollbackResponse, rollbackError := adminClient.RollbackTransaction(context.Background(), &admin.RollbackRequest{Index: transactionIndex})
 

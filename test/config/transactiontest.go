@@ -107,7 +107,7 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 	target2GetReq.CheckValues(s.T(), value2)
 
 	// Now rollback the change
-	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
+	adminClient, err := s.NewAdminServiceClient(ctx)
 	s.NoError(err)
 	rollbackResponse, rollbackError := adminClient.RollbackTransaction(
 		context.Background(), &admin.RollbackRequest{Index: transactionIndex})

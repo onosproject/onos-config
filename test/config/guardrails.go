@@ -96,7 +96,7 @@ func (s *TestSuite) TestGuardRails(ctx context.Context) {
 	s.NoError(err)
 	s.NotNil(target)
 
-	topoClient, err := gnmiutils.NewTopoClient()
+	topoClient, err := s.NewTopoClient()
 	s.NotNil(topoClient)
 	s.Nil(err)
 
