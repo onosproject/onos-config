@@ -5,10 +5,10 @@
 package config
 
 import (
+	"context"
+	"github.com/onosproject/onos-config/test"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/onosproject/onos-api/go/onos/topo"
@@ -17,35 +17,26 @@ import (
 )
 
 // TestGetAllTargets tests retrieval of all target IDs via path.Target="*"
-func (s *TestSuite) TestGetAllTargets(t *testing.T) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create two target simulators
-	target1 := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, target1)
-	target2 := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, target2)
-
+func (s *TestSuite) TestGetAllTargets(ctx context.Context) {
 	// Wait for config to connect to both simulators
-	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target1.Name()), time.Minute)
-	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target2.Name()), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2), time.Minute)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Get the list of all targets via get query on target "*"
 	var getReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
 		Encoding:   gnmiapi.Encoding_PROTO,
-		Extensions: gnmiutils.SyncExtension(t),
+		Extensions: s.SyncExtension(),
 		Paths:      gnmiutils.GetTargetPath("*", ""),
 	}
 	getValue, err := getReq.Get()
-	assert.NoError(t, err)
-	assert.Len(t, getValue, 1)
-	assert.Equal(t, "/all-targets", getValue[0].Path)
-	assert.True(t, strings.Contains(getValue[0].PathDataValue, target1.Name()))
-	assert.True(t, strings.Contains(getValue[0].PathDataValue, target2.Name()))
+	s.NoError(err)
+	s.Len(getValue, 1)
+	s.Equal("/all-targets", getValue[0].Path)
+	s.True(strings.Contains(getValue[0].PathDataValue, s.simulator1))
+	s.True(strings.Contains(getValue[0].PathDataValue, s.simulator2))
 }

@@ -6,12 +6,11 @@ package rbac
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-config/test/utils/rbac"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const (
@@ -30,15 +29,15 @@ func getLeafPath(interfaceName string, leafName string) string {
 	return rootPath + "/config/" + leafName
 }
 
-func setUpInterfaces(t *testing.T, target string, password string) {
+func (s *TestSuite) setUpInterfaces(ctx context.Context, target string, password string) {
 	// get an access token
 	token, err := rbac.FetchATokenViaKeyCloak(keycloakURL, "alicea", password)
-	assert.NoError(t, err)
-	assert.NotNil(t, token)
+	s.NoError(err)
+	s.NotNil(token)
 
 	// Make a GNMI client to use for requests
-	ctx := rbac.GetBearerContext(context.Background(), token)
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
+	ctx = rbac.GetBearerContext(ctx, token)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
 
 	var interfaceNames = [...]string{starbucksInterface, acmeInterface, otherInterface}
 
@@ -57,7 +56,7 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 			Encoding:    gnmiapi.Encoding_PROTO,
 			UpdatePaths: setNamePath,
 		}
-		setReq.SetOrFail(t)
+		setReq.SetOrFail(s.T())
 
 		// Set initial values for Enabled and Description using gNMI client
 		setInitialValuesPath := []proto.GNMIPath{
@@ -65,12 +64,12 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 			{TargetName: target, Path: descriptionPath, PathDataValue: descriptionLeafValue, PathDataType: proto.StringVal},
 		}
 		setReq.UpdatePaths = setInitialValuesPath
-		setReq.SetOrFail(t)
+		setReq.SetOrFail(s.T())
 	}
 }
 
 // TestGetOperations tests get operations to a protected API with various users
-func (s *TestSuite) TestGetOperations(t *testing.T) {
+func (s *TestSuite) TestGetOperations(ctx context.Context) {
 	testCases := map[string]struct {
 		userName      string
 		interfaceName string
@@ -196,50 +195,41 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 		},
 	}
 
-	// Create a simulated device
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
-	setUpInterfaces(t, simulator.Name(), s.keycloakPassword)
+	s.setUpInterfaces(ctx, s.simulator, s.keycloakPassword)
 
 	for name, testCase := range testCases {
-		t.Run(name,
-			func(t *testing.T) {
-				token, err := rbac.FetchATokenViaKeyCloak(keycloakURL, testCase.userName, s.keycloakPassword)
-				assert.NoError(t, err)
-				assert.NotNil(t, token)
+		s.Run(name, func() {
+			token, err := rbac.FetchATokenViaKeyCloak(keycloakURL, testCase.userName, s.keycloakPassword)
+			s.NoError(err)
+			s.NotNil(token)
 
-				// Make a GNMI client to use for requests
-				ctx := rbac.GetBearerContext(context.Background(), token)
-				gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
-				assert.NotNil(t, gnmiClient)
+			// Make a GNMI client to use for requests
+			ctx := rbac.GetBearerContext(ctx, token)
+			gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
+			s.NotNil(gnmiClient)
 
-				descriptionPath := getLeafPath(testCase.interfaceName, descriptionLeafName)
+			descriptionPath := getLeafPath(testCase.interfaceName, descriptionLeafName)
 
-				// Get path for the test value
-				targetPath := []proto.GNMIPath{
-					{TargetName: simulator.Name(), Path: descriptionPath, PathDataValue: testCase.interfaceName, PathDataType: proto.StringVal},
-				}
+			// Get path for the test value
+			targetPath := []proto.GNMIPath{
+				{TargetName: s.simulator, Path: descriptionPath, PathDataValue: testCase.interfaceName, PathDataType: proto.StringVal},
+			}
 
-				// Check that the value can be read via get
-				var onosConfigGetReq = &gnmiutils.GetRequest{
-					Ctx:      ctx,
-					Client:   gnmiClient,
-					Paths:    targetPath,
-					Encoding: gnmiapi.Encoding_PROTO,
-					DataType: gnmiapi.GetRequest_CONFIG,
-				}
-				values, err := onosConfigGetReq.Get()
-				assert.NoError(t, err)
-				value := ""
-				if len(values) != 0 {
-					value = values[0].PathDataValue
-				}
-				assert.Equal(t, testCase.expectedValue, value)
-			},
-		)
+			// Check that the value can be read via get
+			var onosConfigGetReq = &gnmiutils.GetRequest{
+				Ctx:      ctx,
+				Client:   gnmiClient,
+				Paths:    targetPath,
+				Encoding: gnmiapi.Encoding_PROTO,
+				DataType: gnmiapi.GetRequest_CONFIG,
+			}
+			values, err := onosConfigGetReq.Get()
+			s.NoError(err)
+			value := ""
+			if len(values) != 0 {
+				value = values[0].PathDataValue
+			}
+			s.Equal(testCase.expectedValue, value)
+		})
 	}
 }

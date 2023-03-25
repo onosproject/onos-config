@@ -5,12 +5,12 @@
 package config
 
 import (
+	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
-	"testing"
 	"time"
 )
 
@@ -21,33 +21,26 @@ const (
 )
 
 // TestDeleteUpdate tests update of a path after a previous deletion of a parent path
-func (s *TestSuite) TestDeleteUpdate(t *testing.T) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Get the first configured simulator from the environment.
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
+func (s *TestSuite) TestDeleteUpdate(ctx context.Context) {
 	// Wait for config to connect to the target
-	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
-	assert.True(t, ready)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1), 1*time.Minute)
+	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Create interface tree using gNMI client
 	setNamePath := []proto.GNMIPath{
-		{TargetName: simulator.Name(), Path: dutestNamePath, PathDataValue: dutestNameValue, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1, Path: dutestNamePath, PathDataValue: dutestNameValue, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: setNamePath,
 	}
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// Check the name is there...
 	var getConfigReq = &gnmiutils.GetRequest{
@@ -56,25 +49,25 @@ func (s *TestSuite) TestDeleteUpdate(t *testing.T) {
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	getConfigReq.Paths = setNamePath
-	getConfigReq.CheckValues(t, dutestNameValue)
+	getConfigReq.CheckValues(s.T(), dutestNameValue)
 
 	deleteAllPath := []proto.GNMIPath{
-		{TargetName: simulator.Name(), Path: dutestRootPath},
+		{TargetName: s.simulator1, Path: dutestRootPath},
 	}
 	setReq.UpdatePaths = nil
 	setReq.DeletePaths = deleteAllPath
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	//  Make sure everything got removed
-	getConfigReq.Paths = gnmiutils.GetTargetPath(simulator.Name(), dutestRootPath)
-	getConfigReq.CheckValues(t, "")
+	getConfigReq.Paths = gnmiutils.GetTargetPath(s.simulator1, dutestRootPath)
+	getConfigReq.CheckValues(s.T(), "")
 
 	// Now recreate the same interface tree....
 	setReq.UpdatePaths = setNamePath
 	setReq.DeletePaths = nil
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// And check it's there...
 	getConfigReq.Paths = setNamePath
-	getConfigReq.CheckValues(t, dutestNameValue)
+	getConfigReq.CheckValues(s.T(), dutestNameValue)
 }

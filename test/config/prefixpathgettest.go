@@ -6,10 +6,10 @@
 package config
 
 import (
+	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/test"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
-	"testing"
 	"time"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -17,7 +17,7 @@ import (
 )
 
 // TestPrefixPathGet tests GNMI queries using a prefix + path
-func (s *TestSuite) TestPrefixPathGet(t *testing.T) {
+func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
 	const (
 		systemPrefix = "/system"
 		clockPrefix  = systemPrefix + "/clock"
@@ -30,21 +30,14 @@ func (s *TestSuite) TestPrefixPathGet(t *testing.T) {
 		motdValue    = "test-motd-banner"
 	)
 
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create a simulated device
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
 	// Wait for config to connect to the targets
-	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
-	assert.True(t, ready)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1), 1*time.Minute)
+	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
-	gnmiTarget := simulator.Name()
+	gnmiTarget := s.simulator1
 
 	testCases := []struct {
 		name         string
@@ -130,46 +123,45 @@ func (s *TestSuite) TestPrefixPathGet(t *testing.T) {
 	}
 
 	// Set a new value for the time zone using onos-config
-	fullTargetPaths := gnmiutils.GetTargetPathWithValue(simulator.Name(), fullTzPath, tzValue, proto.StringVal)
+	fullTargetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1, fullTzPath, tzValue, proto.StringVal)
 	var onosConfigSetReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: fullTargetPaths,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// set a value for the MOTD using onos-config
-	motdFullTargetPaths := gnmiutils.GetTargetPathWithValue(simulator.Name(), fullMotdPath, motdValue, proto.StringVal)
+	motdFullTargetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1, fullMotdPath, motdValue, proto.StringVal)
 	var motdOnosConfigSetReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: motdFullTargetPaths,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
-	motdOnosConfigSetReq.SetOrFail(t)
+	motdOnosConfigSetReq.SetOrFail(s.T())
 
 	for testCaseIndex := range testCases {
 		testCase := testCases[testCaseIndex]
-		t.Run(testCase.name,
-			func(t *testing.T) {
-				// Get the GNMI paths
-				targetPaths := gnmiutils.GetTargetPaths(testCase.targets, testCase.paths)
-				prefixPaths := gnmiutils.GetTargetPath(testCase.prefixTarget, testCase.prefixPath)
+		s.Run(testCase.name, func() {
+			// Get the GNMI paths
+			targetPaths := gnmiutils.GetTargetPaths(testCase.targets, testCase.paths)
+			prefixPaths := gnmiutils.GetTargetPath(testCase.prefixTarget, testCase.prefixPath)
 
-				// Set up requests
-				var onosConfigGetReq = &gnmiutils.GetRequest{
-					Ctx:      ctx,
-					Client:   gnmiClient,
-					Paths:    targetPaths,
-					Prefix:   prefixPaths[0],
-					Encoding: gnmiapi.Encoding_PROTO,
-				}
+			// Set up requests
+			var onosConfigGetReq = &gnmiutils.GetRequest{
+				Ctx:      ctx,
+				Client:   gnmiClient,
+				Paths:    targetPaths,
+				Prefix:   prefixPaths[0],
+				Encoding: gnmiapi.Encoding_PROTO,
+			}
 
-				// Check that the value was fetched correctly
-				onosConfigGetReq.CheckValues(t, testCase.values...)
-			})
+			// Check that the value was fetched correctly
+			onosConfigGetReq.CheckValues(s.T(), testCase.values...)
+		})
 	}
 }

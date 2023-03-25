@@ -5,7 +5,6 @@
 package main
 
 import (
-	"github.com/onosproject/helmit/pkg/registry"
 	"github.com/onosproject/helmit/pkg/test"
 	"github.com/onosproject/onos-config/test/config"
 	"github.com/onosproject/onos-config/test/rbac"
@@ -14,9 +13,9 @@ import (
 )
 
 func main() {
-	registry.RegisterTestSuite("config", &config.TestSuite{})
-	registry.RegisterTestSuite("rbac", &rbac.TestSuite{})
-	registry.RegisterTestSuite("scaling", &scaling.TestSuite{})
-
-	test.Main()
+	test.Main(map[string]test.TestingSuite{
+		"config":  new(config.TestSuite),
+		"rbac":    new(rbac.TestSuite),
+		"scaling": new(scaling.TestSuite),
+	})
 }

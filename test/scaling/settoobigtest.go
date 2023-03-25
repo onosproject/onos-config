@@ -5,13 +5,13 @@
 package scaling
 
 import (
+	"context"
 	"fmt"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
-	"testing"
 	"time"
 )
 
@@ -35,24 +35,17 @@ const (
 	newDescription             = "description"
 )
 
-func (s *TestSuite) testSetTooBig(t *testing.T, encoding gnmiapi.Encoding) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Make a simulated device
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
+func (s *TestSuite) testSetTooBig(ctx context.Context, encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
-	assert.True(t, ready)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator), 1*time.Minute)
+	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// First do a single set path by setting the name of new root using gNMI client
 	setNamePath := []proto.GNMIPath{
-		{TargetName: simulator.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
+		{TargetName: s.simulator, Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
@@ -60,7 +53,7 @@ func (s *TestSuite) testSetTooBig(t *testing.T, encoding gnmiapi.Encoding) {
 		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: setNamePath,
 	}
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	getConfigReq := &gnmiutils.GetRequest{
 		Ctx:      ctx,
@@ -70,35 +63,34 @@ func (s *TestSuite) testSetTooBig(t *testing.T, encoding gnmiapi.Encoding) {
 
 	// Check that the name value was set correctly
 	getConfigReq.Paths = setNamePath
-	getConfigReq.CheckValues(t, newRootName)
-	t.Logf("successfully allowed gNMI set with less than %d updates", gnmiSetLimitForTest)
+	getConfigReq.CheckValues(s.T(), newRootName)
+	s.T().Logf("successfully allowed gNMI set with less than %d updates", gnmiSetLimitForTest)
 
 	// Now do a test of multiple paths that will exceed the limit using gNMI client
 	setPath := []proto.GNMIPath{
-		{TargetName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
-		{TargetName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
-		{TargetName: simulator.Name(), Path: newRootMtuPath, PathDataValue: "1000", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootHoldTimeUpPath, PathDataValue: "30", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootHoldTimeDownPath, PathDataValue: "31", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf1ConfigIdx, PathDataValue: "1", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf1ConfigDesc, PathDataValue: "Sub if 1", PathDataType: proto.StringVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf1ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf2ConfigIdx, PathDataValue: "2", PathDataType: proto.IntVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf2ConfigDesc, PathDataValue: "Sub if 2", PathDataType: proto.StringVal},
-		{TargetName: simulator.Name(), Path: newRootSubIf2ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator, Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
+		{TargetName: s.simulator, Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator, Path: newRootMtuPath, PathDataValue: "1000", PathDataType: proto.IntVal},
+		{TargetName: s.simulator, Path: newRootHoldTimeUpPath, PathDataValue: "30", PathDataType: proto.IntVal},
+		{TargetName: s.simulator, Path: newRootHoldTimeDownPath, PathDataValue: "31", PathDataType: proto.IntVal},
+		{TargetName: s.simulator, Path: newRootSubIf1ConfigIdx, PathDataValue: "1", PathDataType: proto.IntVal},
+		{TargetName: s.simulator, Path: newRootSubIf1ConfigDesc, PathDataValue: "Sub if 1", PathDataType: proto.StringVal},
+		{TargetName: s.simulator, Path: newRootSubIf1ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator, Path: newRootSubIf2ConfigIdx, PathDataValue: "2", PathDataType: proto.IntVal},
+		{TargetName: s.simulator, Path: newRootSubIf2ConfigDesc, PathDataValue: "Sub if 2", PathDataType: proto.StringVal},
+		{TargetName: s.simulator, Path: newRootSubIf2ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
 	}
 	setReq.UpdatePaths = setPath
-	err := setReq.SetExpectFail(t)
-	assert.Equal(t, fmt.Sprintf("rpc error: code = InvalidArgument desc = "+
+	err := setReq.SetExpectFail(s.T())
+	s.Equal(fmt.Sprintf("rpc error: code = InvalidArgument desc = "+
 		"number of updates and deletes in a gNMI Set must not exceed %d. Target: %s Updates: %d, Deletes %d",
-		gnmiSetLimitForTest, simulator.Name(), 11, 0), err.Error())
-	t.Logf("successfully prevented gNMI set with more than %d updates", gnmiSetLimitForTest)
+		gnmiSetLimitForTest, s.simulator, 11, 0), err.Error())
+	s.T().Logf("successfully prevented gNMI set with more than %d updates", gnmiSetLimitForTest)
 }
 
 // TestSetTooBig tests create/set/delete of a tree of GNMI paths to a single device, where they exceed the size limit
-func (s *TestSuite) TestSetTooBig(t *testing.T) {
-	t.Run("TestSetTooBig PROTO",
-		func(t *testing.T) {
-			s.testSetTooBig(t, gnmiapi.Encoding_PROTO)
-		})
+func (s *TestSuite) TestSetTooBig(ctx context.Context) {
+	s.Run("TestSetTooBig PROTO", func() {
+		s.testSetTooBig(ctx, gnmiapi.Encoding_PROTO)
+	})
 }

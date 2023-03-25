@@ -6,72 +6,72 @@ package config
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
-	topoutils "github.com/onosproject/onos-config/test/utils/topo"
 	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
-	"github.com/stretchr/testify/assert"
 )
 
 // checkControlRelation queries a single control relation between the config and target, and fails if not found
-func (s *TestSuite) checkControlRelations(ctx context.Context, t *testing.T, targetID topoapi.ID, c toposdk.Client) []topoapi.Object {
-	numberOfConfigNodes := int(s.ConfigReplicaCount)
+func (s *TestSuite) checkControlRelations(ctx context.Context, targetID topoapi.ID, c toposdk.Client) []topoapi.Object {
+	numberOfConfigNodes := int(s.replicaCount)
 	numberOfTargets := 1
 	numberOfControlRelationships := numberOfTargets * numberOfConfigNodes
 
-	relationObjects, err := c.List(ctx, toposdk.WithListFilters(topoutils.GetControlRelationFilter()))
-	assert.NoError(t, err)
+	relationObjects, err := c.List(ctx, toposdk.WithListFilters(&topoapi.Filters{
+		KindFilter: &topoapi.Filter{
+			Filter: &topoapi.Filter_Equal_{
+				Equal_: &topoapi.EqualFilter{
+					Value: topoapi.CONTROLS,
+				},
+			},
+		},
+	}))
+	s.NoError(err)
 	var filteredRelations []topoapi.Object
 	for _, relationObject := range relationObjects {
 		if relationObject.GetRelation().TgtEntityID == targetID {
 			filteredRelations = append(filteredRelations, relationObject)
 		}
 	}
-	assert.Equal(t, numberOfControlRelationships, len(filteredRelations))
+	s.Equal(numberOfControlRelationships, len(filteredRelations))
 	return filteredRelations
 }
 
 // checkTopo makes sure that the topo entries are correct
-func (s *TestSuite) checkTopo(t *testing.T, targetID topoapi.ID) {
+func (s *TestSuite) checkTopo(ctx context.Context, targetID topoapi.ID) {
 
 	// Get a topology API client
-	client, err := gnmiutils.NewTopoClient()
-	assert.NoError(t, err)
-	assert.NotNil(t, client)
+	client, err := s.NewTopoClient()
+	s.NoError(err)
+	s.NotNil(client)
 
 	// check number of control relations from onos-config instances to the simulated target
-	relationObjects := s.checkControlRelations(context.Background(), t, targetID, client)
+	relationObjects := s.checkControlRelations(ctx, targetID, client)
 	for _, relationObject := range relationObjects {
 		controlRelation := relationObject.GetRelation()
 		// Gets onos-config master node associated with the target
 		onosConfigNode, err := client.Get(context.Background(), controlRelation.SrcEntityID)
-		assert.NoError(t, err)
+		s.NoError(err)
 		leaseAspect := &topoapi.Lease{}
 		err = onosConfigNode.GetAspect(leaseAspect)
-		assert.NoError(t, err)
+		s.NoError(err)
 		// Find the entity for the simulated target
 		targetObject, err := client.Get(context.Background(), controlRelation.TgtEntityID)
-		assert.NoError(t, err)
+		s.NoError(err)
 		// Check the target simulator aspects
 		configurable := &topoapi.Configurable{}
 		err = targetObject.GetAspect(configurable)
-		assert.NoError(t, err)
+		s.NoError(err)
 	}
 }
 
 // TestTopoIntegration checks that the correct topology entities and relations are created
-func (s *TestSuite) TestTopoIntegration(t *testing.T) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
+func (s *TestSuite) TestTopoIntegration(ctx context.Context) {
 	// Create simulated targets
 	targetID := "test-topo-integration-target-1"
-	simulator := gnmiutils.CreateSimulatorWithName(ctx, t, targetID, true)
-	assert.NotNil(t, simulator)
-	gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(targetID), 2*time.Minute)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-	s.checkTopo(t, topoapi.ID(targetID))
+	s.SetupSimulator(ctx, targetID, true)
+	s.WaitForTargetAvailable(ctx, topoapi.ID(targetID), 2*time.Minute)
+	defer s.TearDownSimulator(ctx, targetID)
+	s.checkTopo(ctx, topoapi.ID(targetID))
 }

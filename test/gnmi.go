@@ -1,0 +1,147 @@
+package test
+
+import (
+	"context"
+	"fmt"
+	"github.com/onosproject/onos-api/go/onos/config/admin"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
+	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
+	"time"
+)
+
+// WaitForControlRelation waits to create control relation for a given target
+func (s *Suite) WaitForControlRelation(ctx context.Context, predicate func(*topo.Relation, topo.Event) bool, timeout time.Duration) bool {
+	cl, err := s.NewTopoClient()
+	s.NoError(err)
+	stream := make(chan topo.Event)
+	err = cl.Watch(ctx, stream, toposdk.WithWatchFilters(s.getControlRelationFilter()))
+	s.NoError(err)
+	for event := range stream {
+		if predicate(event.Object.GetRelation(), event) {
+			return true
+		} // Otherwise, loop and wait for the next topo event
+	}
+
+	return false
+}
+
+func (s *Suite) getKindFilter(kind string) *topo.Filters {
+	kindFilter := &topo.Filters{
+		KindFilter: &topo.Filter{
+			Filter: &topo.Filter_Equal_{
+				Equal_: &topo.EqualFilter{
+					Value: kind,
+				},
+			},
+		},
+	}
+	return kindFilter
+
+}
+
+func (s *Suite) getControlRelationFilter() *topo.Filters {
+	return s.getKindFilter(topo.CONTROLS)
+}
+
+// WaitForTargetAvailable waits for a target to become available
+func (s *Suite) WaitForTargetAvailable(ctx context.Context, objectID topo.ID, timeout time.Duration) bool {
+	return s.WaitForControlRelation(ctx, func(rel *topo.Relation, event topo.Event) bool {
+		if rel.TgtEntityID != objectID {
+			s.T().Logf("Topo %v event from %s (expected %s). Discarding\n", event.Type, rel.TgtEntityID, objectID)
+			return false
+		}
+
+		if event.Type == topo.EventType_ADDED || event.Type == topo.EventType_UPDATED || event.Type == topo.EventType_NONE {
+			cl, err := s.NewTopoClient()
+			s.NoError(err)
+			_, err = cl.Get(ctx, event.Object.ID)
+			if err == nil {
+				s.T().Logf("Target %s is available", objectID)
+				return true
+			}
+		}
+
+		return false
+	}, timeout)
+}
+
+// WaitForTargetUnavailable waits for a target to become available
+func (s *Suite) WaitForTargetUnavailable(ctx context.Context, objectID topo.ID, timeout time.Duration) bool {
+	return s.WaitForControlRelation(ctx, func(rel *topo.Relation, event topo.Event) bool {
+		if rel.TgtEntityID != objectID {
+			s.T().Logf("Topo %v event from %s (expected %s). Discarding\n", event, rel.TgtEntityID, objectID)
+			return false
+		}
+
+		if event.Type == topo.EventType_REMOVED || event.Type == topo.EventType_NONE {
+			cl, err := s.NewTopoClient()
+			s.NoError(err)
+			_, err = cl.Get(ctx, event.Object.ID)
+			if errors.IsNotFound(err) {
+				s.T().Logf("Target %s is unavailable", objectID)
+				return true
+			}
+		}
+		return false
+	}, timeout)
+}
+
+// WaitForRollback waits for a COMPLETED status on the most recent rollback transaction
+func (s *Suite) WaitForRollback(ctx context.Context, transactionIndex configapi.Index, wait time.Duration) bool {
+	client, err := s.NewTransactionServiceClient(ctx)
+	s.NoError(err)
+
+	stream, err := client.WatchTransactions(ctx, &admin.WatchTransactionsRequest{})
+	s.NoError(err)
+	s.NotNil(stream)
+
+	start := time.Now()
+
+	for {
+		resp, err := stream.Recv()
+		if err != nil {
+			return false
+		}
+		s.NotNil(resp)
+		fmt.Printf("%v\n", resp.TransactionEvent)
+
+		t := resp.TransactionEvent.Transaction
+		if rt := t.GetRollback(); rt != nil {
+			if rt.RollbackIndex == transactionIndex {
+				return true
+			}
+		}
+
+		if time.Since(start) > wait {
+			return false
+		}
+	}
+}
+
+// SyncExtension returns list of extensions with just the transaction mode extension set to sync and atomic.
+func (s *Suite) SyncExtension() []*gnmi_ext.Extension {
+	return []*gnmi_ext.Extension{s.TransactionStrategyExtension(configapi.TransactionStrategy_SYNCHRONOUS, 0)}
+}
+
+// TransactionStrategyExtension returns a transaction strategy extension populated with the specified fields
+func (s *Suite) TransactionStrategyExtension(
+	synchronicity configapi.TransactionStrategy_Synchronicity,
+	isolation configapi.TransactionStrategy_Isolation) *gnmi_ext.Extension {
+	ext := configapi.TransactionStrategy{
+		Synchronicity: synchronicity,
+		Isolation:     isolation,
+	}
+	b, err := ext.Marshal()
+	s.NoError(err)
+	return &gnmi_ext.Extension{
+		Ext: &gnmi_ext.Extension_RegisteredExt{
+			RegisteredExt: &gnmi_ext.RegisteredExtension{
+				Id:  configapi.TransactionStrategyExtensionID,
+				Msg: b,
+			},
+		},
+	}
+}

@@ -6,19 +6,18 @@ package config
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/test"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"testing"
 	"time"
 
 	"github.com/onosproject/onos-api/go/onos/topo"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/stretchr/testify/assert"
 )
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
-func (s *TestSuite) testTransaction(t *testing.T, encoding gnmiapi.Encoding) {
+func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encoding) {
 	const (
 		value1     = "test-motd-banner"
 		path1      = "/system/config/motd-banner"
@@ -34,29 +33,18 @@ func (s *TestSuite) testTransaction(t *testing.T, encoding gnmiapi.Encoding) {
 		initialValues = []string{initValue1, initValue2}
 	)
 
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create the first target simulator
-	target1 := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, target1)
-
 	// Wait for config to connect to the first simulator
-	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target1.Name()), time.Minute)
-
-	// Create the second target simulator
-	target2 := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, target2)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), time.Minute)
 
 	// Wait for config to connect to the second simulator
-	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target2.Name()), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2), time.Minute)
 
 	// Set up paths for the two targets
-	targets := []string{target1.Name(), target2.Name()}
+	targets := []string{s.simulator1, s.simulator2}
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Set initial values
 	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, paths, initialValues)
@@ -65,39 +53,39 @@ func (s *TestSuite) testTransaction(t *testing.T, encoding gnmiapi.Encoding) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		Encoding:    gnmiapi.Encoding_PROTO,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		UpdatePaths: targetPathsForInit,
 	}
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	var getReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
 		Encoding:   encoding,
-		Extensions: gnmiutils.SyncExtension(t),
+		Extensions: s.SyncExtension(),
 	}
-	targetPath1 := gnmiutils.GetTargetPath(target1.Name(), path1)
-	targetPath2 := gnmiutils.GetTargetPath(target2.Name(), path2)
+	targetPath1 := gnmiutils.GetTargetPath(s.simulator1, path1)
+	targetPath2 := gnmiutils.GetTargetPath(s.simulator2, path2)
 
 	getReq.Paths = targetPath1
-	getReq.CheckValues(t, initValue1)
+	getReq.CheckValues(s.T(), initValue1)
 	getReq.Paths = targetPath2
-	getReq.CheckValues(t, initValue2)
+	getReq.CheckValues(s.T(), initValue2)
 
 	// Create a change that can be rolled back
 	targetPathsForSet := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
 	setReq.UpdatePaths = targetPathsForSet
-	_, transactionIndex := setReq.SetOrFail(t)
+	_, transactionIndex := setReq.SetOrFail(s.T())
 
 	// Check that the values were set correctly
 	getReq.Paths = targetPath1
-	getReq.CheckValues(t, value1)
+	getReq.CheckValues(s.T(), value1)
 	getReq.Paths = targetPath2
-	getReq.CheckValues(t, value2)
+	getReq.CheckValues(s.T(), value2)
 
 	// Check that the values are set on the targets
-	target1GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target1)
-	target2GnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target2)
+	target1GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
+	target2GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator2)
 
 	var target1GetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
@@ -110,48 +98,46 @@ func (s *TestSuite) testTransaction(t *testing.T, encoding gnmiapi.Encoding) {
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	target1GetReq.Paths = targetPathsForGet[0:1]
-	target1GetReq.CheckValues(t, value1)
+	target1GetReq.CheckValues(s.T(), value1)
 	target1GetReq.Paths = targetPathsForGet[1:2]
-	target1GetReq.CheckValues(t, value2)
+	target1GetReq.CheckValues(s.T(), value2)
 	target2GetReq.Paths = targetPathsForGet[2:3]
-	target2GetReq.CheckValues(t, value1)
+	target2GetReq.CheckValues(s.T(), value1)
 	target2GetReq.Paths = targetPathsForGet[3:4]
-	target2GetReq.CheckValues(t, value2)
+	target2GetReq.CheckValues(s.T(), value2)
 
 	// Now rollback the change
 	adminClient, err := gnmiutils.NewAdminServiceClient(ctx)
-	assert.NoError(t, err)
+	s.NoError(err)
 	rollbackResponse, rollbackError := adminClient.RollbackTransaction(
 		context.Background(), &admin.RollbackRequest{Index: transactionIndex})
 
-	assert.NoError(t, rollbackError, "Rollback returned an error")
-	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
+	s.NoError(rollbackError, "Rollback returned an error")
+	s.NotNil(rollbackResponse, "Response for rollback is nil")
 
 	// Check that the values were really rolled back in onos-config
 	getReq.Paths = targetPath1
-	getReq.CheckValues(t, initValue1)
+	getReq.CheckValues(s.T(), initValue1)
 	getReq.Paths = targetPath2
-	getReq.CheckValues(t, initValue2)
+	getReq.CheckValues(s.T(), initValue2)
 
 	// Check that the values were rolled back on the targets
 	target1GetReq.Paths = targetPathsForGet[0:1]
-	target1GetReq.CheckValues(t, initValue1)
+	target1GetReq.CheckValues(s.T(), initValue1)
 	target1GetReq.Paths = targetPathsForGet[1:2]
-	target1GetReq.CheckValues(t, initValue2)
+	target1GetReq.CheckValues(s.T(), initValue2)
 	target2GetReq.Paths = targetPathsForGet[2:3]
-	target2GetReq.CheckValues(t, initValue1)
+	target2GetReq.CheckValues(s.T(), initValue1)
 	target2GetReq.Paths = targetPathsForGet[3:4]
-	target2GetReq.CheckValues(t, initValue2)
+	target2GetReq.CheckValues(s.T(), initValue2)
 }
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
-func (s *TestSuite) TestTransaction(t *testing.T) {
-	t.Run("TestTransaction PROTO",
-		func(t *testing.T) {
-			s.testTransaction(t, gnmiapi.Encoding_PROTO)
-		})
-	t.Run("TestTransaction JSON",
-		func(t *testing.T) {
-			s.testTransaction(t, gnmiapi.Encoding_JSON)
-		})
+func (s *TestSuite) TestTransaction(ctx context.Context) {
+	s.Run("TestTransaction PROTO", func() {
+		s.testTransaction(ctx, gnmiapi.Encoding_PROTO)
+	})
+	s.Run("TestTransaction JSON", func() {
+		s.testTransaction(ctx, gnmiapi.Encoding_JSON)
+	})
 }

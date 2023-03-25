@@ -5,9 +5,9 @@
 package config
 
 import (
+	"context"
+	"github.com/onosproject/onos-config/test"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/stretchr/testify/assert"
-	"testing"
 	"time"
 
 	"github.com/onosproject/onos-api/go/onos/topo"
@@ -26,62 +26,55 @@ func checkForPath(paths []proto.GNMIPath, wantedPath string) bool {
 }
 
 // TestDeletePathLeaf checks that when a leaf node is removed, its path is removed
-func (s *TestSuite) TestDeletePathLeaf(t *testing.T) {
+func (s *TestSuite) TestDeletePathLeaf(ctx context.Context) {
 	const (
 		leafPath  = "/system/config/login-banner"
 		leafValue = "123"
 	)
 
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create simulated target
-	target := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, target)
-
 	// Wait for config to connect to the target
-	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target.Name()), 10*time.Second)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Set a value so onos-config starts to track the path
-	targetPath := gnmiutils.GetTargetPathWithValue(target.Name(), leafPath, leafValue, proto.StringVal)
+	targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1, leafPath, leafValue, proto.StringVal)
 	setReq := &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: targetPath,
 	}
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	getReq := &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
-		Extensions: gnmiutils.SyncExtension(t),
+		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,
-		Paths:      gnmiutils.GetTargetPath(target.Name(), "/"),
+		Paths:      gnmiutils.GetTargetPath(s.simulator1, "/"),
 	}
 
 	// Make sure that the path is there
 	paths, err := getReq.Get()
-	assert.NoError(t, err)
-	assert.True(t, checkForPath(paths, leafPath))
+	s.NoError(err)
+	s.True(checkForPath(paths, leafPath))
 
 	// Delete leaf path
 	setReq.UpdatePaths = nil
 	setReq.DeletePaths = targetPath
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// Make sure the path got deleted
 	paths, err = getReq.Get()
-	assert.NoError(t, err)
-	assert.False(t, checkForPath(paths, leafPath))
+	s.NoError(err)
+	s.False(checkForPath(paths, leafPath))
 }
 
 // TestDeleteRoot checks that when a root node is removed, its path is removed
-func (s *TestSuite) TestDeleteRoot(t *testing.T) {
+func (s *TestSuite) TestDeleteRoot(ctx context.Context) {
 	const (
 		interfaceName   = "testinterface"
 		rootPath        = "/interfaces/interface[name=" + interfaceName + "]"
@@ -89,69 +82,62 @@ func (s *TestSuite) TestDeleteRoot(t *testing.T) {
 		descriptionPath = rootPath + "/config/description"
 	)
 
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create a simulated target
-	target := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, target)
-
 	// Wait for config to connect to the target
-	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target.Name()), 10*time.Second)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Create new interface tree using gNMI client
 	setNamePath := []proto.GNMIPath{
-		{TargetName: target.Name(), Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1, Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 	}
 	setReq := &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: setNamePath,
 	}
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// Set the description field of the new interface
 	setDescriptionPath := []proto.GNMIPath{
-		{TargetName: target.Name(), Path: descriptionPath, PathDataValue: "123", PathDataType: proto.StringVal},
+		{TargetName: s.simulator1, Path: descriptionPath, PathDataValue: "123", PathDataType: proto.StringVal},
 	}
 	setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: setDescriptionPath,
 	}
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// Make sure that the new paths are there by reading all the paths from the top
 	getReq := &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
-		Extensions: gnmiutils.SyncExtension(t),
+		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,
-		Paths:      gnmiutils.GetTargetPath(target.Name(), "/"),
+		Paths:      gnmiutils.GetTargetPath(s.simulator1, "/"),
 	}
 	paths, err := getReq.Get()
-	assert.NoError(t, err)
-	assert.True(t, checkForPath(paths, descriptionPath))
-	assert.True(t, checkForPath(paths, namePath))
+	s.NoError(err)
+	s.True(checkForPath(paths, descriptionPath))
+	s.True(checkForPath(paths, namePath))
 
 	// Now delete the interface
 	rootTargetPath := []proto.GNMIPath{
-		{TargetName: target.Name(), Path: rootPath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1, Path: rootPath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 	}
 	setReq.UpdatePaths = nil
 	setReq.DeletePaths = rootTargetPath
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// Make sure that the paths are gone
 	paths, err = getReq.Get()
-	assert.NoError(t, err)
-	assert.False(t, checkForPath(paths, descriptionPath))
-	assert.False(t, checkForPath(paths, namePath))
+	s.NoError(err)
+	s.False(checkForPath(paths, descriptionPath))
+	s.False(checkForPath(paths, namePath))
 }
