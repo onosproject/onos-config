@@ -78,7 +78,7 @@ func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 		LabelSelector: fmt.Sprintf("name=%s", s.simulator1.Name),
 	})
 	s.NoError(err)
-	s.Len(pods, 1)
+	s.Len(pods.Items, 1)
 
 	// Delete the simulator pod
 	err = s.CoreV1().Pods(s.Namespace()).Delete(ctx, pods.Items[0].Name, metav1.DeleteOptions{})

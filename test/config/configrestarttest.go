@@ -60,7 +60,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(ctx context.Context) {
 		LabelSelector: "app=onos,type=config",
 	})
 	s.NoError(err)
-	s.Len(pods, 1)
+	s.Len(pods.Items, 1)
 
 	// Delete the onos-config pod to restart it
 	err = s.CoreV1().Pods(s.Namespace()).Delete(ctx, pods.Items[0].Name, metav1.DeleteOptions{})
@@ -100,7 +100,7 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(ctx context.Context) {
 		LabelSelector: "app=onos,type=config",
 	})
 	s.NoError(err)
-	s.Len(pods, 1)
+	s.Len(pods.Items, 1)
 
 	// Delete the onos-config pod to restart it
 	err = s.CoreV1().Pods(s.Namespace()).Delete(ctx, pods.Items[0].Name, metav1.DeleteOptions{})
