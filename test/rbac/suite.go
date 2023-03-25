@@ -38,6 +38,11 @@ func (s *TestSuite) SetupSuite(ctx context.Context) {
 	s.NoError(err)
 }
 
+// TearDownSuite tears down the test suite
+func (s *TestSuite) TearDownSuite(ctx context.Context) {
+	s.NoError(s.Helm().Uninstall("onos-umbrella").Do(ctx))
+}
+
 func (s *TestSuite) SetupTest(ctx context.Context) {
 	s.simulator = s.SetupRandomSimulator(ctx, true)
 }
