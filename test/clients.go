@@ -104,7 +104,7 @@ func (s *Suite) getClientCredentials() (*tls.Config, error) {
 func (s *Suite) NewSimulatorGNMIClientOrFail(ctx context.Context, simulator string) gnmiclient.Impl {
 	s.T().Helper()
 	dest := gnmiclient.Destination{
-		Addrs:   []string{fmt.Sprintf("%s:10161", simulator)},
+		Addrs:   []string{fmt.Sprintf("%s-device-simulator:11161", simulator)},
 		Target:  simulator,
 		Timeout: 10 * time.Second,
 	}
