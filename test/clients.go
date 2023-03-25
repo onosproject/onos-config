@@ -12,6 +12,7 @@ import (
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"math"
 	"time"
 )
@@ -108,7 +109,7 @@ func (s *Suite) NewSimulatorGNMIClientOrFail(ctx context.Context, simulator stri
 		Target:  simulator,
 		Timeout: 10 * time.Second,
 	}
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	return s.newGNMIClientOrFail(ctx, dest, opts)
 }
 

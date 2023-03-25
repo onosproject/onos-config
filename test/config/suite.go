@@ -35,12 +35,14 @@ func (s *TestSuite) TearDownSuite(ctx context.Context) {
 	s.NoError(s.Helm().Uninstall(s.umbrella.Name).Do(ctx))
 }
 
+// SetupTest sets up simulators for tests
 func (s *TestSuite) SetupTest(ctx context.Context) {
 	simulators := s.SetupRandomSimulators(ctx, 2)
 	s.simulator1 = simulators[0]
 	s.simulator2 = simulators[1]
 }
 
+// TearDownTest tears down simulators for tests
 func (s *TestSuite) TearDownTest(ctx context.Context) {
 	s.TearDownSimulators(ctx, s.simulator1.Name, s.simulator2.Name)
 }

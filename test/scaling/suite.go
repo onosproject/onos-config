@@ -13,7 +13,7 @@ import (
 
 const gnmiSetLimitForTest = 10
 
-// TestSuite is the onos-config GNMI test suite
+// TestSuite is the scaling test suite.
 type TestSuite struct {
 	test.Suite
 	umbrella  *helm.Release
@@ -36,10 +36,12 @@ func (s *TestSuite) TearDownSuite(ctx context.Context) {
 	s.NoError(s.Helm().Uninstall(s.umbrella.Name).Do(ctx))
 }
 
+// SetupTest sets up a simulator for tests
 func (s *TestSuite) SetupTest(ctx context.Context) {
 	s.simulator = s.SetupRandomSimulator(ctx, true)
 }
 
+// TearDownTest tears down the simulator for tests
 func (s *TestSuite) TearDownTest(ctx context.Context) {
 	s.TearDownSimulator(ctx, s.simulator.Name)
 	s.simulator = nil

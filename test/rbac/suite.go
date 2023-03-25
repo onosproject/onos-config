@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TestSuite is the onos-config HA test suite
+// TestSuite is the onos-config RBAC test suite.
 type TestSuite struct {
 	test.Suite
 	keycloakPassword string
@@ -46,10 +46,12 @@ func (s *TestSuite) TearDownSuite(ctx context.Context) {
 	s.NoError(s.Helm().Uninstall(s.umbrella.Name).Do(ctx))
 }
 
+// SetupTest sets up simulators for tests
 func (s *TestSuite) SetupTest(ctx context.Context) {
 	s.simulator = s.SetupRandomSimulator(ctx, true)
 }
 
+// TearDownTest tears down simulators for tests
 func (s *TestSuite) TearDownTest(ctx context.Context) {
 	s.TearDownSimulator(ctx, s.simulator.Name)
 }
