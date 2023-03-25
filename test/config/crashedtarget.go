@@ -75,7 +75,7 @@ func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 
 	// Crash the target simulator
 	pods, err := s.CoreV1().Pods(s.Namespace()).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("name=%s", s.simulator1.Name),
+		LabelSelector: fmt.Sprintf("name=%s-device-simulator", s.simulator1.Name),
 	})
 	s.NoError(err)
 	s.Len(pods.Items, 1)
