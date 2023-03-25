@@ -20,15 +20,15 @@ const (
 
 func (s *TestSuite) testSinglePath(ctx context.Context, encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
-	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
+	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 
 	// Get the GNMI path
-	targetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1, tzPath, tzValue, proto.StringVal)
+	targetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, tzPath, tzValue, proto.StringVal)
 
 	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{

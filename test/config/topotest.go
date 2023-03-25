@@ -12,7 +12,7 @@ import (
 
 // checkControlRelation queries a single control relation between the config and target, and fails if not found
 func (s *TestSuite) checkControlRelations(ctx context.Context, targetID topoapi.ID, c toposdk.Client) []topoapi.Object {
-	numberOfConfigNodes := int(s.replicaCount)
+	numberOfConfigNodes := s.umbrella.Get("onos-config.replicaCount").Int()
 	numberOfTargets := 1
 	numberOfControlRelationships := numberOfTargets * numberOfConfigNodes
 

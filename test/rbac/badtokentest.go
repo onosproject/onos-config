@@ -76,7 +76,7 @@ func (s *TestSuite) TestBadTokens(ctx context.Context) {
 		},
 	}
 
-	devicePath := gnmiutils.GetTargetPathWithValue(s.simulator, tzPath, tzValue, proto.StringVal)
+	devicePath := gnmiutils.GetTargetPathWithValue(s.simulator.Name, tzPath, tzValue, proto.StringVal)
 
 	// Run the test cases
 	for testCaseIndex := range testCases {

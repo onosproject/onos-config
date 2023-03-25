@@ -36,7 +36,7 @@ const (
 
 func (s *TestSuite) testSetTooBig(ctx context.Context, encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
@@ -44,7 +44,7 @@ func (s *TestSuite) testSetTooBig(ctx context.Context, encoding gnmiapi.Encoding
 
 	// First do a single set path by setting the name of new root using gNMI client
 	setNamePath := []proto.GNMIPath{
-		{TargetName: s.simulator, Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
+		{TargetName: s.simulator.Name, Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
@@ -67,23 +67,23 @@ func (s *TestSuite) testSetTooBig(ctx context.Context, encoding gnmiapi.Encoding
 
 	// Now do a test of multiple paths that will exceed the limit using gNMI client
 	setPath := []proto.GNMIPath{
-		{TargetName: s.simulator, Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
-		{TargetName: s.simulator, Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
-		{TargetName: s.simulator, Path: newRootMtuPath, PathDataValue: "1000", PathDataType: proto.IntVal},
-		{TargetName: s.simulator, Path: newRootHoldTimeUpPath, PathDataValue: "30", PathDataType: proto.IntVal},
-		{TargetName: s.simulator, Path: newRootHoldTimeDownPath, PathDataValue: "31", PathDataType: proto.IntVal},
-		{TargetName: s.simulator, Path: newRootSubIf1ConfigIdx, PathDataValue: "1", PathDataType: proto.IntVal},
-		{TargetName: s.simulator, Path: newRootSubIf1ConfigDesc, PathDataValue: "Sub if 1", PathDataType: proto.StringVal},
-		{TargetName: s.simulator, Path: newRootSubIf1ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
-		{TargetName: s.simulator, Path: newRootSubIf2ConfigIdx, PathDataValue: "2", PathDataType: proto.IntVal},
-		{TargetName: s.simulator, Path: newRootSubIf2ConfigDesc, PathDataValue: "Sub if 2", PathDataType: proto.StringVal},
-		{TargetName: s.simulator, Path: newRootSubIf2ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator.Name, Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
+		{TargetName: s.simulator.Name, Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator.Name, Path: newRootMtuPath, PathDataValue: "1000", PathDataType: proto.IntVal},
+		{TargetName: s.simulator.Name, Path: newRootHoldTimeUpPath, PathDataValue: "30", PathDataType: proto.IntVal},
+		{TargetName: s.simulator.Name, Path: newRootHoldTimeDownPath, PathDataValue: "31", PathDataType: proto.IntVal},
+		{TargetName: s.simulator.Name, Path: newRootSubIf1ConfigIdx, PathDataValue: "1", PathDataType: proto.IntVal},
+		{TargetName: s.simulator.Name, Path: newRootSubIf1ConfigDesc, PathDataValue: "Sub if 1", PathDataType: proto.StringVal},
+		{TargetName: s.simulator.Name, Path: newRootSubIf1ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator.Name, Path: newRootSubIf2ConfigIdx, PathDataValue: "2", PathDataType: proto.IntVal},
+		{TargetName: s.simulator.Name, Path: newRootSubIf2ConfigDesc, PathDataValue: "Sub if 2", PathDataType: proto.StringVal},
+		{TargetName: s.simulator.Name, Path: newRootSubIf2ConfigEnabled, PathDataValue: "true", PathDataType: proto.BoolVal},
 	}
 	setReq.UpdatePaths = setPath
 	err := setReq.SetExpectFail(s.T())
 	s.Equal(fmt.Sprintf("rpc error: code = InvalidArgument desc = "+
 		"number of updates and deletes in a gNMI Set must not exceed %d. Target: %s Updates: %d, Deletes %d",
-		gnmiSetLimitForTest, s.simulator, 11, 0), err.Error())
+		gnmiSetLimitForTest, s.simulator.Name, 11, 0), err.Error())
 	s.T().Logf("successfully prevented gNMI set with more than %d updates", gnmiSetLimitForTest)
 }
 

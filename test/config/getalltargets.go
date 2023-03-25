@@ -17,8 +17,8 @@ import (
 // TestGetAllTargets tests retrieval of all target IDs via path.Target="*"
 func (s *TestSuite) TestGetAllTargets(ctx context.Context) {
 	// Wait for config to connect to both simulators
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2))
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2.Name))
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
@@ -35,6 +35,6 @@ func (s *TestSuite) TestGetAllTargets(ctx context.Context) {
 	s.NoError(err)
 	s.Len(getValue, 1)
 	s.Equal("/all-targets", getValue[0].Path)
-	s.True(strings.Contains(getValue[0].PathDataValue, s.simulator1))
-	s.True(strings.Contains(getValue[0].PathDataValue, s.simulator2))
+	s.True(strings.Contains(getValue[0].PathDataValue, s.simulator1.Name))
+	s.True(strings.Contains(getValue[0].PathDataValue, s.simulator2.Name))
 }

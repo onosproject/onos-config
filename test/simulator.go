@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	petname "github.com/dustinkirkland/golang-petname"
+	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/onostest"
 	"time"
 )
@@ -17,43 +18,45 @@ const (
 )
 
 // SetupSimulators sets up the given number of device simulators
-func (s *Suite) SetupSimulators(ctx context.Context, names ...string) {
-	s.NoError(iterAsync(len(names), func(i int) error {
+func (s *Suite) SetupSimulators(ctx context.Context, names ...string) []*helm.Release {
+	releases, err := callAsync[*helm.Release](len(names), func(i int) (*helm.Release, error) {
 		return s.setupSimulator(ctx, names[i], true)
-	}))
+	})
+	s.NoError(err)
+	return releases
 }
 
 // SetupRandomSimulators creates the given number of randomly named simulators
-func (s *Suite) SetupRandomSimulators(ctx context.Context, num int) []string {
+func (s *Suite) SetupRandomSimulators(ctx context.Context, num int) []*helm.Release {
 	var names []string
 	for i := 0; i < num; i++ {
 		names = append(names, petname.Generate(2, "-"))
 	}
-	s.SetupSimulators(ctx, names...)
-	return names
+	return s.SetupSimulators(ctx, names...)
 }
 
 // SetupRandomSimulator creates a simulator with a random name
-func (s *Suite) SetupRandomSimulator(ctx context.Context, createTopoEntity bool) string {
+func (s *Suite) SetupRandomSimulator(ctx context.Context, createTopoEntity bool) *helm.Release {
 	name := petname.Generate(2, "-")
-	s.SetupSimulator(ctx, name, createTopoEntity)
-	return name
+	return s.SetupSimulator(ctx, name, createTopoEntity)
 }
 
 // SetupSimulator creates a device simulator
-func (s *Suite) SetupSimulator(ctx context.Context, name string, createTopoEntity bool) {
-	s.NoError(s.setupSimulator(ctx, name, createTopoEntity))
+func (s *Suite) SetupSimulator(ctx context.Context, name string, createTopoEntity bool) *helm.Release {
+	release, err := s.setupSimulator(ctx, name, createTopoEntity)
+	s.NoError(err)
+	return release
 }
 
 // setupSimulator creates a device simulator
-func (s *Suite) setupSimulator(ctx context.Context, name string, createTopoEntity bool) error {
-	err := s.Helm().Install(name, "device-simulator").
+func (s *Suite) setupSimulator(ctx context.Context, name string, createTopoEntity bool) (*helm.Release, error) {
+	release, err := s.Helm().Install(name, "device-simulator").
 		RepoURL(onostest.OnosChartRepo).
 		Set("image.tag", "latest").
 		Wait().
-		Do(ctx)
+		Get(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	time.Sleep(2 * time.Second)
@@ -65,7 +68,7 @@ func (s *Suite) setupSimulator(ctx context.Context, name string, createTopoEntit
 		err = s.AddTargetToTopo(ctx, simulatorTarget)
 		s.NoError(err, "could not add target to topo for simulator %v", err)
 	}
-	return nil
+	return release, nil
 }
 
 // TearDownSimulators deletes all the simulator pods

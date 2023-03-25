@@ -6,6 +6,7 @@ package scaling
 
 import (
 	"context"
+	"github.com/onosproject/helmit/pkg/helm"
 	helmit "github.com/onosproject/helmit/pkg/test"
 	"github.com/onosproject/onos-config/test"
 )
@@ -15,8 +16,8 @@ const gnmiSetLimitForTest = 10
 // TestSuite is the onos-config GNMI test suite
 type TestSuite struct {
 	test.Suite
-	replicaCount int64
-	simulator    string
+	umbrella  *helm.Release
+	simulator *helm.Release
 }
 
 // SetupSuite sets up the onos-config GNMI test suite
@@ -27,12 +28,12 @@ func (s *TestSuite) SetupSuite(ctx context.Context) {
 		Wait().
 		Get(ctx)
 	s.NoError(err)
-	s.replicaCount = release.Get("onos-config.replicaCount").Int64()
+	s.umbrella = release
 }
 
 // TearDownSuite tears down the test suite
 func (s *TestSuite) TearDownSuite(ctx context.Context) {
-	s.NoError(s.Helm().Uninstall("onos-umbrella").Do(ctx))
+	s.NoError(s.Helm().Uninstall(s.umbrella.Name).Do(ctx))
 }
 
 func (s *TestSuite) SetupTest(ctx context.Context) {
@@ -40,8 +41,8 @@ func (s *TestSuite) SetupTest(ctx context.Context) {
 }
 
 func (s *TestSuite) TearDownTest(ctx context.Context) {
-	s.TearDownSimulator(ctx, s.simulator)
-	s.simulator = ""
+	s.TearDownSimulator(ctx, s.simulator.Name)
+	s.simulator = nil
 }
 
 var _ helmit.SetupSuite = (*TestSuite)(nil)

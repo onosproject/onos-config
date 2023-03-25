@@ -33,10 +33,10 @@ var (
 // TestCrashedTarget tests that a crashed target receives proper configuration restoration
 func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 	// Wait for the simulator to become available
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
 
 	// Set up crashedTargetPaths to configure
-	targets := []string{s.simulator1}
+	targets := []string{s.simulator1.Name}
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, crashedTargetPaths)
 
 	// Make a GNMI client to use for requests
@@ -61,8 +61,8 @@ func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 		Encoding:   gnmiapi.Encoding_PROTO,
 		Extensions: s.SyncExtension(),
 	}
-	targetPath1 := gnmiutils.GetTargetPath(s.simulator1, crashedTargetPath1)
-	targetPath2 := gnmiutils.GetTargetPath(s.simulator1, crashedTargetPath2)
+	targetPath1 := gnmiutils.GetTargetPath(s.simulator1.Name, crashedTargetPath1)
+	targetPath2 := gnmiutils.GetTargetPath(s.simulator1.Name, crashedTargetPath2)
 
 	// Check that the crashedTargetValues were set correctly
 	getReq.Paths = targetPath1
@@ -71,11 +71,11 @@ func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 	getReq.CheckValues(s.T(), crashedTargetValue2)
 
 	// ... and the target
-	_ = s.checkTarget(ctx, s.simulator1, targetPathsForGet, true)
+	_ = s.checkTarget(ctx, s.simulator1.Name, targetPathsForGet, true)
 
 	// Crash the target simulator
 	pods, err := s.CoreV1().Pods(s.Namespace()).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("name=%s", s.simulator1),
+		LabelSelector: fmt.Sprintf("name=%s", s.simulator1.Name),
 	})
 	s.NoError(err)
 	s.Len(pods, 1)
@@ -84,21 +84,21 @@ func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 	err = s.CoreV1().Pods(s.Namespace()).Delete(ctx, pods.Items[0].Name, metav1.DeleteOptions{})
 	s.NoError(err)
 
-	s.WaitForTargetUnavailable(ctx, topo.ID(s.simulator1))
+	s.WaitForTargetUnavailable(ctx, topo.ID(s.simulator1.Name))
 
 	// Wait for it to become available
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
 
 	// Settle the race between reapplying the changes to the freshly restarted target and the subsequent checks.
 	for i := 0; i < 30; i++ {
-		if ok := s.checkTarget(ctx, s.simulator1, targetPathsForGet, false); ok {
+		if ok := s.checkTarget(ctx, s.simulator1.Name, targetPathsForGet, false); ok {
 			break
 		}
 		time.Sleep(2 * time.Second)
 	}
 
 	// Make sure the configuration has been re-applied to the target
-	_ = s.checkTarget(ctx, s.simulator1, targetPathsForGet, true)
+	_ = s.checkTarget(ctx, s.simulator1.Name, targetPathsForGet, true)
 }
 
 // Check that the crashedTargetValues are set on the target

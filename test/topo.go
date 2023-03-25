@@ -10,7 +10,7 @@ import (
 
 // NewSimulatorTargetEntity creates a topo entity for a device simulator target
 func (s *Suite) NewSimulatorTargetEntity(name string, targetType string, targetVersion string) (*topo.Object, error) {
-	return s.NewTargetEntity(name, targetType, targetVersion, fmt.Sprintf("%s:10161", name))
+	return s.NewTargetEntity(name, targetType, targetVersion, fmt.Sprintf("%s-device-simulator:11161", name))
 }
 
 // NewTargetEntity creates a topo entity with the specified target name, type, version and service address

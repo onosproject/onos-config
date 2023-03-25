@@ -58,7 +58,7 @@ func (s *TestSuite) TestSetOperations(ctx context.Context) {
 			s.NotNil(gnmiClient)
 
 			// Get path for the test value
-			targetPath := gnmiutils.GetTargetPathWithValue(s.simulator, tzPath, tzValue, proto.StringVal)
+			targetPath := gnmiutils.GetTargetPathWithValue(s.simulator.Name, tzPath, tzValue, proto.StringVal)
 			s.NotNil(targetPath)
 
 			// Set a value using gNMI client

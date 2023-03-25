@@ -41,16 +41,16 @@ const (
 // Container-path deletion is verified in treepathtest.go.
 func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
-	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
+	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 
 	// setting path-value for ../config/hostname
 	// Creating the GNMI path
-	targetPath1 := gnmiutils.GetTargetPathWithValue(s.simulator1, cfHostnamePath, cfHostnameValue, proto.StringVal)
+	targetPath1 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, cfHostnamePath, cfHostnameValue, proto.StringVal)
 
 	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{
@@ -82,7 +82,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// setting path-value for ../config/domain-name
 	// Creating the GNMI path
-	targetPath2 := gnmiutils.GetTargetPathWithValue(s.simulator1, cfDomainNamePath, cfDomainNameValue, proto.StringVal)
+	targetPath2 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, cfDomainNamePath, cfDomainNameValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -114,7 +114,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// setting path-value for ../config/login-banner
 	// Creating the GNMI path
-	targetPath3 := gnmiutils.GetTargetPathWithValue(s.simulator1, cfLoginBannerPath, cfLoginBannerValue, proto.StringVal)
+	targetPath3 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, cfLoginBannerPath, cfLoginBannerValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -146,7 +146,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// setting path-value for ../config/motd-banner
 	// Creating the GNMI path
-	targetPath4 := gnmiutils.GetTargetPathWithValue(s.simulator1, cfMotdBannerPath, cfMotdBannerValue, proto.StringVal)
+	targetPath4 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, cfMotdBannerPath, cfMotdBannerValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -178,7 +178,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// setting path-value for ../agent/config/backoff-interval banner
 	// Creating the GNMI path
-	targetPath5 := gnmiutils.GetTargetPathWithValue(s.simulator1, ofAgentConfigBOIntervalPath, ofAgentConfigBOIntervalValue, proto.IntVal)
+	targetPath5 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigBOIntervalPath, ofAgentConfigBOIntervalValue, proto.IntVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -210,7 +210,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// setting path-value for ../agent/config/datapath-id banner
 	// Creating the GNMI path
-	targetPath6 := gnmiutils.GetTargetPathWithValue(s.simulator1, ofAgentConfigDpIOPath, ofAgentConfigDpIDValue, proto.StringVal)
+	targetPath6 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigDpIOPath, ofAgentConfigDpIDValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -242,7 +242,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// setting path-value for ../agent/config/failure-mode banner
 	// Creating the GNMI path
-	targetPath7 := gnmiutils.GetTargetPathWithValue(s.simulator1, ofAgentConfigFailureModePath, ofAgentConfigFailureModeValue, proto.StringVal)
+	targetPath7 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigFailureModePath, ofAgentConfigFailureModeValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -274,7 +274,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// setting path-value for ../agent/config/inactivity-probe banner
 	// Creating the GNMI path
-	targetPath8 := gnmiutils.GetTargetPathWithValue(s.simulator1, ofAgentConfigInactivityProbePath, ofAgentConfigInactivityProbeValue, proto.IntVal)
+	targetPath8 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigInactivityProbePath, ofAgentConfigInactivityProbeValue, proto.IntVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -306,7 +306,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// setting path-value for ../agent/config/max-backoff banner
 	// Creating the GNMI path
-	targetPath9 := gnmiutils.GetTargetPathWithValue(s.simulator1, ofAgentConfigMaxBOPath, ofAgentConfigMaxBOValue, proto.IntVal)
+	targetPath9 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigMaxBOPath, ofAgentConfigMaxBOValue, proto.IntVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -337,14 +337,14 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 	simulatorGetReq.CheckValues(s.T(), ofAgentConfigMaxBOValue)
 
 	// get the root path
-	getPath1 := gnmiutils.GetTargetPath(s.simulator1, cfPath)
+	getPath1 := gnmiutils.GetTargetPath(s.simulator1.Name, cfPath)
 
 	// Remove the path we added
 	onosConfigSetReq.DeletePaths = getPath1
 	onosConfigSetReq.UpdatePaths = nil
 	onosConfigSetReq.SetOrFail(s.T())
 
-	getPath2 := gnmiutils.GetTargetPath(s.simulator1, ofAgentConfigPath)
+	getPath2 := gnmiutils.GetTargetPath(s.simulator1.Name, ofAgentConfigPath)
 
 	// Remove the path we added
 	onosConfigSetReq.DeletePaths = getPath2
@@ -360,7 +360,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 		Client:     gnmiClient,
 		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,
-		Paths:      gnmiutils.GetTargetPath(s.simulator1, "/"),
+		Paths:      gnmiutils.GetTargetPath(s.simulator1.Name, "/"),
 	}
 	paths, err := getReq.Get()
 	s.NoError(err)

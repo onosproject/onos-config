@@ -28,24 +28,24 @@ func (s *TestSuite) TestVersionOverride(ctx context.Context) {
 	)
 
 	// Change topo entity for the simulator to non-existent type/version
-	err := s.UpdateTargetTypeVersion(ctx, topo.ID(s.simulator1), "testdevice", "1.0.0")
+	err := s.UpdateTargetTypeVersion(ctx, topo.ID(s.simulator1.Name), "testdevice", "1.0.0")
 	s.NoError(err)
 
 	// Wait for config to connect to the first simulator
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Set up paths for the set
-	targets := []string{s.simulator1}
+	targets := []string{s.simulator1.Name}
 
 	targetPaths := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Formulate extensions with sync and with target version override
 	extensions := s.SyncExtension()
-	ttv, err := utils.TargetVersionOverrideExtension(configapi.TargetID(s.simulator1), "devicesim", "1.0.0")
+	ttv, err := utils.TargetVersionOverrideExtension(configapi.TargetID(s.simulator1.Name), "devicesim", "1.0.0")
 	s.NoError(err)
 	extensions = append(extensions, ttv)
 
@@ -59,7 +59,7 @@ func (s *TestSuite) TestVersionOverride(ctx context.Context) {
 	setReq.SetOrFail(s.T())
 
 	// Make sure the configuration has been applied to the target
-	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 
 	var targetGetReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,

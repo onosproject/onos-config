@@ -25,7 +25,7 @@ const (
 // TestUpdateDelete tests update and delete paths in a single GNMI request
 func (s *TestSuite) TestUpdateDelete(ctx context.Context) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
@@ -33,7 +33,7 @@ func (s *TestSuite) TestUpdateDelete(ctx context.Context) {
 
 	// Create interface tree using gNMI client
 	setNamePath := []proto.GNMIPath{
-		{TargetName: s.simulator1, Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1.Name, Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
@@ -54,18 +54,18 @@ func (s *TestSuite) TestUpdateDelete(ctx context.Context) {
 
 	// Set initial values for Enabled and Description using gNMI client
 	setInitialValuesPath := []proto.GNMIPath{
-		{TargetName: s.simulator1, Path: udtestEnabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
-		{TargetName: s.simulator1, Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1.Name, Path: udtestEnabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator1.Name, Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
 	}
 	setReq.UpdatePaths = setInitialValuesPath
 	setReq.SetOrFail(s.T())
 
 	// Update Enabled, delete Description using gNMI client
 	updateEnabledPath := []proto.GNMIPath{
-		{TargetName: s.simulator1, Path: udtestEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator1.Name, Path: udtestEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
 	deleteDescriptionPath := []proto.GNMIPath{
-		{TargetName: s.simulator1, Path: udtestDescriptionPath},
+		{TargetName: s.simulator1.Name, Path: udtestDescriptionPath},
 	}
 	setReq.UpdatePaths = updateEnabledPath
 	setReq.DeletePaths = deleteDescriptionPath
@@ -76,6 +76,6 @@ func (s *TestSuite) TestUpdateDelete(ctx context.Context) {
 	getConfigReq.CheckValues(s.T(), "false")
 
 	//  Make sure Description got removed
-	getConfigReq.Paths = gnmiutils.GetTargetPath(s.simulator1, udtestDescriptionPath)
+	getConfigReq.Paths = gnmiutils.GetTargetPath(s.simulator1.Name, udtestDescriptionPath)
 	getConfigReq.CheckValues(s.T(), "")
 }

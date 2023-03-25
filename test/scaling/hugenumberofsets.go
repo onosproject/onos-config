@@ -37,7 +37,7 @@ func ifDescription(ifIdx int) string {
 
 func (s *TestSuite) testHugeNumberOfSets(ctx context.Context, encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
@@ -53,12 +53,12 @@ func (s *TestSuite) testHugeNumberOfSets(ctx context.Context, encoding gnmiapi.E
 	for i := 0; i < iterateCount; i++ {
 
 		setReq.UpdatePaths = []proto.GNMIPath{
-			{TargetName: s.simulator, Path: ifPath(i, configNamePath), PathDataValue: fmt.Sprintf("if-%d", i), PathDataType: proto.StringVal},
-			{TargetName: s.simulator, Path: ifPath(i, descriptionPath), PathDataValue: ifDescription(i), PathDataType: proto.StringVal},
-			{TargetName: s.simulator, Path: ifPath(i, enabledPath), PathDataValue: "false", PathDataType: proto.BoolVal},
-			{TargetName: s.simulator, Path: ifPath(i, mtuPath), PathDataValue: strconv.FormatInt(int64(i), 10), PathDataType: proto.IntVal},
-			{TargetName: s.simulator, Path: ifPath(i, holdTimeUpPath), PathDataValue: strconv.FormatInt(int64(i*1000), 10), PathDataType: proto.IntVal},
-			{TargetName: s.simulator, Path: ifPath(i, holdTimeDownPath), PathDataValue: strconv.FormatInt(int64(i*1000+1), 10), PathDataType: proto.IntVal},
+			{TargetName: s.simulator.Name, Path: ifPath(i, configNamePath), PathDataValue: fmt.Sprintf("if-%d", i), PathDataType: proto.StringVal},
+			{TargetName: s.simulator.Name, Path: ifPath(i, descriptionPath), PathDataValue: ifDescription(i), PathDataType: proto.StringVal},
+			{TargetName: s.simulator.Name, Path: ifPath(i, enabledPath), PathDataValue: "false", PathDataType: proto.BoolVal},
+			{TargetName: s.simulator.Name, Path: ifPath(i, mtuPath), PathDataValue: strconv.FormatInt(int64(i), 10), PathDataType: proto.IntVal},
+			{TargetName: s.simulator.Name, Path: ifPath(i, holdTimeUpPath), PathDataValue: strconv.FormatInt(int64(i*1000), 10), PathDataType: proto.IntVal},
+			{TargetName: s.simulator.Name, Path: ifPath(i, holdTimeDownPath), PathDataValue: strconv.FormatInt(int64(i*1000+1), 10), PathDataType: proto.IntVal},
 		}
 
 		setReq.SetOrFail(s.T())
@@ -72,7 +72,7 @@ func (s *TestSuite) testHugeNumberOfSets(ctx context.Context, encoding gnmiapi.E
 
 	// Check that the name value was set correctly
 	getConfigReq.Paths = []proto.GNMIPath{
-		{TargetName: s.simulator, Path: "/interfaces/interface[name=*]"},
+		{TargetName: s.simulator.Name, Path: "/interfaces/interface[name=*]"},
 	}
 	getConfigReq.CountValues(s.T(), iterateCount*6)
 }

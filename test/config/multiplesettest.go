@@ -24,19 +24,19 @@ func (s *TestSuite) testMultipleSet(ctx context.Context, encoding gnmiapi.Encodi
 	generateTimezoneName()
 
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
-	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
+	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 
 	for i := 0; i < 10; i++ {
 
 		msValue := generateTimezoneName()
 
 		// Set a value using gNMI client
-		targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1, tzPath, msValue, proto.StringVal)
+		targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, tzPath, msValue, proto.StringVal)
 		var setReq = &gnmiutils.SetRequest{
 			Ctx:         ctx,
 			Client:      gnmiClient,

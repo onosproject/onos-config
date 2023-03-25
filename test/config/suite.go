@@ -5,6 +5,7 @@
 package config
 
 import (
+	"github.com/onosproject/helmit/pkg/helm"
 	helmit "github.com/onosproject/helmit/pkg/test"
 	"github.com/onosproject/onos-config/test"
 	"golang.org/x/net/context"
@@ -13,9 +14,9 @@ import (
 // TestSuite is the onos-config GNMI test suite
 type TestSuite struct {
 	test.Suite
-	replicaCount int64
-	simulator1   string
-	simulator2   string
+	umbrella   *helm.Release
+	simulator1 *helm.Release
+	simulator2 *helm.Release
 }
 
 // SetupSuite sets up the onos-config GNMI test suite
@@ -26,12 +27,12 @@ func (s *TestSuite) SetupSuite(ctx context.Context) {
 		Wait().
 		Get(ctx)
 	s.NoError(err)
-	s.replicaCount = release.Get("onos-config.replicaCount").Int64()
+	s.umbrella = release
 }
 
 // TearDownSuite tears down the test suite
 func (s *TestSuite) TearDownSuite(ctx context.Context) {
-	s.NoError(s.Helm().Uninstall("onos-umbrella").Do(ctx))
+	s.NoError(s.Helm().Uninstall(s.umbrella.Name).Do(ctx))
 }
 
 func (s *TestSuite) SetupTest(ctx context.Context) {
@@ -41,7 +42,7 @@ func (s *TestSuite) SetupTest(ctx context.Context) {
 }
 
 func (s *TestSuite) TearDownTest(ctx context.Context) {
-	s.TearDownSimulators(ctx, s.simulator1, s.simulator2)
+	s.TearDownSimulators(ctx, s.simulator1.Name, s.simulator2.Name)
 }
 
 var _ helmit.SetupSuite = (*TestSuite)(nil)

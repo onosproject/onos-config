@@ -195,7 +195,7 @@ func (s *TestSuite) TestGetOperations(ctx context.Context) {
 		},
 	}
 
-	s.setUpInterfaces(ctx, s.simulator, s.keycloakPassword)
+	s.setUpInterfaces(ctx, s.simulator.Name, s.keycloakPassword)
 
 	for name, testCase := range testCases {
 		s.Run(name, func() {
@@ -212,7 +212,7 @@ func (s *TestSuite) TestGetOperations(ctx context.Context) {
 
 			// Get path for the test value
 			targetPath := []proto.GNMIPath{
-				{TargetName: s.simulator, Path: descriptionPath, PathDataValue: testCase.interfaceName, PathDataType: proto.StringVal},
+				{TargetName: s.simulator.Name, Path: descriptionPath, PathDataValue: testCase.interfaceName, PathDataType: proto.StringVal},
 			}
 
 			// Check that the value can be read via get

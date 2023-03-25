@@ -27,13 +27,13 @@ func (s *TestSuite) TestPrefixPathSet(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the targets
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
-	gnmiTarget := s.simulator1
+	gnmiTarget := s.simulator1.Name
 
 	testCases := []struct {
 		name          string
@@ -166,10 +166,10 @@ func (s *TestSuite) TestPrefixPathSet(ctx context.Context) {
 			onosConfigGetReq.CheckValues(s.T(), testCase.values...)
 
 			// Check that the value was set correctly on the target
-			simClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
+			simClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 			targets := make([]string, 0)
 			for range testCase.fullPaths {
-				targets = append(targets, s.simulator1)
+				targets = append(targets, s.simulator1.Name)
 			}
 			simPaths := gnmiutils.GetTargetPaths(targets, testCase.fullPaths)
 

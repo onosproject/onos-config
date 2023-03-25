@@ -24,7 +24,7 @@ func (s *TestSuite) TestGetState(ctx context.Context) {
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
 
 	// Get the GNMI path
-	targetPaths := gnmiutils.GetTargetPathsWithValues([]string{s.simulator1, s.simulator1}, []string{statePath1, statePath2}, []string{stateValue1, stateValue2})
+	targetPaths := gnmiutils.GetTargetPathsWithValues([]string{s.simulator1.Name, s.simulator1.Name}, []string{statePath1, statePath2}, []string{stateValue1, stateValue2})
 
 	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{

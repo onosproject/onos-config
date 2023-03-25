@@ -26,13 +26,13 @@ const (
 // TestGetOperationAfterNodeRestart tests a Get operation after restarting the onos-config node
 func (s *TestSuite) TestGetOperationAfterNodeRestart(ctx context.Context) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for onos-config requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
 
-	targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1, restartTzPath, restartTzValue, proto.StringVal)
+	targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, restartTzPath, restartTzValue, proto.StringVal)
 
 	// Set a value using onos-config
 
@@ -70,7 +70,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(ctx context.Context) {
 	getReq.CheckValues(s.T(), restartTzValue)
 
 	// Check that the value is set on the target
-	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetGnmiClient,
@@ -85,11 +85,11 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(ctx context.Context) {
 	// Make a GNMI client to use for onos-config requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
 
-	tzPath := gnmiutils.GetTargetPathWithValue(s.simulator1, restartTzPath, restartTzValue, proto.StringVal)
-	loginBannerPath := gnmiutils.GetTargetPathWithValue(s.simulator1, restartLoginBannerPath, restartLoginBannerValue, proto.StringVal)
-	motdBannerPath := gnmiutils.GetTargetPathWithValue(s.simulator1, restartMotdBannerPath, restartMotdBannerValue, proto.StringVal)
+	tzPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, restartTzPath, restartTzValue, proto.StringVal)
+	loginBannerPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, restartLoginBannerPath, restartLoginBannerValue, proto.StringVal)
+	motdBannerPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, restartMotdBannerPath, restartMotdBannerValue, proto.StringVal)
 
-	targets := []string{s.simulator1, s.simulator1}
+	targets := []string{s.simulator1.Name, s.simulator1.Name}
 	paths := []string{restartLoginBannerPath, restartMotdBannerPath}
 	values := []string{restartLoginBannerValue, restartMotdBannerValue}
 
@@ -133,7 +133,7 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(ctx context.Context) {
 	getConfigReq.CheckValues(s.T(), restartMotdBannerValue)
 
 	// Check that the values are set on the target
-	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetGnmiClient,

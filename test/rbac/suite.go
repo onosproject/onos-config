@@ -6,6 +6,7 @@ package rbac
 
 import (
 	"context"
+	"github.com/onosproject/helmit/pkg/helm"
 	helmit "github.com/onosproject/helmit/pkg/test"
 	"github.com/onosproject/onos-config/test"
 	"github.com/onosproject/onos-test/pkg/onostest"
@@ -16,7 +17,8 @@ import (
 type TestSuite struct {
 	test.Suite
 	keycloakPassword string
-	simulator        string
+	umbrella         *helm.Release
+	simulator        *helm.Release
 }
 
 func (s *TestSuite) getKeycloakPassword(ctx context.Context) string {
@@ -29,18 +31,19 @@ func (s *TestSuite) getKeycloakPassword(ctx context.Context) string {
 // SetupSuite sets up the onos-config RBAC test suite
 func (s *TestSuite) SetupSuite(ctx context.Context) {
 	s.keycloakPassword = s.getKeycloakPassword(ctx)
-	err := s.InstallUmbrella().
+	release, err := s.InstallUmbrella().
 		Set("onos-config.openidc.issuer", "https://keycloak-dev.onlab.us/auth/realms/master").
 		Set("onos-config.openpolicyagent.regoConfigMap", "onos-umbrella-opa-rbac").
 		Set("onos-config.openpolicyagent.enabled", true).
 		Wait().
-		Do(ctx)
+		Get(ctx)
 	s.NoError(err)
+	s.umbrella = release
 }
 
 // TearDownSuite tears down the test suite
 func (s *TestSuite) TearDownSuite(ctx context.Context) {
-	s.NoError(s.Helm().Uninstall("onos-umbrella").Do(ctx))
+	s.NoError(s.Helm().Uninstall(s.umbrella.Name).Do(ctx))
 }
 
 func (s *TestSuite) SetupTest(ctx context.Context) {
@@ -48,7 +51,7 @@ func (s *TestSuite) SetupTest(ctx context.Context) {
 }
 
 func (s *TestSuite) TearDownTest(ctx context.Context) {
-	s.TearDownSimulator(ctx, s.simulator)
+	s.TearDownSimulator(ctx, s.simulator.Name)
 }
 
 var _ helmit.SetupSuite = (*TestSuite)(nil)

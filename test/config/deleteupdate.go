@@ -22,7 +22,7 @@ const (
 // TestDeleteUpdate tests update of a path after a previous deletion of a parent path
 func (s *TestSuite) TestDeleteUpdate(ctx context.Context) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
@@ -30,7 +30,7 @@ func (s *TestSuite) TestDeleteUpdate(ctx context.Context) {
 
 	// Create interface tree using gNMI client
 	setNamePath := []proto.GNMIPath{
-		{TargetName: s.simulator1, Path: dutestNamePath, PathDataValue: dutestNameValue, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1.Name, Path: dutestNamePath, PathDataValue: dutestNameValue, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
@@ -51,14 +51,14 @@ func (s *TestSuite) TestDeleteUpdate(ctx context.Context) {
 	getConfigReq.CheckValues(s.T(), dutestNameValue)
 
 	deleteAllPath := []proto.GNMIPath{
-		{TargetName: s.simulator1, Path: dutestRootPath},
+		{TargetName: s.simulator1.Name, Path: dutestRootPath},
 	}
 	setReq.UpdatePaths = nil
 	setReq.DeletePaths = deleteAllPath
 	setReq.SetOrFail(s.T())
 
 	//  Make sure everything got removed
-	getConfigReq.Paths = gnmiutils.GetTargetPath(s.simulator1, dutestRootPath)
+	getConfigReq.Paths = gnmiutils.GetTargetPath(s.simulator1.Name, dutestRootPath)
 	getConfigReq.CheckValues(s.T(), "")
 
 	// Now recreate the same interface tree....

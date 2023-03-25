@@ -24,17 +24,17 @@ const (
 
 func (s *TestSuite) testTreePath(ctx context.Context, encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
-	getPath := gnmiutils.GetTargetPath(s.simulator1, newRootEnabledPath)
+	getPath := gnmiutils.GetTargetPath(s.simulator1.Name, newRootEnabledPath)
 
 	// Set name of new root using gNMI client
 	setNamePath := []proto.GNMIPath{
-		{TargetName: s.simulator1, Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1.Name, Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
@@ -46,8 +46,8 @@ func (s *TestSuite) testTreePath(ctx context.Context, encoding gnmiapi.Encoding)
 
 	// Set values using gNMI client
 	setPath := []proto.GNMIPath{
-		{TargetName: s.simulator1, Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
-		{TargetName: s.simulator1, Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator1.Name, Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1.Name, Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
 	setReq.UpdatePaths = setPath
 	setReq.SetOrFail(s.T())

@@ -23,13 +23,13 @@ func (s *TestSuite) TestDeleteAndRollback(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the target
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Set values
-	var targetPath = gnmiutils.GetTargetPathWithValue(s.simulator1, newPath, newValue, proto.StringVal)
+	var targetPath = gnmiutils.GetTargetPathWithValue(s.simulator1.Name, newPath, newValue, proto.StringVal)
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
@@ -49,7 +49,7 @@ func (s *TestSuite) TestDeleteAndRollback(ctx context.Context) {
 	getConfigReq.CheckValues(s.T(), newValue)
 
 	// Check that the values are set on the target
-	target1GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
+	target1GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   target1GnmiClient,

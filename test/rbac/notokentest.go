@@ -23,7 +23,7 @@ func (s *TestSuite) TestNoToken(ctx context.Context) {
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Try to fetch a value from the GNMI client
-	devicePath := gnmiutils.GetTargetPathWithValue(s.simulator, tzPath, tzValue, proto.StringVal)
+	devicePath := gnmiutils.GetTargetPathWithValue(s.simulator.Name, tzPath, tzValue, proto.StringVal)
 	var onosConfigGetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   gnmiClient,

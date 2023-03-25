@@ -16,9 +16,9 @@ func (s *TestSuite) TestSubscribePoll(ctx context.Context) {
 	generateTimezoneName()
 
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
-	ready = s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator2))
+	ready = s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator2.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
@@ -30,10 +30,10 @@ func (s *TestSuite) TestSubscribePoll(ctx context.Context) {
 				Prefix: &gnmiapi.Path{Target: "", Elem: []*gnmiapi.PathElem{}},
 				Mode:   gnmiapi.SubscriptionList_POLL,
 				Subscription: []*gnmiapi.Subscription{{
-					Path: getPath(s.simulator1, "system", "state", "current-datetime"),
+					Path: getPath(s.simulator1.Name, "system", "state", "current-datetime"),
 					Mode: gnmiapi.SubscriptionMode_SAMPLE,
 				}, {
-					Path: getPath(s.simulator2, "system", "state", "current-datetime"),
+					Path: getPath(s.simulator2.Name, "system", "state", "current-datetime"),
 					Mode: gnmiapi.SubscriptionMode_SAMPLE,
 				}},
 				Encoding:    gnmiapi.Encoding_PROTO,

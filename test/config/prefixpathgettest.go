@@ -29,13 +29,13 @@ func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the targets
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
-	gnmiTarget := s.simulator1
+	gnmiTarget := s.simulator1.Name
 
 	testCases := []struct {
 		name         string
@@ -121,7 +121,7 @@ func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
 	}
 
 	// Set a new value for the time zone using onos-config
-	fullTargetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1, fullTzPath, tzValue, proto.StringVal)
+	fullTargetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, fullTzPath, tzValue, proto.StringVal)
 	var onosConfigSetReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,
@@ -132,7 +132,7 @@ func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
 	onosConfigSetReq.SetOrFail(s.T())
 
 	// set a value for the MOTD using onos-config
-	motdFullTargetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1, fullMotdPath, motdValue, proto.StringVal)
+	motdFullTargetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, fullMotdPath, motdValue, proto.StringVal)
 	var motdOnosConfigSetReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      gnmiClient,

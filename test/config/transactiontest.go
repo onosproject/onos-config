@@ -32,13 +32,13 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 	)
 
 	// Wait for config to connect to the first simulator
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1))
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
 
 	// Wait for config to connect to the second simulator
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2))
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2.Name))
 
 	// Set up paths for the two targets
-	targets := []string{s.simulator1, s.simulator2}
+	targets := []string{s.simulator1.Name, s.simulator2.Name}
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Make a GNMI client to use for requests
@@ -62,8 +62,8 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 		Encoding:   encoding,
 		Extensions: s.SyncExtension(),
 	}
-	targetPath1 := gnmiutils.GetTargetPath(s.simulator1, path1)
-	targetPath2 := gnmiutils.GetTargetPath(s.simulator2, path2)
+	targetPath1 := gnmiutils.GetTargetPath(s.simulator1.Name, path1)
+	targetPath2 := gnmiutils.GetTargetPath(s.simulator2.Name, path2)
 
 	getReq.Paths = targetPath1
 	getReq.CheckValues(s.T(), initValue1)
@@ -82,8 +82,8 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 	getReq.CheckValues(s.T(), value2)
 
 	// Check that the values are set on the targets
-	target1GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1)
-	target2GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator2)
+	target1GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
+	target2GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator2.Name)
 
 	var target1GetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,

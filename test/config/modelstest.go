@@ -24,7 +24,7 @@ func (s *TestSuite) TestModels(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1))
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Data to run the test cases
@@ -56,7 +56,7 @@ func (s *TestSuite) TestModels(ctx context.Context) {
 			expectedError := thisTestCase.expectedError
 			s.T().Logf("testing %q", description)
 
-			setResult := gnmiutils.GetTargetPathWithValue(s.simulator1, path, value, valueType)
+			setResult := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, path, value, valueType)
 			var setReq = &gnmiutils.SetRequest{
 				Ctx:         ctx,
 				Client:      gnmiClient,
