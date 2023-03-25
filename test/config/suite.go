@@ -23,6 +23,7 @@ func (s *TestSuite) SetupSuite(ctx context.Context) {
 	release, err := s.InstallUmbrella().
 		Set("import.onos-cli.enabled", false). // not needed - can be enabled by adding '--set onos-umbrella.import.onos-cli.enabled=true' to helmit args for investigations
 		Set("onos-config.gnmiSet.sizeLimit", 0).
+		Wait().
 		Get(ctx)
 	s.NoError(err)
 	s.replicaCount = release.Get("onos-config.replicaCount").Int64()
