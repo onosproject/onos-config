@@ -6,9 +6,46 @@
 package gnmi
 
 import (
+	"crypto/tls"
 	protoutils "github.com/onosproject/onos-config/benchmark/utils/proto"
+	"github.com/onosproject/onos-lib-go/pkg/certs"
+	gnmiclient "github.com/openconfig/gnmi/client"
 	"strings"
+	"time"
 )
+
+const (
+	onosConfigName = "onos-config"
+	onosConfigPort = "5150"
+	onosConfig     = onosConfigName + ":" + onosConfigPort
+)
+
+// GetOnosConfigDestination returns a gnmi Destination for the onos-config service
+func GetOnosConfigDestination() (gnmiclient.Destination, error) {
+	creds, err := getClientCredentials()
+	if err != nil {
+		return gnmiclient.Destination{}, err
+	}
+
+	return gnmiclient.Destination{
+		Addrs:   []string{onosConfig},
+		Target:  onosConfigName,
+		TLS:     creds,
+		Timeout: 10 * time.Second,
+	}, nil
+}
+
+// getClientCredentials returns the credentials for a service client
+func getClientCredentials() (*tls.Config, error) {
+	cert, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		Certificates:       []tls.Certificate{cert},
+		InsecureSkipVerify: true,
+	}, nil
+}
 
 // GetTargetPath creates a target path
 func GetTargetPath(target string, path string) []protoutils.GNMIPath {
