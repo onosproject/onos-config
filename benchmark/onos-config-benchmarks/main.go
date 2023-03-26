@@ -6,12 +6,12 @@ package main
 
 import (
 	"github.com/onosproject/helmit/pkg/benchmark"
-	"github.com/onosproject/helmit/pkg/registry"
 	"github.com/onosproject/onos-config/benchmark/gnmi"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 func main() {
-	registry.RegisterBenchmarkSuite("gnmi", &gnmi.BenchmarkSuite{})
-	benchmark.Main()
+	benchmark.Main(map[string]benchmark.BenchmarkingSuite{
+		"gnmi": new(gnmi.BenchmarkSuite),
+	})
 }

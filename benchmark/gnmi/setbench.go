@@ -6,18 +6,15 @@ package gnmi
 
 import (
 	"context"
-	"github.com/onosproject/helmit/pkg/benchmark"
-	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-config/test/utils/proto"
+	petname "github.com/dustinkirkland/golang-petname"
+	gnmiutils "github.com/onosproject/onos-config/benchmark/utils/gnmi"
+	"github.com/onosproject/onos-config/benchmark/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"time"
 )
 
 // BenchmarkSet tests set of GNMI paths
-func (s *BenchmarkSuite) BenchmarkSet(b *benchmark.Benchmark) error {
-	devicePath := gnmiutils.GetTargetPathWithValue(s.simulator.Name(), "/system/config/motd-banner", s.value.Next().String(), proto.StringVal)
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+func (s *BenchmarkSuite) BenchmarkSet(ctx context.Context) error {
+	devicePath := gnmiutils.GetTargetPathWithValue(s.simulator.Name, "/system/config/motd-banner", petname.Generate(2, " "), proto.StringVal)
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
 		Client:      s.client,
