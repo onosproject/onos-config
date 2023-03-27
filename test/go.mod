@@ -8,7 +8,7 @@ require (
 	github.com/divan/num2words v0.0.0-20170904212200-57dba452f942
 	github.com/dustinkirkland/golang-petname v0.0.0-20191129215211-8e5a1ed0cff0
 	github.com/golang/protobuf v1.5.2
-	github.com/onosproject/helmit v0.6.21-0.20230326055114-df0f10111644
+	github.com/onosproject/helmit v0.6.21-0.20230327065826-c5d10717523b
 	github.com/onosproject/onos-api/go v0.10.5
 	github.com/onosproject/onos-config v0.11.5-0.20230131003943-768028c7afb7
 	github.com/onosproject/onos-lib-go v0.9.5
@@ -16,12 +16,11 @@ require (
 	github.com/onosproject/onos-test v0.6.6
 	github.com/openconfig/gnmi v0.0.0-20220920173703-480bf53a74d2
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/net v0.5.0
+	golang.org/x/net v0.8.0
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.1
 	k8s.io/apimachinery v0.26.0
-	k8s.io/client-go v0.26.0
 )
 
 require (
@@ -155,9 +154,9 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/term v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/term v0.6.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21 // indirect
@@ -170,6 +169,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.26.0 // indirect
 	k8s.io/apiserver v0.26.0 // indirect
 	k8s.io/cli-runtime v0.26.0 // indirect
+	k8s.io/client-go v0.26.0 // indirect
 	k8s.io/component-base v0.26.0 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect

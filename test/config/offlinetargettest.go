@@ -24,7 +24,7 @@ const (
 // TestOfflineTarget tests set/query of a single GNMI path to a single target that is initially not connected to onos-config
 func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
 	// create a target entity in topo
-	s.createOfflineTarget(offlineTargetName, "devicesim", "1.0.0", offlineTargetName+"-device-simulator:11161")
+	s.createOfflineTarget(ctx, offlineTargetName, "devicesim", "1.0.0", offlineTargetName+"-device-simulator:11161")
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
@@ -44,7 +44,7 @@ func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
 	defer s.TearDownSimulator(ctx, offlineTargetName)
 
 	// Wait for config to connect to the target
-	s.WaitForTargetAvailable(ctx, topoapi.ID(offlineTargetName))
+	s.WaitForTargetAvailable(ctx, offlineTargetName)
 	var getConfigReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
@@ -65,13 +65,13 @@ func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
 	getTargetReq.CheckValues(s.T(), modValue)
 }
 
-func (s *TestSuite) createOfflineTarget(targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {
+func (s *TestSuite) createOfflineTarget(ctx context.Context, targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {
 	topoClient, err := s.NewTopoClient()
 	s.NotNil(topoClient)
 	s.Nil(err)
 
 	newTarget, err := s.NewTargetEntity(string(targetID), targetType, targetVersion, targetAddress)
 	s.NoError(err)
-	err = topoClient.Create(context.Background(), newTarget)
+	err = topoClient.Create(ctx, newTarget)
 	s.NoError(err)
 }
