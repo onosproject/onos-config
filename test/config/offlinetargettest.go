@@ -44,7 +44,7 @@ func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
 	defer s.TearDownSimulator(ctx, offlineTargetName)
 
 	// Wait for config to connect to the target
-	s.WaitForTargetAvailable(ctx, offlineTargetName)
+	s.True(s.WaitForTargetAvailable(ctx, offlineTargetName))
 	var getConfigReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
