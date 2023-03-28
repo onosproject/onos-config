@@ -575,8 +575,8 @@ github.com/nelsam/hel/v2 v2.3.3/go.mod h1:1ZTGfU2PFTOd5mx22i5O0Lc2GY933lQ2wb/ggy
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6HuIJcUGPhkA7kY=
-github.com/onosproject/helmit v0.6.21-0.20230327065826-c5d10717523b h1:9ZDMcQ1GIapFYxiD/atZuoT8u+2WUvjHe0ypQpVn3Tk=
-github.com/onosproject/helmit v0.6.21-0.20230327065826-c5d10717523b/go.mod h1:SO9XK1T3gskgf3aVwg2ys/v6DFkamAF/QzSX995bzPU=
+github.com/onosproject/helmit v1.0.0 h1:LSiOvVmLvQ0eSCTyGMwUlDU6yGgHwvhNFITo7GiES7o=
+github.com/onosproject/helmit v1.0.0/go.mod h1:SO9XK1T3gskgf3aVwg2ys/v6DFkamAF/QzSX995bzPU=
 github.com/onosproject/onos-api/go v0.10.5 h1:zqcbXvkggxB7L+gQWPV2mP0imlp47IX58DKBaWz7I20=
 github.com/onosproject/onos-api/go v0.10.5/go.mod h1:R882+8UcxQBLpCopnnbBnemXtJ77UXnL2I1y5yHbq10=
 github.com/onosproject/onos-config v0.11.5-0.20230131003943-768028c7afb7 h1:+RlD4rw+KiHGH/7wQtH7TaJG8xUyYZrkdiKYcf3LbaM=

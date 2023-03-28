@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/dustinkirkland/golang-petname v0.0.0-20191129215211-8e5a1ed0cff0
 	github.com/golang/protobuf v1.5.2
-	github.com/onosproject/helmit v0.6.21-0.20230327065826-c5d10717523b
+	github.com/onosproject/helmit v1.0.0
 	github.com/onosproject/onos-api/go v0.10.5
 	github.com/onosproject/onos-config v0.11.5-0.20230131003943-768028c7afb7
 	github.com/onosproject/onos-lib-go v0.9.5
