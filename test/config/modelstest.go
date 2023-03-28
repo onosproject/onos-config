@@ -5,19 +5,17 @@
 package config
 
 import (
+	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"testing"
-	"time"
-
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/stretchr/testify/assert"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/status"
 )
 
 // TestModels tests GNMI operation involving unknown or illegal paths
-func (s *TestSuite) TestModels(t *testing.T) {
+func (s *TestSuite) TestModels(ctx context.Context) {
 	const (
 		unknownPath       = "/system/config/no-such-path"
 		ntpPath           = "/system/ntp/state/enable-ntp-auth"
@@ -25,15 +23,9 @@ func (s *TestSuite) TestModels(t *testing.T) {
 		clockTimeZonePath = "/system/clock/config/timezone-name"
 	)
 
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
 	// Wait for config to connect to the target
-	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
-	assert.True(t, ready)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	s.True(ready)
 
 	// Data to run the test cases
 	testCases := []struct {
@@ -51,32 +43,31 @@ func (s *TestSuite) TestModels(t *testing.T) {
 	}
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Run the test cases
 	for _, testCase := range testCases {
 		thisTestCase := testCase
-		t.Run(thisTestCase.description,
-			func(t *testing.T) {
-				description := thisTestCase.description
-				path := thisTestCase.path
-				value := thisTestCase.value
-				valueType := thisTestCase.valueType
-				expectedError := thisTestCase.expectedError
-				t.Logf("testing %q", description)
+		s.Run(thisTestCase.description, func() {
+			description := thisTestCase.description
+			path := thisTestCase.path
+			value := thisTestCase.value
+			valueType := thisTestCase.valueType
+			expectedError := thisTestCase.expectedError
+			s.T().Logf("testing %q", description)
 
-				setResult := gnmiutils.GetTargetPathWithValue(simulator.Name(), path, value, valueType)
-				var setReq = &gnmiutils.SetRequest{
-					Ctx:         ctx,
-					Client:      gnmiClient,
-					Extensions:  gnmiutils.SyncExtension(t),
-					Encoding:    gnmiapi.Encoding_PROTO,
-					UpdatePaths: setResult,
-				}
-				msg, _, err := setReq.Set()
-				assert.NotNil(t, err, "Set operation for %s does not generate an error", description)
-				assert.Contains(t, status.Convert(err).Message(), expectedError,
-					"set operation for %s generates wrong error %s", description, msg)
-			})
+			setResult := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, path, value, valueType)
+			var setReq = &gnmiutils.SetRequest{
+				Ctx:         ctx,
+				Client:      gnmiClient,
+				Extensions:  s.SyncExtension(),
+				Encoding:    gnmiapi.Encoding_PROTO,
+				UpdatePaths: setResult,
+			}
+			msg, _, err := setReq.Set()
+			s.NotNil(err, "Set operation for %s does not generate an error", description)
+			s.Contains(status.Convert(err).Message(), expectedError,
+				"set operation for %s generates wrong error %s", description, msg)
+		})
 	}
 }

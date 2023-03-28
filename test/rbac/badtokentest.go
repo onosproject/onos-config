@@ -6,17 +6,15 @@ package rbac
 
 import (
 	"context"
-	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
-	"testing"
-
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-config/test/utils/rbac"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 // TestBadTokens tests access to a protected API with no access token supplied
-func (s *TestSuite) TestBadTokens(t *testing.T) {
+func (s *TestSuite) TestBadTokens(ctx context.Context) {
 	const (
 		tzValue      = "Europe/Dublin"
 		tzPath       = "/system/clock/config/timezone-name"
@@ -78,50 +76,41 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 		},
 	}
 
-	// Create a simulated target
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
-	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	devicePath := gnmiutils.GetTargetPathWithValue(s.simulator.Name, tzPath, tzValue, proto.StringVal)
 
 	// Run the test cases
 	for testCaseIndex := range testCases {
 		testCase := testCases[testCaseIndex]
-		t.Run(testCase.name,
-			func(t *testing.T) {
+		s.Run(testCase.name, func() {
+			token, err := rbac.FetchATokenViaKeyCloak(openIDIssuer, testCase.username, testCase.password)
+			if testCase.expectedClientError != "" {
+				s.Contains(err.Error(), testCase.expectedClientError)
+				return
+			}
+			s.NoError(err)
+			s.NotNil(token)
 
-				token, err := rbac.FetchATokenViaKeyCloak(openIDIssuer, testCase.username, testCase.password)
-				if testCase.expectedClientError != "" {
-					assert.Contains(t, err.Error(), testCase.expectedClientError)
-					return
+			// Make a GNMI client to use for requests
+			ctx := rbac.GetBearerContext(ctx, testCase.token)
+			gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+
+			// Try to fetch a value from the GNMI client
+			var onosConfigGetReq = &gnmiutils.GetRequest{
+				Ctx:      ctx,
+				Client:   gnmiClient,
+				Paths:    devicePath,
+				Encoding: gnmiapi.Encoding_PROTO,
+				DataType: gnmiapi.GetRequest_CONFIG,
+			}
+			_, err = onosConfigGetReq.Get()
+
+			if testCase.expectedGetError != "" {
+				// An error is expected
+				s.Error(err)
+				if err != nil {
+					s.Contains(err.Error(), testCase.expectedGetError)
 				}
-				assert.NoError(t, err)
-				assert.NotNil(t, token)
-
-				// Make a GNMI client to use for requests
-				ctx := rbac.GetBearerContext(context.Background(), testCase.token)
-				gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
-
-				// Try to fetch a value from the GNMI client
-				var onosConfigGetReq = &gnmiutils.GetRequest{
-					Ctx:      ctx,
-					Client:   gnmiClient,
-					Paths:    devicePath,
-					Encoding: gnmiapi.Encoding_PROTO,
-					DataType: gnmiapi.GetRequest_CONFIG,
-				}
-				_, err = onosConfigGetReq.Get()
-
-				if testCase.expectedGetError != "" {
-					// An error is expected
-					assert.Error(t, err)
-					if err != nil {
-						assert.Contains(t, err.Error(), testCase.expectedGetError)
-					}
-				}
-			},
-		)
+			}
+		})
 	}
 }

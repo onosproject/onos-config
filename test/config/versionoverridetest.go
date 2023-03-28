@@ -5,20 +5,18 @@
 package config
 
 import (
+	"context"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	"github.com/onosproject/onos-config/pkg/utils"
-	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"testing"
-	"time"
-
 	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/test"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/stretchr/testify/assert"
 )
 
 // TestVersionOverride tests using version override extension
-func (s *TestSuite) TestVersionOverride(t *testing.T) {
+func (s *TestSuite) TestVersionOverride(ctx context.Context) {
 	const (
 		value1 = "test-motd-banner"
 		path1  = "/system/config/motd-banner"
@@ -29,33 +27,26 @@ func (s *TestSuite) TestVersionOverride(t *testing.T) {
 		values = []string{value1}
 	)
 
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create the first target simulator
-	target := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, target)
-
 	// Change topo entity for the simulator to non-existent type/version
-	err := gnmiutils.UpdateTargetTypeVersion(ctx, topo.ID(target.Name()), "testdevice", "1.0.0")
-	assert.NoError(t, err)
+	err := s.UpdateTargetTypeVersion(ctx, topo.ID(s.simulator1.Name), "testdevice", "1.0.0")
+	s.NoError(err)
 
 	// Wait for config to connect to the first simulator
-	gnmiutils.WaitForTargetAvailable(ctx, t, topo.ID(target.Name()), time.Minute)
+	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	// Set up paths for the set
-	targets := []string{target.Name()}
+	targets := []string{s.simulator1.Name}
 
 	targetPaths := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Formulate extensions with sync and with target version override
-	extensions := gnmiutils.SyncExtension(t)
-	ttv, err := utils.TargetVersionOverrideExtension(configapi.TargetID(target.Name()), "devicesim", "1.0.0")
-	assert.NoError(t, err)
+	extensions := s.SyncExtension()
+	ttv, err := utils.TargetVersionOverrideExtension(configapi.TargetID(s.simulator1.Name), "devicesim", "1.0.0")
+	s.NoError(err)
 	extensions = append(extensions, ttv)
 
 	var setReq = &gnmiutils.SetRequest{
@@ -65,19 +56,19 @@ func (s *TestSuite) TestVersionOverride(t *testing.T) {
 		Extensions:  extensions,
 		UpdatePaths: targetPaths,
 	}
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// Make sure the configuration has been applied to the target
-	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, target)
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 
 	var targetGetReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     targetGnmiClient,
 		Encoding:   gnmiapi.Encoding_JSON,
-		Extensions: gnmiutils.SyncExtension(t),
+		Extensions: s.SyncExtension(),
 	}
 	targetGetReq.Paths = targetPathsForGet
-	targetGetReq.CheckValues(t, value1)
+	targetGetReq.CheckValues(s.T(), value1)
 
 	// Make sure the configuration has been received by onos-config
 	var getReq = &gnmiutils.GetRequest{
@@ -87,5 +78,5 @@ func (s *TestSuite) TestVersionOverride(t *testing.T) {
 		Extensions: extensions,
 	}
 	getReq.Paths = targetPathsForGet
-	getReq.CheckValues(t, value1)
+	getReq.CheckValues(s.T(), value1)
 }

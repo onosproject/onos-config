@@ -7,39 +7,27 @@ package config
 import (
 	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	baseClient "github.com/openconfig/gnmi/client"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
-	"testing"
-	"time"
 )
 
 var log = logging.GetLogger("northbound", "gnmi")
 
 // TestSubscribe tests subscribe NB API
-func (s *TestSuite) TestSubscribe(t *testing.T) {
+func (s *TestSuite) TestSubscribe(ctx context.Context) {
 	generateTimezoneName()
 
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create two simulated devices
-	target1 := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, target1)
-	target2 := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, target2)
-
 	// Wait for config to connect to the target
-	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(target1.Name()), 1*time.Minute)
-	assert.True(t, ready)
-	ready = gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(target2.Name()), 1*time.Minute)
-	assert.True(t, ready)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	s.True(ready)
+	ready = s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator2.Name))
+	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
 	sr := &gnmiapi.SubscribeRequest{
 		Request: &gnmiapi.SubscribeRequest_Subscribe{
@@ -47,10 +35,10 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 				Prefix: &gnmiapi.Path{Target: "", Elem: []*gnmiapi.PathElem{}},
 				Mode:   gnmiapi.SubscriptionList_ONCE,
 				Subscription: []*gnmiapi.Subscription{{
-					Path: getPath(target1.Name(), "system", "state", "current-datetime"),
+					Path: getPath(s.simulator1.Name, "system", "state", "current-datetime"),
 					Mode: gnmiapi.SubscriptionMode_SAMPLE,
 				}, {
-					Path: getPath(target2.Name(), "system", "state", "current-datetime"),
+					Path: getPath(s.simulator2.Name, "system", "state", "current-datetime"),
 					Mode: gnmiapi.SubscriptionMode_SAMPLE,
 				}},
 				Encoding:    gnmiapi.Encoding_PROTO,
@@ -60,8 +48,8 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	}
 
 	updates := make([]*gnmiapi.SubscribeResponse_Update, 0, 4)
-	subscribe(ctx, t, gnmiClient, sr, &updates)
-	waitForResponses(t, gnmiClient, &updates, 2)
+	s.subscribe(ctx, gnmiClient, sr, &updates)
+	s.waitForResponses(gnmiClient, &updates, 2)
 }
 
 func getPath(target string, pe ...string) *gnmiapi.Path {
@@ -72,11 +60,11 @@ func getPath(target string, pe ...string) *gnmiapi.Path {
 	return &gnmiapi.Path{Target: target, Elem: elem}
 }
 
-func subscribe(ctx context.Context, t *testing.T, gnmiClient baseClient.Impl, req *gnmiapi.SubscribeRequest,
+func (s *TestSuite) subscribe(ctx context.Context, gnmiClient baseClient.Impl, req *gnmiapi.SubscribeRequest,
 	updates *[]*gnmiapi.SubscribeResponse_Update) {
 
 	q, err := baseClient.NewQuery(req)
-	assert.NoError(t, err)
+	s.NoError(err)
 
 	q.NotificationHandler = nil
 	q.ProtoHandler = func(msg proto.Message) error {
@@ -89,10 +77,10 @@ func subscribe(ctx context.Context, t *testing.T, gnmiClient baseClient.Impl, re
 	}
 
 	err = gnmiClient.Subscribe(ctx, q)
-	assert.NoError(t, err)
+	s.NoError(err)
 }
 
-func waitForResponses(t *testing.T, gnmiClient baseClient.Impl, updates *[]*gnmiapi.SubscribeResponse_Update, count int) {
+func (s *TestSuite) waitForResponses(gnmiClient baseClient.Impl, updates *[]*gnmiapi.SubscribeResponse_Update, count int) {
 	log.Debugf("Subscribe issued... waiting for responses")
 	for {
 		err := gnmiClient.Recv()
@@ -102,5 +90,5 @@ func waitForResponses(t *testing.T, gnmiClient baseClient.Impl, updates *[]*gnmi
 		}
 	}
 
-	assert.Len(t, *updates, count)
+	s.Len(*updates, count)
 }

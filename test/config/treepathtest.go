@@ -5,13 +5,12 @@
 package config
 
 import (
+	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -23,26 +22,19 @@ const (
 	newDescription         = "description"
 )
 
-func (s *TestSuite) testTreePath(t *testing.T, encoding gnmiapi.Encoding) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Make a simulated device
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
+func (s *TestSuite) testTreePath(ctx context.Context, encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
-	assert.True(t, ready)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
 
-	getPath := gnmiutils.GetTargetPath(simulator.Name(), newRootEnabledPath)
+	getPath := gnmiutils.GetTargetPath(s.simulator1.Name, newRootEnabledPath)
 
 	// Set name of new root using gNMI client
 	setNamePath := []proto.GNMIPath{
-		{TargetName: simulator.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1.Name, Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:         ctx,
@@ -50,15 +42,15 @@ func (s *TestSuite) testTreePath(t *testing.T, encoding gnmiapi.Encoding) {
 		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: setNamePath,
 	}
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// Set values using gNMI client
 	setPath := []proto.GNMIPath{
-		{TargetName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
-		{TargetName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
+		{TargetName: s.simulator1.Name, Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
+		{TargetName: s.simulator1.Name, Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
 	setReq.UpdatePaths = setPath
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	getConfigReq := &gnmiutils.GetRequest{
 		Ctx:      ctx,
@@ -68,34 +60,32 @@ func (s *TestSuite) testTreePath(t *testing.T, encoding gnmiapi.Encoding) {
 
 	// Check that the name value was set correctly
 	getConfigReq.Paths = setNamePath
-	getConfigReq.CheckValues(t, newRootName)
+	getConfigReq.CheckValues(s.T(), newRootName)
 
 	// Check that the enabled value was set correctly
 	getConfigReq.Paths = getPath
-	getConfigReq.CheckValues(t, "false")
+	getConfigReq.CheckValues(s.T(), "false")
 
 	// Remove the root path we added
 	setReq.UpdatePaths = nil
 	setReq.DeletePaths = getPath
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	//  Make sure child got removed
 	getConfigReq.Paths = setNamePath
-	getConfigReq.CheckValues(t, newRootName)
+	getConfigReq.CheckValues(s.T(), newRootName)
 
 	//  Make sure new root got removed
 	getConfigReq.Paths = getPath
-	getConfigReq.CheckValues(t, "")
+	getConfigReq.CheckValues(s.T(), "")
 }
 
 // TestTreePath tests create/set/delete of a tree of GNMI paths to a single device
-func (s *TestSuite) TestTreePath(t *testing.T) {
-	t.Run("TestTreePath PROTO",
-		func(t *testing.T) {
-			s.testTreePath(t, gnmiapi.Encoding_PROTO)
-		})
-	t.Run("TestTreePath JSON",
-		func(t *testing.T) {
-			s.testTreePath(t, gnmiapi.Encoding_JSON)
-		})
+func (s *TestSuite) TestTreePath(ctx context.Context) {
+	s.Run("TestTreePath PROTO", func() {
+		s.testTreePath(ctx, gnmiapi.Encoding_PROTO)
+	})
+	s.Run("TestTreePath JSON", func() {
+		s.testTreePath(ctx, gnmiapi.Encoding_JSON)
+	})
 }

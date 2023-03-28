@@ -5,13 +5,12 @@
 package config
 
 import (
+	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -40,25 +39,18 @@ const (
 // TestCascadingDelete checks that when a root leaf or an intermediate leaf is removed, all its children are removed too.
 // This test tests verifies only single scenario - tree-path deletion (i.e., /system/config and /system/openflow/agent)
 // Container-path deletion is verified in treepathtest.go.
-func (s *TestSuite) TestCascadingDelete(t *testing.T) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create a simulated target
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
+func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 	// Wait for config to connect to the target
-	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
-	assert.True(t, ready)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
-	targetClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 
 	// setting path-value for ../config/hostname
 	// Creating the GNMI path
-	targetPath1 := gnmiutils.GetTargetPathWithValue(simulator.Name(), cfHostnamePath, cfHostnameValue, proto.StringVal)
+	targetPath1 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, cfHostnamePath, cfHostnameValue, proto.StringVal)
 
 	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{
@@ -77,20 +69,20 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath1,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, cfHostnameValue)
-	simulatorGetReq.CheckValues(t, cfHostnameValue)
+	onosConfigGetReq.CheckValues(s.T(), cfHostnameValue)
+	simulatorGetReq.CheckValues(s.T(), cfHostnameValue)
 
 	// setting path-value for ../config/domain-name
 	// Creating the GNMI path
-	targetPath2 := gnmiutils.GetTargetPathWithValue(simulator.Name(), cfDomainNamePath, cfDomainNameValue, proto.StringVal)
+	targetPath2 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, cfDomainNamePath, cfDomainNameValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -109,20 +101,20 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath2,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, cfDomainNameValue)
-	simulatorGetReq.CheckValues(t, cfDomainNameValue)
+	onosConfigGetReq.CheckValues(s.T(), cfDomainNameValue)
+	simulatorGetReq.CheckValues(s.T(), cfDomainNameValue)
 
 	// setting path-value for ../config/login-banner
 	// Creating the GNMI path
-	targetPath3 := gnmiutils.GetTargetPathWithValue(simulator.Name(), cfLoginBannerPath, cfLoginBannerValue, proto.StringVal)
+	targetPath3 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, cfLoginBannerPath, cfLoginBannerValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -141,20 +133,20 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath3,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, cfLoginBannerValue)
-	simulatorGetReq.CheckValues(t, cfLoginBannerValue)
+	onosConfigGetReq.CheckValues(s.T(), cfLoginBannerValue)
+	simulatorGetReq.CheckValues(s.T(), cfLoginBannerValue)
 
 	// setting path-value for ../config/motd-banner
 	// Creating the GNMI path
-	targetPath4 := gnmiutils.GetTargetPathWithValue(simulator.Name(), cfMotdBannerPath, cfMotdBannerValue, proto.StringVal)
+	targetPath4 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, cfMotdBannerPath, cfMotdBannerValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -173,20 +165,20 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath4,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, cfMotdBannerValue)
-	simulatorGetReq.CheckValues(t, cfMotdBannerValue)
+	onosConfigGetReq.CheckValues(s.T(), cfMotdBannerValue)
+	simulatorGetReq.CheckValues(s.T(), cfMotdBannerValue)
 
 	// setting path-value for ../agent/config/backoff-interval banner
 	// Creating the GNMI path
-	targetPath5 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigBOIntervalPath, ofAgentConfigBOIntervalValue, proto.IntVal)
+	targetPath5 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigBOIntervalPath, ofAgentConfigBOIntervalValue, proto.IntVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -205,20 +197,20 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath5,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, ofAgentConfigBOIntervalValue)
-	simulatorGetReq.CheckValues(t, ofAgentConfigBOIntervalValue)
+	onosConfigGetReq.CheckValues(s.T(), ofAgentConfigBOIntervalValue)
+	simulatorGetReq.CheckValues(s.T(), ofAgentConfigBOIntervalValue)
 
 	// setting path-value for ../agent/config/datapath-id banner
 	// Creating the GNMI path
-	targetPath6 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigDpIOPath, ofAgentConfigDpIDValue, proto.StringVal)
+	targetPath6 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigDpIOPath, ofAgentConfigDpIDValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -237,20 +229,20 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath6,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, ofAgentConfigDpIDValue)
-	simulatorGetReq.CheckValues(t, ofAgentConfigDpIDValue)
+	onosConfigGetReq.CheckValues(s.T(), ofAgentConfigDpIDValue)
+	simulatorGetReq.CheckValues(s.T(), ofAgentConfigDpIDValue)
 
 	// setting path-value for ../agent/config/failure-mode banner
 	// Creating the GNMI path
-	targetPath7 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigFailureModePath, ofAgentConfigFailureModeValue, proto.StringVal)
+	targetPath7 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigFailureModePath, ofAgentConfigFailureModeValue, proto.StringVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -269,20 +261,20 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath7,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, ofAgentConfigFailureModeValue)
-	simulatorGetReq.CheckValues(t, ofAgentConfigFailureModeValue)
+	onosConfigGetReq.CheckValues(s.T(), ofAgentConfigFailureModeValue)
+	simulatorGetReq.CheckValues(s.T(), ofAgentConfigFailureModeValue)
 
 	// setting path-value for ../agent/config/inactivity-probe banner
 	// Creating the GNMI path
-	targetPath8 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigInactivityProbePath, ofAgentConfigInactivityProbeValue, proto.IntVal)
+	targetPath8 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigInactivityProbePath, ofAgentConfigInactivityProbeValue, proto.IntVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -301,20 +293,20 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath8,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, ofAgentConfigInactivityProbeValue)
-	simulatorGetReq.CheckValues(t, ofAgentConfigInactivityProbeValue)
+	onosConfigGetReq.CheckValues(s.T(), ofAgentConfigInactivityProbeValue)
+	simulatorGetReq.CheckValues(s.T(), ofAgentConfigInactivityProbeValue)
 
 	// setting path-value for ../agent/config/max-backoff banner
 	// Creating the GNMI path
-	targetPath9 := gnmiutils.GetTargetPathWithValue(simulator.Name(), ofAgentConfigMaxBOPath, ofAgentConfigMaxBOValue, proto.IntVal)
+	targetPath9 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, ofAgentConfigMaxBOPath, ofAgentConfigMaxBOValue, proto.IntVal)
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
@@ -333,45 +325,45 @@ func (s *TestSuite) TestCascadingDelete(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath9,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and in the target
-	onosConfigGetReq.CheckValues(t, ofAgentConfigMaxBOValue)
-	simulatorGetReq.CheckValues(t, ofAgentConfigMaxBOValue)
+	onosConfigGetReq.CheckValues(s.T(), ofAgentConfigMaxBOValue)
+	simulatorGetReq.CheckValues(s.T(), ofAgentConfigMaxBOValue)
 
 	// get the root path
-	getPath1 := gnmiutils.GetTargetPath(simulator.Name(), cfPath)
+	getPath1 := gnmiutils.GetTargetPath(s.simulator1.Name, cfPath)
 
 	// Remove the path we added
 	onosConfigSetReq.DeletePaths = getPath1
 	onosConfigSetReq.UpdatePaths = nil
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
-	getPath2 := gnmiutils.GetTargetPath(simulator.Name(), ofAgentConfigPath)
+	getPath2 := gnmiutils.GetTargetPath(s.simulator1.Name, ofAgentConfigPath)
 
 	// Remove the path we added
 	onosConfigSetReq.DeletePaths = getPath2
 	onosConfigSetReq.UpdatePaths = nil
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	//  Make sure it got removed, both in onos-config and in the target
-	onosConfigGetReq.CheckValuesDeleted(t)
-	simulatorGetReq.CheckValuesDeleted(t)
+	onosConfigGetReq.CheckValuesDeleted(s.T())
+	simulatorGetReq.CheckValuesDeleted(s.T())
 
 	getReq := &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
-		Extensions: gnmiutils.SyncExtension(t),
+		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,
-		Paths:      gnmiutils.GetTargetPath(simulator.Name(), "/"),
+		Paths:      gnmiutils.GetTargetPath(s.simulator1.Name, "/"),
 	}
 	paths, err := getReq.Get()
-	assert.NoError(t, err)
-	assert.False(t, checkForPath(paths, ofAgentConfigPath))
-	assert.False(t, checkForPath(paths, cfPath))
+	s.NoError(err)
+	s.False(checkForPath(paths, ofAgentConfigPath))
+	s.False(checkForPath(paths, cfPath))
 }

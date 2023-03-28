@@ -5,8 +5,8 @@
 package config
 
 import (
-	"testing"
-
+	"context"
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
 )
@@ -19,19 +19,12 @@ const (
 )
 
 // TestGetState tests query/set/delete of a single GNMI path to a single device
-func (s *TestSuite) TestGetState(t *testing.T) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create a simulated device
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
+func (s *TestSuite) TestGetState(ctx context.Context) {
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
 
 	// Get the GNMI path
-	targetPaths := gnmiutils.GetTargetPathsWithValues([]string{simulator.Name(), simulator.Name()}, []string{statePath1, statePath2}, []string{stateValue1, stateValue2})
+	targetPaths := gnmiutils.GetTargetPathsWithValues([]string{s.simulator1.Name, s.simulator1.Name}, []string{statePath1, statePath2}, []string{stateValue1, stateValue2})
 
 	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{
@@ -43,6 +36,6 @@ func (s *TestSuite) TestGetState(t *testing.T) {
 	}
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, stateValue1, stateValue2)
+	onosConfigGetReq.CheckValues(s.T(), stateValue1, stateValue2)
 
 }

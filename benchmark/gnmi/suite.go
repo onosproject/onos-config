@@ -6,12 +6,10 @@ package gnmi
 
 import (
 	"context"
+	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/onosproject/helmit/pkg/benchmark"
 	"github.com/onosproject/helmit/pkg/helm"
-	"github.com/onosproject/helmit/pkg/input"
-	"github.com/onosproject/helmit/pkg/util/random"
-	"github.com/onosproject/onos-config/test/utils/charts"
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/benchmark/utils/gnmi"
 	"github.com/onosproject/onos-test/pkg/onostest"
 	"github.com/openconfig/gnmi/client/gnmi"
 	"time"
@@ -20,28 +18,45 @@ import (
 // BenchmarkSuite is an onos-config gNMI benchmark suite
 type BenchmarkSuite struct {
 	benchmark.Suite
-	simulator *helm.HelmRelease
+	umbrella  *helm.Release
+	simulator *helm.Release
 	client    *client.Client
-	value     input.Source
 }
 
 // SetupSuite :: benchmark
-func (s *BenchmarkSuite) SetupSuite(c *input.Context) error {
-	umbrella := charts.CreateUmbrellaRelease().
+func (s *BenchmarkSuite) SetupSuite(ctx context.Context) error {
+	release, err := s.Helm().Install("onos", "onos-umbrella").
+		RepoURL(onostest.OnosChartRepo).
+		Set("onos-topo.image.tag", "latest").
+		Set("onos-config.image.tag", "latest").
+		Set("onos-config-model.image.tag", "latest").
 		Set("onos-topo.replicaCount", 2).
-		Set("onos-config.replicaCount", 2)
-	return umbrella.Install(true)
+		Set("onos-config.replicaCount", 2).
+		Wait().
+		Get(ctx)
+	if err != nil {
+		return err
+	}
+	s.umbrella = release
+	return nil
+}
+
+// TearDownSuite :: benchmark
+func (s *BenchmarkSuite) TearDownSuite(ctx context.Context) error {
+	return s.Helm().Uninstall(s.umbrella.Name).Do(ctx)
 }
 
 // SetupWorker :: benchmark
-func (s *BenchmarkSuite) SetupWorker(c *input.Context) error {
-	s.value = input.RandomString(8)
-	s.simulator = helm.
-		Chart("device-simulator", onostest.OnosChartRepo).
-		Release(random.NewPetName(2))
-	if err := s.simulator.Install(true); err != nil {
+func (s *BenchmarkSuite) SetupWorker(ctx context.Context) error {
+	release, err := s.Helm().
+		Install(petname.Generate(2, "-"), "device-simulator").
+		RepoURL(onostest.OnosChartRepo).
+		Wait().
+		Get(ctx)
+	if err != nil {
 		return err
 	}
+	s.simulator = release
 	gnmiClient, err := getGNMIClient()
 	if err != nil {
 		return err
@@ -51,9 +66,9 @@ func (s *BenchmarkSuite) SetupWorker(c *input.Context) error {
 }
 
 // TearDownWorker :: benchmark
-func (s *BenchmarkSuite) TearDownWorker(c *input.Context) error {
+func (s *BenchmarkSuite) TearDownWorker(ctx context.Context) error {
 	s.client.Close()
-	return s.simulator.Uninstall()
+	return s.Helm().Uninstall(s.simulator.Name).Do(ctx)
 }
 
 var _ benchmark.SetupWorker = &BenchmarkSuite{}
@@ -72,3 +87,8 @@ func getGNMIClient() (*client.Client, error) {
 	}
 	return gnmiClient.(*client.Client), nil
 }
+
+var _ benchmark.SetupSuite = (*BenchmarkSuite)(nil)
+var _ benchmark.TearDownSuite = (*BenchmarkSuite)(nil)
+var _ benchmark.SetupWorker = (*BenchmarkSuite)(nil)
+var _ benchmark.TearDownWorker = (*BenchmarkSuite)(nil)

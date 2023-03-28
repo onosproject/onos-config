@@ -6,13 +6,11 @@ package config
 
 import (
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
-
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -20,24 +18,17 @@ const (
 	tzPath  = "/system/clock/config/timezone-name"
 )
 
-func (s *TestSuite) testSinglePath(t *testing.T, encoding gnmiapi.Encoding) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create a simulated device
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
+func (s *TestSuite) testSinglePath(ctx context.Context, encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
-	assert.True(t, ready)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.NoRetry)
-	targetClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 
 	// Get the GNMI path
-	targetPaths := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	targetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, tzPath, tzValue, proto.StringVal)
 
 	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{
@@ -56,35 +47,33 @@ func (s *TestSuite) testSinglePath(t *testing.T, encoding gnmiapi.Encoding) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPaths,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
 
 	// Set a new value for the time zone using onos-config
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly, both in onos-config and on the target
-	onosConfigGetReq.CheckValues(t, tzValue)
-	simulatorGetReq.CheckValues(t, tzValue)
+	onosConfigGetReq.CheckValues(s.T(), tzValue)
+	simulatorGetReq.CheckValues(s.T(), tzValue)
 
 	// Remove the path we added
 	onosConfigSetReq.DeletePaths = targetPaths
 	onosConfigSetReq.UpdatePaths = nil
-	onosConfigSetReq.SetOrFail(t)
+	onosConfigSetReq.SetOrFail(s.T())
 
 	//  Make sure it got removed, both in onos-config and on the target
-	onosConfigGetReq.CheckValuesDeleted(t)
-	simulatorGetReq.CheckValuesDeleted(t)
+	onosConfigGetReq.CheckValuesDeleted(s.T())
+	simulatorGetReq.CheckValuesDeleted(s.T())
 }
 
 // TestSinglePath tests query/set/delete of a single GNMI path to a single device
-func (s *TestSuite) TestSinglePath(t *testing.T) {
-	t.Run("TestSinglePath PROTO",
-		func(t *testing.T) {
-			s.testSinglePath(t, gnmiapi.Encoding_PROTO)
-		})
-	t.Run("TestSinglePath JSON",
-		func(t *testing.T) {
-			s.testSinglePath(t, gnmiapi.Encoding_JSON)
-		})
+func (s *TestSuite) TestSinglePath(ctx context.Context) {
+	s.Run("TestSinglePath PROTO", func() {
+		s.testSinglePath(ctx, gnmiapi.Encoding_PROTO)
+	})
+	s.Run("TestSinglePath JSON", func() {
+		s.testSinglePath(ctx, gnmiapi.Encoding_JSON)
+	})
 }

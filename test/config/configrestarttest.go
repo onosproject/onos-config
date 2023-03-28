@@ -5,15 +5,13 @@
 package config
 
 import (
+	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
-
+	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
-	hautils "github.com/onosproject/onos-config/test/utils/ha"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -26,22 +24,15 @@ const (
 )
 
 // TestGetOperationAfterNodeRestart tests a Get operation after restarting the onos-config node
-func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create a simulated target
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
+func (s *TestSuite) TestGetOperationAfterNodeRestart(ctx context.Context) {
 	// Wait for config to connect to the target
-	ready := gnmiutils.WaitForTargetAvailable(ctx, t, topoapi.ID(simulator.Name()), 1*time.Minute)
-	assert.True(t, ready)
+	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	s.True(ready)
 
 	// Make a GNMI client to use for onos-config requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
 
-	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
+	targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, restartTzPath, restartTzValue, proto.StringVal)
 
 	// Set a value using onos-config
 
@@ -49,103 +40,110 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 		Ctx:         ctx,
 		Client:      gnmiClient,
 		UpdatePaths: targetPath,
-		Extensions:  gnmiutils.SyncExtension(t),
+		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
 	}
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// Check that the value was set correctly
 	var getReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
 		Paths:      targetPath,
-		Extensions: gnmiutils.SyncExtension(t),
+		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,
 	}
-	getReq.CheckValues(t, restartTzValue)
+	getReq.CheckValues(s.T(), restartTzValue)
 
-	// Restart onos-config
-	configPod := hautils.FindPodWithPrefix(t, "onos-config")
-	hautils.CrashPodOrFail(t, configPod)
+	// Get the onos-config pod
+	pods, err := s.CoreV1().Pods(s.Namespace()).List(ctx, metav1.ListOptions{
+		LabelSelector: "app=onos,type=config",
+	})
+	s.NoError(err)
+	s.Len(pods.Items, 1)
+
+	// Delete the onos-config pod to restart it
+	err = s.CoreV1().Pods(s.Namespace()).Delete(ctx, pods.Items[0].Name, metav1.DeleteOptions{})
+	s.NoError(err)
 
 	// Check that the value was set correctly in the new onos-config instance
-	getReq.CheckValues(t, restartTzValue)
+	getReq.CheckValues(s.T(), restartTzValue)
 
 	// Check that the value is set on the target
-	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetGnmiClient,
 		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
 	}
-	getTargetReq.CheckValues(t, restartTzValue)
+	getTargetReq.CheckValues(s.T(), restartTzValue)
 }
 
 // TestSetOperationAfterNodeRestart tests a Set operation after restarting the onos-config node
-func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
-	ctx, cancel := gnmiutils.MakeContext()
-	defer cancel()
-
-	// Create a simulated target
-	simulator := gnmiutils.CreateSimulator(ctx, t)
-	defer gnmiutils.DeleteSimulator(t, simulator)
-
+func (s *TestSuite) TestSetOperationAfterNodeRestart(ctx context.Context) {
 	// Make a GNMI client to use for onos-config requests
-	gnmiClient := gnmiutils.NewOnosConfigGNMIClientOrFail(ctx, t, gnmiutils.WithRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
 
-	tzPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
-	loginBannerPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartLoginBannerPath, restartLoginBannerValue, proto.StringVal)
-	motdBannerPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartMotdBannerPath, restartMotdBannerValue, proto.StringVal)
+	tzPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, restartTzPath, restartTzValue, proto.StringVal)
+	loginBannerPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, restartLoginBannerPath, restartLoginBannerValue, proto.StringVal)
+	motdBannerPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, restartMotdBannerPath, restartMotdBannerValue, proto.StringVal)
 
-	targets := []string{simulator.Name(), simulator.Name()}
+	targets := []string{s.simulator1.Name, s.simulator1.Name}
 	paths := []string{restartLoginBannerPath, restartMotdBannerPath}
 	values := []string{restartLoginBannerValue, restartMotdBannerValue}
 
 	bannerPaths := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
 
-	// Restart onos-config
-	configPod := hautils.FindPodWithPrefix(t, "onos-config")
-	hautils.CrashPodOrFail(t, configPod)
+	// Get the onos-config pod
+	pods, err := s.CoreV1().Pods(s.Namespace()).List(ctx, metav1.ListOptions{
+		LabelSelector: "app=onos,type=config",
+	})
+	s.NoError(err)
+	s.Len(pods.Items, 1)
+
+	// Delete the onos-config pod to restart it
+	err = s.CoreV1().Pods(s.Namespace()).Delete(ctx, pods.Items[0].Name, metav1.DeleteOptions{})
+	s.NoError(err)
 
 	// Set values using onos-config
 	var setReq = &gnmiutils.SetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
-		Extensions: gnmiutils.SyncExtension(t),
+		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,
 	}
 	setReq.UpdatePaths = tzPath
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 	setReq.UpdatePaths = bannerPaths
-	setReq.SetOrFail(t)
+	setReq.SetOrFail(s.T())
 
 	// Check that the values were set correctly
 	var getConfigReq = &gnmiutils.GetRequest{
 		Ctx:        ctx,
 		Client:     gnmiClient,
-		Extensions: gnmiutils.SyncExtension(t),
+		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,
 	}
 	getConfigReq.Paths = tzPath
-	getConfigReq.CheckValues(t, restartTzValue)
+	getConfigReq.CheckValues(s.T(), restartTzValue)
 	getConfigReq.Paths = loginBannerPath
-	getConfigReq.CheckValues(t, restartLoginBannerValue)
+	getConfigReq.CheckValues(s.T(), restartLoginBannerValue)
 	getConfigReq.Paths = motdBannerPath
-	getConfigReq.CheckValues(t, restartMotdBannerValue)
+	getConfigReq.CheckValues(s.T(), restartMotdBannerValue)
 
 	// Check that the values are set on the target
-	targetGnmiClient := gnmiutils.NewSimulatorGNMIClientOrFail(ctx, t, simulator)
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      ctx,
 		Client:   targetGnmiClient,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	getTargetReq.Paths = tzPath
-	getTargetReq.CheckValues(t, restartTzValue)
+	getTargetReq.CheckValues(s.T(), restartTzValue)
 	getTargetReq.Paths = loginBannerPath
-	getTargetReq.CheckValues(t, restartLoginBannerValue)
+	getTargetReq.CheckValues(s.T(), restartLoginBannerValue)
 	getTargetReq.Paths = motdBannerPath
-	getTargetReq.CheckValues(t, restartMotdBannerValue)
+	getTargetReq.CheckValues(s.T(), restartMotdBannerValue)
 
 }
