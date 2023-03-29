@@ -6,6 +6,8 @@ package mastership
 
 import (
 	"context"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"sync"
 
 	"github.com/onosproject/onos-config/pkg/store/topo"
@@ -72,6 +74,48 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 
 // Stop stops the topology watcher
 func (w *TopoWatcher) Stop() {
+	w.mu.Lock()
+	if w.cancel != nil {
+		w.cancel()
+		w.cancel = nil
+	}
+	w.mu.Unlock()
+}
+
+// ConfigurationStoreWatcher configuration store watcher
+type ConfigurationStoreWatcher struct {
+	configurations configuration.Store
+	cancel         context.CancelFunc
+	mu             sync.Mutex
+}
+
+// Start starts the watcher
+func (w *ConfigurationStoreWatcher) Start(ch chan<- controller.ID) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.cancel != nil {
+		return nil
+	}
+
+	eventCh := make(chan configapi.ConfigurationEvent, queueSize)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	err := w.configurations.Watch(ctx, eventCh, configuration.WithReplay())
+	if err != nil {
+		cancel()
+		return err
+	}
+	w.cancel = cancel
+	go func() {
+		for event := range eventCh {
+			ch <- controller.NewID(topoapi.ID(event.Configuration.TargetID))
+		}
+	}()
+	return nil
+}
+
+// Stop stops the watcher
+func (w *ConfigurationStoreWatcher) Stop() {
 	w.mu.Lock()
 	if w.cancel != nil {
 		w.cancel()
