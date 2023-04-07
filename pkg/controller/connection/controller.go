@@ -52,7 +52,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	defer cancel()
 
 	connID := id.Value.(gnmi.ConnID)
-	log.Infof("Reconciling Conn '%s'", connID)
+	log.Debugf("Reconciling Conn '%s'", connID)
 	conn, ok := r.conns.Get(ctx, connID)
 	if !ok {
 		return r.deleteRelation(ctx, connID)

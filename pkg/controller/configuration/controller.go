@@ -71,7 +71,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		return controller.Result{}, nil
 	}
 
-	log.Infof("Reconciling Configuration '%s'", config.ID)
+	log.Debugf("Reconciling Configuration '%s'", config.ID)
 	log.Debug(config)
 	return r.reconcileConfiguration(ctx, config)
 }

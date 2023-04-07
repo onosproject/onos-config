@@ -10,7 +10,10 @@ import (
 	"github.com/atomix/go-sdk/pkg/primitive"
 	_map "github.com/atomix/go-sdk/pkg/primitive/map"
 	"github.com/atomix/go-sdk/pkg/types"
+	"github.com/google/uuid"
+	"github.com/onosproject/onos-config/pkg/utils/tree"
 	"io"
+	"sync"
 	"time"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
@@ -59,9 +62,18 @@ func NewAtomixStore(client primitive.Client) (Store, error) {
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return &configurationStore{
+	store := &configurationStore{
+		client:         client,
 		configurations: configurations,
-	}, nil
+		committed:      make(map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue]),
+		applied:        make(map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue]),
+		watchers:       make(map[uuid.UUID]chan<- configapi.ConfigurationEvent),
+		idWatchers:     make(map[configapi.ConfigurationID]map[uuid.UUID]chan<- configapi.ConfigurationEvent),
+	}
+	if err := store.open(); err != nil {
+		return nil, err
+	}
+	return store, nil
 }
 
 type watchOptions struct {
@@ -102,6 +114,86 @@ func WithConfigurationID(id configapi.ConfigurationID) WatchOption {
 
 type configurationStore struct {
 	configurations _map.Map[configapi.ConfigurationID, *configapi.Configuration]
+	client         primitive.Client
+	committed      map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue]
+	applied        map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue]
+	watchers       map[uuid.UUID]chan<- configapi.ConfigurationEvent
+	idWatchers     map[configapi.ConfigurationID]map[uuid.UUID]chan<- configapi.ConfigurationEvent
+	mu             sync.RWMutex
+}
+
+func (s *configurationStore) open() error {
+	events, err := s.configurations.Events(context.Background())
+	if err != nil {
+		return err
+	}
+	go func() {
+		for {
+			event, err := events.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			var configurationEvent configapi.ConfigurationEvent
+			switch e := event.(type) {
+			case *_map.Inserted[configapi.ConfigurationID, *configapi.Configuration]:
+				configuration := e.Entry.Value
+				configuration.Version = uint64(e.Entry.Version)
+				if err := s.populate(context.Background(), configuration); err != nil {
+					log.Error(err)
+					continue
+				}
+				configurationEvent = configapi.ConfigurationEvent{
+					Type:          configapi.ConfigurationEvent_CREATED,
+					Configuration: *configuration,
+				}
+			case *_map.Updated[configapi.ConfigurationID, *configapi.Configuration]:
+				configuration := e.Entry.Value
+				configuration.Version = uint64(e.Entry.Version)
+				if err := s.populate(context.Background(), configuration); err != nil {
+					log.Error(err)
+					continue
+				}
+				configurationEvent = configapi.ConfigurationEvent{
+					Type:          configapi.ConfigurationEvent_UPDATED,
+					Configuration: *configuration,
+				}
+			case *_map.Removed[configapi.ConfigurationID, *configapi.Configuration]:
+				configuration := e.Entry.Value
+				configuration.Version = uint64(e.Entry.Version)
+				if err := s.populate(context.Background(), configuration); err != nil {
+					log.Error(err)
+					continue
+				}
+				configurationEvent = configapi.ConfigurationEvent{
+					Type:          configapi.ConfigurationEvent_DELETED,
+					Configuration: *configuration,
+				}
+			}
+
+			var watchers []chan<- configapi.ConfigurationEvent
+			s.mu.RLock()
+			for _, ch := range s.watchers {
+				watchers = append(watchers, ch)
+			}
+			idWatchers, ok := s.idWatchers[configurationEvent.Configuration.ID]
+			if ok {
+				for _, ch := range idWatchers {
+					watchers = append(watchers, ch)
+				}
+			}
+			s.mu.RUnlock()
+
+			for _, ch := range watchers {
+				ch <- configurationEvent
+			}
+		}
+	}()
+	return nil
 }
 
 func (s *configurationStore) Get(ctx context.Context, id configapi.ConfigurationID) (*configapi.Configuration, error) {
@@ -114,6 +206,10 @@ func (s *configurationStore) Get(ctx context.Context, id configapi.Configuration
 	configuration := entry.Value
 	configuration.Key = string(entry.Key)
 	configuration.Version = uint64(entry.Version)
+	if err := s.populate(ctx, configuration); err != nil {
+		log.Error(err)
+		return nil, err
+	}
 	return configuration, nil
 }
 
@@ -131,10 +227,21 @@ func (s *configurationStore) Create(ctx context.Context, configuration *configap
 		return errors.NewInvalid("cannot create configuration with version")
 	}
 
+	if configuration.Values != nil {
+		committed, err := s.getCommitted(ctx, configuration.ID)
+		if err != nil {
+			return err
+		}
+		if err := s.store(ctx, committed, configuration.Values); err != nil {
+			return err
+		}
+	}
+
 	configuration.Key = string(configuration.ID)
 	configuration.Revision = 1
 	configuration.Created = time.Now()
 	configuration.Updated = time.Now()
+	configuration.Values = nil
 
 	// Create the entry in the underlying map primitive.
 	entry, err := s.configurations.Insert(ctx, configuration.ID, configuration)
@@ -158,8 +265,20 @@ func (s *configurationStore) Update(ctx context.Context, configuration *configap
 	if configuration.Version == 0 {
 		return errors.NewInvalid("configuration must contain a version on update")
 	}
+
+	if configuration.Values != nil {
+		committed, err := s.getCommitted(ctx, configuration.ID)
+		if err != nil {
+			return err
+		}
+		if err := s.store(ctx, committed, configuration.Values); err != nil {
+			return err
+		}
+	}
+
 	configuration.Revision++
 	configuration.Updated = time.Now()
+	configuration.Values = nil
 
 	// Update the entry in the underlying map primitive using the configuration version
 	// as an optimistic lock.
@@ -184,7 +303,19 @@ func (s *configurationStore) UpdateStatus(ctx context.Context, configuration *co
 	if configuration.Version == 0 {
 		return errors.NewInvalid("configuration must contain a version on update")
 	}
+
+	if configuration.Status.Applied.Values != nil {
+		applied, err := s.getApplied(ctx, configuration.ID)
+		if err != nil {
+			return err
+		}
+		if err := s.store(ctx, applied, configuration.Status.Applied.Values); err != nil {
+			return err
+		}
+	}
+
 	configuration.Updated = time.Now()
+	configuration.Status.Applied.Values = nil
 
 	// Update the entry in the underlying map primitive using the configuration version
 	// as an optimistic lock.
@@ -214,6 +345,10 @@ func (s *configurationStore) List(ctx context.Context) ([]*configapi.Configurati
 		}
 		configuration := entry.Value
 		configuration.Version = uint64(entry.Version)
+		if err := s.populate(ctx, configuration); err != nil {
+			log.Error(err)
+			return nil, err
+		}
 		configurations = append(configurations, configuration)
 	}
 }
@@ -224,41 +359,69 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 		opt.apply(&options)
 	}
 
-	var eventsOpts []_map.EventsOption
+	id := uuid.New()
+	eventCh := make(chan configapi.ConfigurationEvent)
+	s.mu.Lock()
 	if options.configurationID != "" {
-		eventsOpts = append(eventsOpts, _map.WithKey[configapi.ConfigurationID](options.configurationID))
+		watchers, ok := s.idWatchers[options.configurationID]
+		if !ok {
+			watchers = make(map[uuid.UUID]chan<- configapi.ConfigurationEvent)
+			s.idWatchers[options.configurationID] = watchers
+		}
+		watchers[id] = eventCh
+	} else {
+		s.watchers[id] = eventCh
 	}
-	events, err := s.configurations.Events(ctx, eventsOpts...)
-	if err != nil {
-		return errors.FromAtomix(err)
-	}
+	s.mu.Unlock()
 
-	if options.replay {
-		if options.configurationID != "" {
-			entry, err := s.configurations.Get(ctx, options.configurationID)
-			if err != nil {
-				err = errors.FromAtomix(err)
-				if !errors.IsNotFound(err) {
-					return err
+	go func() {
+		defer func() {
+			s.mu.Lock()
+			if options.configurationID != "" {
+				watchers, ok := s.idWatchers[options.configurationID]
+				if ok {
+					delete(watchers, id)
+					if len(watchers) == 0 {
+						delete(s.idWatchers, options.configurationID)
+					}
 				}
-				go propagateEvents(events, ch)
 			} else {
-				go func() {
+				delete(s.watchers, id)
+			}
+			s.mu.Unlock()
+		}()
+
+		if options.replay {
+			if options.configurationID != "" {
+				entry, err := s.configurations.Get(ctx, options.configurationID)
+				if err != nil {
+					err = errors.FromAtomix(err)
+					if !errors.IsNotFound(err) {
+						log.Error(err)
+					}
+				} else {
 					configuration := entry.Value
 					configuration.Version = uint64(entry.Version)
+					if ctx.Err() != nil {
+						close(ch)
+						return
+					}
+					if err := s.populate(ctx, configuration); err != nil {
+						log.Error(err)
+						return
+					}
 					ch <- configapi.ConfigurationEvent{
 						Type:          configapi.ConfigurationEvent_REPLAYED,
 						Configuration: *configuration,
 					}
-					propagateEvents(events, ch)
-				}()
-			}
-		} else {
-			entries, err := s.configurations.List(ctx)
-			if err != nil {
-				return errors.FromAtomix(err)
-			}
-			go func() {
+				}
+			} else {
+				entries, err := s.configurations.List(ctx)
+				if err != nil {
+					log.Error(err)
+					close(ch)
+					return
+				}
 				for {
 					entry, err := entries.Next()
 					if err == io.EOF {
@@ -268,56 +431,154 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 						log.Error(err)
 						continue
 					}
+					if ctx.Err() != nil {
+						close(ch)
+						return
+					}
 					configuration := entry.Value
 					configuration.Version = uint64(entry.Version)
+					if err := s.populate(ctx, configuration); err != nil {
+						log.Error(err)
+						return
+					}
 					ch <- configapi.ConfigurationEvent{
 						Type:          configapi.ConfigurationEvent_REPLAYED,
 						Configuration: *configuration,
 					}
 				}
-				propagateEvents(events, ch)
-			}()
+			}
 		}
-	} else {
-		go propagateEvents(events, ch)
-	}
+
+		for {
+			select {
+			case event := <-eventCh:
+				ch <- event
+			case <-ctx.Done():
+				close(ch)
+				go func() {
+					for range eventCh {
+					}
+				}()
+				return
+			}
+		}
+	}()
 	return nil
 }
 
-func propagateEvents(events _map.EventStream[configapi.ConfigurationID, *configapi.Configuration], ch chan<- configapi.ConfigurationEvent) {
+func (s *configurationStore) populate(ctx context.Context, configuration *configapi.Configuration) error {
+	committed, err := s.getCommitted(ctx, configuration.ID)
+	if err != nil {
+		return err
+	}
+	stream, err := committed.List(ctx)
+	if err != nil {
+		return err
+	}
 	for {
-		event, err := events.Next()
+		entry, err := stream.Next()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			log.Error(err)
-			continue
+			return err
 		}
-		switch e := event.(type) {
-		case *_map.Inserted[configapi.ConfigurationID, *configapi.Configuration]:
-			configuration := e.Entry.Value
-			configuration.Version = uint64(e.Entry.Version)
-			ch <- configapi.ConfigurationEvent{
-				Type:          configapi.ConfigurationEvent_CREATED,
-				Configuration: *configuration,
+		if configuration.Values == nil {
+			configuration.Values = make(map[string]*configapi.PathValue)
+		}
+		configuration.Values[entry.Key] = entry.Value
+	}
+
+	applied, err := s.getApplied(ctx, configuration.ID)
+	if err != nil {
+		return err
+	}
+	stream, err = applied.List(ctx)
+	if err != nil {
+		return err
+	}
+	for {
+		entry, err := stream.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if configuration.Status.Applied.Values == nil {
+			configuration.Status.Applied.Values = make(map[string]*configapi.PathValue)
+		}
+		configuration.Status.Applied.Values[entry.Key] = entry.Value
+	}
+	return nil
+}
+
+func (s *configurationStore) getCommitted(ctx context.Context, id configapi.ConfigurationID) (_map.Map[string, *configapi.PathValue], error) {
+	return s.getTarget(ctx, s.committed, id)
+}
+
+func (s *configurationStore) getApplied(ctx context.Context, id configapi.ConfigurationID) (_map.Map[string, *configapi.PathValue], error) {
+	return s.getTarget(ctx, s.applied, id)
+}
+
+func (s *configurationStore) store(ctx context.Context, store _map.Map[string, *configapi.PathValue], values map[string]*configapi.PathValue) error {
+	prunedValues := tree.PrunePathMap(values, true)
+	transaction := store.Transaction(ctx)
+	for _, pv := range values {
+		entry, err := store.Get(ctx, pv.Path)
+		if err != nil {
+			err = errors.FromAtomix(err)
+			if !errors.IsNotFound(err) {
+				return err
 			}
-		case *_map.Updated[configapi.ConfigurationID, *configapi.Configuration]:
-			configuration := e.Entry.Value
-			configuration.Version = uint64(e.Entry.Version)
-			ch <- configapi.ConfigurationEvent{
-				Type:          configapi.ConfigurationEvent_UPDATED,
-				Configuration: *configuration,
+			if _, ok := prunedValues[pv.Path]; ok {
+				transaction.Insert(pv.Path, pv)
 			}
-		case *_map.Removed[configapi.ConfigurationID, *configapi.Configuration]:
-			configuration := e.Entry.Value
-			configuration.Version = uint64(e.Entry.Version)
-			ch <- configapi.ConfigurationEvent{
-				Type:          configapi.ConfigurationEvent_DELETED,
-				Configuration: *configuration,
-			}
+		} else if _, ok := prunedValues[pv.Path]; !ok {
+			transaction.Remove(pv.Path, _map.IfVersion(entry.Version))
+		} else if pv.Index != entry.Value.Index {
+			transaction.Update(pv.Path, pv, _map.IfVersion(entry.Version))
 		}
 	}
+	if _, err := transaction.Commit(); err != nil {
+		err = errors.FromAtomix(err)
+		if errors.IsNotFound(err) || errors.IsAlreadyExists(err) || errors.IsConflict(err) {
+			return errors.NewConflict(err.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *configurationStore) getTarget(
+	ctx context.Context,
+	targets map[configapi.ConfigurationID]_map.Map[string, *configapi.PathValue],
+	id configapi.ConfigurationID) (_map.Map[string, *configapi.PathValue], error) {
+	s.mu.RLock()
+	target, ok := targets[id]
+	s.mu.RUnlock()
+	if ok {
+		return target, nil
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	target, ok = targets[id]
+	if ok {
+		return target, nil
+	}
+
+	var err error
+	target, err = _map.NewBuilder[string, *configapi.PathValue](s.client, fmt.Sprintf("configurations-%s", id)).
+		Tag("onos-config", "path-value").
+		Codec(types.Proto[*configapi.PathValue](&configapi.PathValue{})).
+		Get(ctx)
+	if err != nil {
+		return nil, errors.FromAtomix(err)
+	}
+	targets[id] = target
+	return target, nil
 }
 
 func (s *configurationStore) Close(ctx context.Context) error {

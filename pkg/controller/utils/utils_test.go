@@ -107,7 +107,7 @@ func Test_CascadingDeleteAlgorithm(t *testing.T) {
 	log.Infof("changeValues is\n%v", changeValues)
 
 	// cascading delete algorithm
-	updatedChangeValues := AddDeleteChildren(changeValues, store)
+	updatedChangeValues := AddDeleteChildren(1, changeValues, store)
 	log.Infof("updChangeValues is\n%v", updatedChangeValues)
 	assert.Equal(t, 5, len(updatedChangeValues))
 	log.Infof("updChangeValues has %d PathValues to delete", len(updatedChangeValues))

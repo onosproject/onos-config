@@ -3,7 +3,7 @@ module github.com/onosproject/onos-config
 go 1.19
 
 require (
-	github.com/atomix/go-sdk v0.12.7
+	github.com/atomix/go-sdk v0.13.2
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
@@ -26,9 +26,9 @@ require (
 
 require (
 	github.com/Shopify/sarama v1.31.1 // indirect
-	github.com/atomix/atomix/api v0.9.2 // indirect
-	github.com/atomix/atomix/protocols/rsm v0.5.6 // indirect
-	github.com/atomix/atomix/runtime v0.9.0 // indirect
+	github.com/atomix/atomix/api v1.1.0 // indirect
+	github.com/atomix/atomix/protocols/rsm v1.1.0 // indirect
+	github.com/atomix/atomix/runtime v1.1.0 // indirect
 	github.com/atomix/atomix/sidecar v0.4.4 // indirect
 	github.com/bits-and-blooms/bitset v1.3.1 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.3.1 // indirect
@@ -87,5 +87,3 @@ require (
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3

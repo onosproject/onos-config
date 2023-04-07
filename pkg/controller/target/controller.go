@@ -51,7 +51,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	defer cancel()
 
 	targetID := id.Value.(topoapi.ID)
-	log.Infof("Reconciling Target '%s'", targetID)
+	log.Debugf("Reconciling Target '%s'", targetID)
 	target, err := r.topo.Get(ctx, targetID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
