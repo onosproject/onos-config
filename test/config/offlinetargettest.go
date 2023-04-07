@@ -17,7 +17,7 @@ import (
 const (
 	modPath           = "/system/clock/config/timezone-name"
 	modValue          = "Europe/Rome"
-	offlineTargetName = "offline-target-device-simulator"
+	offlineTargetName = "offline-target"
 )
 
 // TestOfflineTarget tests set/query of a single GNMI path to a single target that is initially not connected to onos-config
