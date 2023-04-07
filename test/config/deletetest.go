@@ -16,22 +16,22 @@ import (
 )
 
 // TestDeleteAndRollback tests target deletion and rollback
-func (s *TestSuite) TestDeleteAndRollback(ctx context.Context) {
+func (s *TestSuite) TestDeleteAndRollback() {
 	const (
 		newValue = "new-value"
 		newPath  = "/system/config/login-banner"
 	)
 
 	// Wait for config to connect to the target
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator1.Name))
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// Set values
 	var targetPath = gnmiutils.GetTargetPathWithValue(s.simulator1.Name, newPath, newValue, proto.StringVal)
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
@@ -41,7 +41,7 @@ func (s *TestSuite) TestDeleteAndRollback(ctx context.Context) {
 
 	// Check that the values were set correctly
 	var getConfigReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Encoding: gnmiapi.Encoding_PROTO,
 		Paths:    targetPath,
@@ -49,9 +49,9 @@ func (s *TestSuite) TestDeleteAndRollback(ctx context.Context) {
 	getConfigReq.CheckValues(s.T(), newValue)
 
 	// Check that the values are set on the target
-	target1GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
+	target1GnmiClient := s.NewSimulatorGNMIClientOrFail(s.simulator1.Name)
 	var getTargetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   target1GnmiClient,
 		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
@@ -59,7 +59,7 @@ func (s *TestSuite) TestDeleteAndRollback(ctx context.Context) {
 	getTargetReq.CheckValues(s.T(), newValue)
 
 	// Now rollback the change
-	adminClient, err := s.NewAdminServiceClient(ctx)
+	adminClient, err := s.NewAdminServiceClient()
 	s.NoError(err)
 	rollbackResponse, rollbackError := adminClient.RollbackTransaction(context.Background(), &admin.RollbackRequest{Index: transactionIndex})
 

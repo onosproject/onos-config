@@ -15,7 +15,7 @@ import (
 )
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
-func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encoding) {
+func (s *TestSuite) testTransaction(encoding gnmiapi.Encoding) {
 	const (
 		value1     = "test-motd-banner"
 		path1      = "/system/config/motd-banner"
@@ -32,23 +32,23 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 	)
 
 	// Wait for config to connect to the first simulator
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator1.Name))
 
 	// Wait for config to connect to the second simulator
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator2.Name))
 
 	// Set up paths for the two targets
 	targets := []string{s.simulator1.Name, s.simulator2.Name}
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// Set initial values
 	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, paths, initialValues)
 
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Encoding:    gnmiapi.Encoding_PROTO,
 		Extensions:  s.SyncExtension(),
@@ -57,7 +57,7 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 	setReq.SetOrFail(s.T())
 
 	var getReq = &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     gnmiClient,
 		Encoding:   encoding,
 		Extensions: s.SyncExtension(),
@@ -82,16 +82,16 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 	getReq.CheckValues(s.T(), value2)
 
 	// Check that the values are set on the targets
-	target1GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
-	target2GnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator2.Name)
+	target1GnmiClient := s.NewSimulatorGNMIClientOrFail(s.simulator1.Name)
+	target2GnmiClient := s.NewSimulatorGNMIClientOrFail(s.simulator2.Name)
 
 	var target1GetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   target1GnmiClient,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	var target2GetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   target2GnmiClient,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
@@ -105,7 +105,7 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 	target2GetReq.CheckValues(s.T(), value2)
 
 	// Now rollback the change
-	adminClient, err := s.NewAdminServiceClient(ctx)
+	adminClient, err := s.NewAdminServiceClient()
 	s.NoError(err)
 	rollbackResponse, rollbackError := adminClient.RollbackTransaction(
 		context.Background(), &admin.RollbackRequest{Index: transactionIndex})
@@ -131,11 +131,11 @@ func (s *TestSuite) testTransaction(ctx context.Context, encoding gnmiapi.Encodi
 }
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
-func (s *TestSuite) TestTransaction(ctx context.Context) {
+func (s *TestSuite) TestTransaction() {
 	s.Run("TestTransaction PROTO", func() {
-		s.testTransaction(ctx, gnmiapi.Encoding_PROTO)
+		s.testTransaction(gnmiapi.Encoding_PROTO)
 	})
 	s.Run("TestTransaction JSON", func() {
-		s.testTransaction(ctx, gnmiapi.Encoding_JSON)
+		s.testTransaction(gnmiapi.Encoding_JSON)
 	})
 }

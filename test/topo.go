@@ -5,7 +5,6 @@
 package test
 
 import (
-	"context"
 	"fmt"
 	"github.com/cenkalti/backoff"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
@@ -48,38 +47,38 @@ func (s *Suite) NewTargetEntity(name string, targetType string, targetVersion st
 }
 
 // AddTargetToTopo adds a new target to topo
-func (s *Suite) AddTargetToTopo(ctx context.Context, targetEntity *topo.Object) error {
+func (s *Suite) AddTargetToTopo(targetEntity *topo.Object) error {
 	client, err := s.NewTopoClient()
 	if err != nil {
 		return err
 	}
-	err = client.Create(ctx, targetEntity)
+	err = client.Create(s.Context(), targetEntity)
 	return err
 }
 
 // GetTargetFromTopo retrieves the specified target entity
-func (s *Suite) GetTargetFromTopo(ctx context.Context, id topo.ID) (*topo.Object, error) {
+func (s *Suite) GetTargetFromTopo(id topo.ID) (*topo.Object, error) {
 	client, err := s.NewTopoClient()
 	if err != nil {
 		return nil, err
 	}
-	return client.Get(ctx, id)
+	return client.Get(s.Context(), id)
 }
 
 // UpdateTargetInTopo updates the target
-func (s *Suite) UpdateTargetInTopo(ctx context.Context, targetEntity *topo.Object) error {
+func (s *Suite) UpdateTargetInTopo(targetEntity *topo.Object) error {
 	client, err := s.NewTopoClient()
 	if err != nil {
 		return err
 	}
-	err = client.Update(ctx, targetEntity)
+	err = client.Update(s.Context(), targetEntity)
 	return err
 }
 
 // UpdateTargetTypeVersion updates the target type and version information in the Configurable aspect
-func (s *Suite) UpdateTargetTypeVersion(ctx context.Context, id topo.ID, targetType configapi.TargetType, targetVersion configapi.TargetVersion) error {
+func (s *Suite) UpdateTargetTypeVersion(id topo.ID, targetType configapi.TargetType, targetVersion configapi.TargetVersion) error {
 	updateTargetTypeVersion := func() error {
-		entity, err := s.GetTargetFromTopo(ctx, id)
+		entity, err := s.GetTargetFromTopo(id)
 		if err != nil {
 			return err
 		}
@@ -94,7 +93,7 @@ func (s *Suite) UpdateTargetTypeVersion(ctx context.Context, id topo.ID, targetT
 		if err != nil {
 			return err
 		}
-		return s.UpdateTargetInTopo(ctx, entity)
+		return s.UpdateTargetInTopo(entity)
 	}
 
 	err := backoff.Retry(updateTargetTypeVersion, backoff.NewExponentialBackOff())

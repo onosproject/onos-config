@@ -10,7 +10,6 @@ import (
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -18,33 +17,33 @@ const (
 	tzPath  = "/system/clock/config/timezone-name"
 )
 
-func (s *TestSuite) testSinglePath(ctx context.Context, encoding gnmiapi.Encoding) {
+func (s *TestSuite) testSinglePath(encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
-	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
+	targetClient := s.NewSimulatorGNMIClientOrFail(s.simulator1.Name)
 
 	// Get the GNMI path
 	targetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, tzPath, tzValue, proto.StringVal)
 
 	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPaths,
 		Encoding: encoding,
 	}
 	var simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPaths,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	var onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPaths,
 		Extensions:  s.SyncExtension(),
@@ -69,11 +68,11 @@ func (s *TestSuite) testSinglePath(ctx context.Context, encoding gnmiapi.Encodin
 }
 
 // TestSinglePath tests query/set/delete of a single GNMI path to a single device
-func (s *TestSuite) TestSinglePath(ctx context.Context) {
+func (s *TestSuite) TestSinglePath() {
 	s.Run("TestSinglePath PROTO", func() {
-		s.testSinglePath(ctx, gnmiapi.Encoding_PROTO)
+		s.testSinglePath(gnmiapi.Encoding_PROTO)
 	})
 	s.Run("TestSinglePath JSON", func() {
-		s.testSinglePath(ctx, gnmiapi.Encoding_JSON)
+		s.testSinglePath(gnmiapi.Encoding_JSON)
 	})
 }

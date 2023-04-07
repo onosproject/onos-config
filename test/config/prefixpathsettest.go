@@ -6,7 +6,6 @@
 package config
 
 import (
-	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -14,7 +13,7 @@ import (
 )
 
 // TestPrefixPathSet tests GNMI updates using a prefix + path
-func (s *TestSuite) TestPrefixPathSet(ctx context.Context) {
+func (s *TestSuite) TestPrefixPathSet() {
 	const (
 		systemPrefix = "/system"
 		clockPrefix  = systemPrefix + "/clock"
@@ -27,11 +26,11 @@ func (s *TestSuite) TestPrefixPathSet(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the targets
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	gnmiTarget := s.simulator1.Name
 
@@ -138,7 +137,7 @@ func (s *TestSuite) TestPrefixPathSet(ctx context.Context) {
 			prefixPath := gnmiutils.GetTargetPath(testCase.prefixTarget, testCase.prefixPath)[0]
 
 			onosConfigSetReq := &gnmiutils.SetRequest{
-				Ctx:         ctx,
+				Ctx:         s.Context(),
 				Client:      gnmiClient,
 				Prefix:      prefixPath,
 				UpdatePaths: targetPaths,
@@ -155,7 +154,7 @@ func (s *TestSuite) TestPrefixPathSet(ctx context.Context) {
 
 			// Set the requested value with the requested path and prefix
 			var onosConfigGetReq = &gnmiutils.GetRequest{
-				Ctx:      ctx,
+				Ctx:      s.Context(),
 				Client:   gnmiClient,
 				Paths:    targetPaths,
 				Prefix:   prefixPath,
@@ -166,7 +165,7 @@ func (s *TestSuite) TestPrefixPathSet(ctx context.Context) {
 			onosConfigGetReq.CheckValues(s.T(), testCase.values...)
 
 			// Check that the value was set correctly on the target
-			simClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
+			simClient := s.NewSimulatorGNMIClientOrFail(s.simulator1.Name)
 			targets := make([]string, 0)
 			for range testCase.fullPaths {
 				targets = append(targets, s.simulator1.Name)
@@ -174,7 +173,7 @@ func (s *TestSuite) TestPrefixPathSet(ctx context.Context) {
 			simPaths := gnmiutils.GetTargetPaths(targets, testCase.fullPaths)
 
 			simulatorGetReq := &gnmiutils.GetRequest{
-				Ctx:      ctx,
+				Ctx:      s.Context(),
 				Client:   simClient,
 				Paths:    simPaths,
 				Encoding: gnmiapi.Encoding_JSON,

@@ -5,7 +5,6 @@
 package rbac
 
 import (
-	"context"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -29,15 +28,15 @@ func getLeafPath(interfaceName string, leafName string) string {
 	return rootPath + "/config/" + leafName
 }
 
-func (s *TestSuite) setUpInterfaces(ctx context.Context, target string, password string) {
+func (s *TestSuite) setUpInterfaces(target string, password string) {
 	// get an access token
 	token, err := rbac.FetchATokenViaKeyCloak(keycloakURL, "alicea", password)
 	s.NoError(err)
 	s.NotNil(token)
 
 	// Make a GNMI client to use for requests
-	ctx = rbac.GetBearerContext(ctx, token)
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
+	ctx := rbac.GetBearerContext(s.Context(), token)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.WithRetry)
 
 	var interfaceNames = [...]string{starbucksInterface, acmeInterface, otherInterface}
 
@@ -69,7 +68,7 @@ func (s *TestSuite) setUpInterfaces(ctx context.Context, target string, password
 }
 
 // TestGetOperations tests get operations to a protected API with various users
-func (s *TestSuite) TestGetOperations(ctx context.Context) {
+func (s *TestSuite) TestGetOperations() {
 	testCases := map[string]struct {
 		userName      string
 		interfaceName string
@@ -195,7 +194,7 @@ func (s *TestSuite) TestGetOperations(ctx context.Context) {
 		},
 	}
 
-	s.setUpInterfaces(ctx, s.simulator.Name, s.keycloakPassword)
+	s.setUpInterfaces(s.simulator.Name, s.keycloakPassword)
 
 	for name, testCase := range testCases {
 		s.Run(name, func() {
@@ -204,8 +203,8 @@ func (s *TestSuite) TestGetOperations(ctx context.Context) {
 			s.NotNil(token)
 
 			// Make a GNMI client to use for requests
-			ctx := rbac.GetBearerContext(ctx, token)
-			gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
+			ctx := rbac.GetBearerContext(s.Context(), token)
+			gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.WithRetry)
 			s.NotNil(gnmiClient)
 
 			descriptionPath := getLeafPath(testCase.interfaceName, descriptionLeafName)

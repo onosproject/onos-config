@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
@@ -15,17 +14,17 @@ import (
 )
 
 // TestGetAllTargets tests retrieval of all target IDs via path.Target="*"
-func (s *TestSuite) TestGetAllTargets(ctx context.Context) {
+func (s *TestSuite) TestGetAllTargets() {
 	// Wait for config to connect to both simulators
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator2.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator1.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator2.Name))
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// Get the list of all targets via get query on target "*"
 	var getReq = &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     gnmiClient,
 		Encoding:   gnmiapi.Encoding_PROTO,
 		Extensions: s.SyncExtension(),

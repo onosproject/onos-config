@@ -6,7 +6,6 @@
 package config
 
 import (
-	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiapi "github.com/openconfig/gnmi/proto/gnmi"
@@ -22,17 +21,17 @@ const (
 )
 
 // TestOfflineTarget tests set/query of a single GNMI path to a single target that is initially not connected to onos-config
-func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
+func (s *TestSuite) TestOfflineTarget() {
 	// create a target entity in topo
-	s.createOfflineTarget(ctx, offlineTargetName, "devicesim", "1.0.0", offlineTargetName+"-device-simulator:11161")
+	s.createOfflineTarget(offlineTargetName, "devicesim", "1.0.0", offlineTargetName+"-device-simulator:11161")
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.WithRetry)
 
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: targetPath,
@@ -40,13 +39,13 @@ func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
 	setReq.SetOrFail(s.T())
 
 	// Install and start target simulator
-	s.SetupSimulator(ctx, offlineTargetName, false)
-	defer s.TearDownSimulator(ctx, offlineTargetName)
+	s.SetupSimulator(offlineTargetName, false)
+	defer s.TearDownSimulator(offlineTargetName)
 
 	// Wait for config to connect to the target
-	s.True(s.WaitForTargetAvailable(ctx, offlineTargetName))
+	s.True(s.WaitForTargetAvailable(offlineTargetName))
 	var getConfigReq = &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     gnmiClient,
 		Paths:      targetPath,
 		Extensions: s.SyncExtension(),
@@ -55,9 +54,9 @@ func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
 	getConfigReq.CheckValues(s.T(), modValue)
 
 	// Check that the value was set properly on the target, wait for configuration gets completed
-	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, offlineTargetName)
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(offlineTargetName)
 	var getTargetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetGnmiClient,
 		Encoding: gnmiapi.Encoding_JSON,
 		Paths:    targetPath,
@@ -65,13 +64,13 @@ func (s *TestSuite) TestOfflineTarget(ctx context.Context) {
 	getTargetReq.CheckValues(s.T(), modValue)
 }
 
-func (s *TestSuite) createOfflineTarget(ctx context.Context, targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {
+func (s *TestSuite) createOfflineTarget(targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {
 	topoClient, err := s.NewTopoClient()
 	s.NotNil(topoClient)
 	s.Nil(err)
 
 	newTarget, err := s.NewTargetEntity(string(targetID), targetType, targetVersion, targetAddress)
 	s.NoError(err)
-	err = topoClient.Create(ctx, newTarget)
+	err = topoClient.Create(s.Context(), newTarget)
 	s.NoError(err)
 }

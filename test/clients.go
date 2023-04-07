@@ -5,7 +5,6 @@
 package test
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
@@ -44,8 +43,8 @@ func (s *Suite) NewTopoClient() (toposdk.Client, error) {
 }
 
 // NewAdminServiceClient :
-func (s *Suite) NewAdminServiceClient(ctx context.Context) (admin.ConfigAdminServiceClient, error) {
-	conn, err := s.getOnosConfigConnection(ctx)
+func (s *Suite) NewAdminServiceClient() (admin.ConfigAdminServiceClient, error) {
+	conn, err := s.getOnosConfigConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +52,8 @@ func (s *Suite) NewAdminServiceClient(ctx context.Context) (admin.ConfigAdminSer
 }
 
 // NewTransactionServiceClient :
-func (s *Suite) NewTransactionServiceClient(ctx context.Context) (admin.TransactionServiceClient, error) {
-	conn, err := s.getOnosConfigConnection(ctx)
+func (s *Suite) NewTransactionServiceClient() (admin.TransactionServiceClient, error) {
+	conn, err := s.getOnosConfigConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +61,8 @@ func (s *Suite) NewTransactionServiceClient(ctx context.Context) (admin.Transact
 }
 
 // NewConfigurationServiceClient returns configuration store client
-func (s *Suite) NewConfigurationServiceClient(ctx context.Context) (admin.ConfigurationServiceClient, error) {
-	conn, err := s.getOnosConfigConnection(ctx)
+func (s *Suite) NewConfigurationServiceClient() (admin.ConfigurationServiceClient, error) {
+	conn, err := s.getOnosConfigConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -85,12 +84,12 @@ func (s *Suite) GetOnosConfigDestination() (gnmiclient.Destination, error) {
 	}, nil
 }
 
-func (s *Suite) getOnosConfigConnection(ctx context.Context) (*grpc.ClientConn, error) {
+func (s *Suite) getOnosConfigConnection() (*grpc.ClientConn, error) {
 	tlsConfig, err := s.getClientCredentials()
 	if err != nil {
 		return nil, err
 	}
-	return grpc.DialContext(ctx, onosConfig, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	return grpc.DialContext(s.Context(), onosConfig, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 }
 
 // getClientCredentials returns the credentials for a service client
@@ -106,7 +105,7 @@ func (s *Suite) getClientCredentials() (*tls.Config, error) {
 }
 
 // NewSimulatorGNMIClientOrFail creates a GNMI client to a target. If there is an error, the test is failed
-func (s *Suite) NewSimulatorGNMIClientOrFail(ctx context.Context, simulator string) gnmiclient.Impl {
+func (s *Suite) NewSimulatorGNMIClientOrFail(simulator string) gnmiclient.Impl {
 	s.T().Helper()
 	dest := gnmiclient.Destination{
 		Addrs:   []string{fmt.Sprintf("%s-device-simulator:11161", simulator)},
@@ -114,11 +113,11 @@ func (s *Suite) NewSimulatorGNMIClientOrFail(ctx context.Context, simulator stri
 		Timeout: 10 * time.Second,
 	}
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	return s.newGNMIClientOrFail(ctx, dest, opts)
+	return s.newGNMIClientOrFail(dest, opts)
 }
 
 // NewOnosConfigGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
-func (s *Suite) NewOnosConfigGNMIClientOrFail(ctx context.Context, retryOption RetryOption) gnmiclient.Impl {
+func (s *Suite) NewOnosConfigGNMIClientOrFail(retryOption RetryOption) gnmiclient.Impl {
 	s.T().Helper()
 	dest, err := s.GetOnosConfigDestination()
 	s.NoError(err)
@@ -128,16 +127,16 @@ func (s *Suite) NewOnosConfigGNMIClientOrFail(ctx context.Context, retryOption R
 		opts = append(opts, grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()))
 	}
 
-	return s.newGNMIClientOrFail(ctx, dest, opts)
+	return s.newGNMIClientOrFail(dest, opts)
 }
 
 // newGNMIClientOrFail returns a gnmi client
-func (s *Suite) newGNMIClientOrFail(ctx context.Context, dest gnmiclient.Destination, opts []grpc.DialOption) gnmiclient.Impl {
+func (s *Suite) newGNMIClientOrFail(dest gnmiclient.Destination, opts []grpc.DialOption) gnmiclient.Impl {
 	opts = append(opts, grpc.WithBlock())
 	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)))
-	conn, err := grpc.DialContext(ctx, dest.Addrs[0], opts...)
+	conn, err := grpc.DialContext(s.Context(), dest.Addrs[0], opts...)
 	s.NoError(err)
-	client, err := gclient.NewFromConn(ctx, conn, dest)
+	client, err := gclient.NewFromConn(s.Context(), conn, dest)
 	s.NoError(err)
 	return client
 }

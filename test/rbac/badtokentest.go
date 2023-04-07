@@ -5,7 +5,6 @@
 package rbac
 
 import (
-	"context"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -14,7 +13,7 @@ import (
 )
 
 // TestBadTokens tests access to a protected API with no access token supplied
-func (s *TestSuite) TestBadTokens(ctx context.Context) {
+func (s *TestSuite) TestBadTokens() {
 	const (
 		tzValue      = "Europe/Dublin"
 		tzPath       = "/system/clock/config/timezone-name"
@@ -91,8 +90,8 @@ func (s *TestSuite) TestBadTokens(ctx context.Context) {
 			s.NotNil(token)
 
 			// Make a GNMI client to use for requests
-			ctx := rbac.GetBearerContext(ctx, testCase.token)
-			gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+			ctx := rbac.GetBearerContext(s.Context(), testCase.token)
+			gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 			// Try to fetch a value from the GNMI client
 			var onosConfigGetReq = &gnmiutils.GetRequest{

@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -23,20 +22,20 @@ const (
 )
 
 // TestUpdateDelete tests update and delete paths in a single GNMI request
-func (s *TestSuite) TestUpdateDelete(ctx context.Context) {
+func (s *TestSuite) TestUpdateDelete() {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// Create interface tree using gNMI client
 	setNamePath := []proto.GNMIPath{
 		{TargetName: s.simulator1.Name, Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
@@ -45,7 +44,7 @@ func (s *TestSuite) TestUpdateDelete(ctx context.Context) {
 	setReq.SetOrFail(s.T())
 
 	var getConfigReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}

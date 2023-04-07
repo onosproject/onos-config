@@ -5,7 +5,6 @@
 package scaling
 
 import (
-	"context"
 	"fmt"
 	"github.com/divan/num2words"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -35,16 +34,16 @@ func ifDescription(ifIdx int) string {
 	return fmt.Sprintf("if-%d (%s): %s", ifIdx, num2words.Convert(ifIdx), longIfDescription)
 }
 
-func (s *TestSuite) testHugeNumberOfSets(ctx context.Context, encoding gnmiapi.Encoding) {
+func (s *TestSuite) testHugeNumberOfSets(encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
@@ -65,7 +64,7 @@ func (s *TestSuite) testHugeNumberOfSets(ctx context.Context, encoding gnmiapi.E
 	}
 
 	getConfigReq := &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Encoding: encoding,
 	}
@@ -78,8 +77,8 @@ func (s *TestSuite) testHugeNumberOfSets(ctx context.Context, encoding gnmiapi.E
 }
 
 // TestHugeNumberOfSets tests a huge number of sets to a single device, to test the limits of configuration
-func (s *TestSuite) TestHugeNumberOfSets(ctx context.Context) {
+func (s *TestSuite) TestHugeNumberOfSets() {
 	s.Run("TestHugeNumberOfSets PROTO", func() {
-		s.testHugeNumberOfSets(ctx, gnmiapi.Encoding_PROTO)
+		s.testHugeNumberOfSets(gnmiapi.Encoding_PROTO)
 	})
 }
