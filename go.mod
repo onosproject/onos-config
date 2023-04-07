@@ -87,5 +87,3 @@ require (
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3
