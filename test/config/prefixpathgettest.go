@@ -6,7 +6,6 @@
 package config
 
 import (
-	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -15,7 +14,7 @@ import (
 )
 
 // TestPrefixPathGet tests GNMI queries using a prefix + path
-func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
+func (s *TestSuite) TestPrefixPathGet() {
 	const (
 		systemPrefix = "/system"
 		clockPrefix  = systemPrefix + "/clock"
@@ -29,11 +28,11 @@ func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the targets
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	gnmiTarget := s.simulator1.Name
 
@@ -123,7 +122,7 @@ func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
 	// Set a new value for the time zone using onos-config
 	fullTargetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, fullTzPath, tzValue, proto.StringVal)
 	var onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: fullTargetPaths,
 		Extensions:  s.SyncExtension(),
@@ -134,7 +133,7 @@ func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
 	// set a value for the MOTD using onos-config
 	motdFullTargetPaths := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, fullMotdPath, motdValue, proto.StringVal)
 	var motdOnosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: motdFullTargetPaths,
 		Extensions:  s.SyncExtension(),
@@ -151,7 +150,7 @@ func (s *TestSuite) TestPrefixPathGet(ctx context.Context) {
 
 			// Set up requests
 			var onosConfigGetReq = &gnmiutils.GetRequest{
-				Ctx:      ctx,
+				Ctx:      s.Context(),
 				Client:   gnmiClient,
 				Paths:    targetPaths,
 				Prefix:   prefixPaths[0],

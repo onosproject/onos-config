@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -24,22 +23,22 @@ func checkForPath(paths []proto.GNMIPath, wantedPath string) bool {
 }
 
 // TestDeletePathLeaf checks that when a leaf node is removed, its path is removed
-func (s *TestSuite) TestDeletePathLeaf(ctx context.Context) {
+func (s *TestSuite) TestDeletePathLeaf() {
 	const (
 		leafPath  = "/system/config/login-banner"
 		leafValue = "123"
 	)
 
 	// Wait for config to connect to the target
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator1.Name))
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// Set a value so onos-config starts to track the path
 	targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, leafPath, leafValue, proto.StringVal)
 	setReq := &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
@@ -48,7 +47,7 @@ func (s *TestSuite) TestDeletePathLeaf(ctx context.Context) {
 	setReq.SetOrFail(s.T())
 
 	getReq := &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     gnmiClient,
 		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,
@@ -72,7 +71,7 @@ func (s *TestSuite) TestDeletePathLeaf(ctx context.Context) {
 }
 
 // TestDeleteRoot checks that when a root node is removed, its path is removed
-func (s *TestSuite) TestDeleteRoot(ctx context.Context) {
+func (s *TestSuite) TestDeleteRoot() {
 	const (
 		interfaceName   = "testinterface"
 		rootPath        = "/interfaces/interface[name=" + interfaceName + "]"
@@ -81,17 +80,17 @@ func (s *TestSuite) TestDeleteRoot(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the target
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator1.Name))
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// Create new interface tree using gNMI client
 	setNamePath := []proto.GNMIPath{
 		{TargetName: s.simulator1.Name, Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 	}
 	setReq := &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
@@ -104,7 +103,7 @@ func (s *TestSuite) TestDeleteRoot(ctx context.Context) {
 		{TargetName: s.simulator1.Name, Path: descriptionPath, PathDataValue: "123", PathDataType: proto.StringVal},
 	}
 	setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Extensions:  s.SyncExtension(),
 		Encoding:    gnmiapi.Encoding_PROTO,
@@ -114,7 +113,7 @@ func (s *TestSuite) TestDeleteRoot(ctx context.Context) {
 
 	// Make sure that the new paths are there by reading all the paths from the top
 	getReq := &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     gnmiClient,
 		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,

@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -39,14 +38,14 @@ const (
 // TestCascadingDelete checks that when a root leaf or an intermediate leaf is removed, all its children are removed too.
 // This test tests verifies only single scenario - tree-path deletion (i.e., /system/config and /system/openflow/agent)
 // Container-path deletion is verified in treepathtest.go.
-func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
+func (s *TestSuite) TestCascadingDelete() {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
-	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
+	targetClient := s.NewSimulatorGNMIClientOrFail(s.simulator1.Name)
 
 	// setting path-value for ../config/hostname
 	// Creating the GNMI path
@@ -54,19 +53,19 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// Set up requests
 	var onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPath1,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	var simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPath1,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	var onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPath1,
 		Extensions:  s.SyncExtension(),
@@ -86,19 +85,19 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPath2,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPath2,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPath2,
 		Extensions:  s.SyncExtension(),
@@ -118,19 +117,19 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPath3,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPath3,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPath3,
 		Extensions:  s.SyncExtension(),
@@ -150,19 +149,19 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPath4,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPath4,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPath4,
 		Extensions:  s.SyncExtension(),
@@ -182,19 +181,19 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPath5,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPath5,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPath5,
 		Extensions:  s.SyncExtension(),
@@ -214,19 +213,19 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPath6,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPath6,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPath6,
 		Extensions:  s.SyncExtension(),
@@ -246,19 +245,19 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPath7,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPath7,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPath7,
 		Extensions:  s.SyncExtension(),
@@ -278,19 +277,19 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPath8,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPath8,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPath8,
 		Extensions:  s.SyncExtension(),
@@ -310,19 +309,19 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 
 	// Set up requests
 	onosConfigGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Paths:    targetPath9,
 		Encoding: gnmiapi.Encoding_PROTO,
 	}
 	simulatorGetReq = &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   targetClient,
 		Paths:    targetPath9,
 		Encoding: gnmiapi.Encoding_JSON,
 	}
 	onosConfigSetReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		UpdatePaths: targetPath9,
 		Extensions:  s.SyncExtension(),
@@ -356,7 +355,7 @@ func (s *TestSuite) TestCascadingDelete(ctx context.Context) {
 	simulatorGetReq.CheckValuesDeleted(s.T())
 
 	getReq := &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     gnmiClient,
 		Extensions: s.SyncExtension(),
 		Encoding:   gnmiapi.Encoding_PROTO,

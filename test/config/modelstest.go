@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -15,7 +14,7 @@ import (
 )
 
 // TestModels tests GNMI operation involving unknown or illegal paths
-func (s *TestSuite) TestModels(ctx context.Context) {
+func (s *TestSuite) TestModels() {
 	const (
 		unknownPath       = "/system/config/no-such-path"
 		ntpPath           = "/system/ntp/state/enable-ntp-auth"
@@ -24,7 +23,7 @@ func (s *TestSuite) TestModels(ctx context.Context) {
 	)
 
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Data to run the test cases
@@ -43,7 +42,7 @@ func (s *TestSuite) TestModels(ctx context.Context) {
 	}
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// Run the test cases
 	for _, testCase := range testCases {
@@ -58,7 +57,7 @@ func (s *TestSuite) TestModels(ctx context.Context) {
 
 			setResult := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, path, value, valueType)
 			var setReq = &gnmiutils.SetRequest{
-				Ctx:         ctx,
+				Ctx:         s.Context(),
 				Client:      gnmiClient,
 				Extensions:  s.SyncExtension(),
 				Encoding:    gnmiapi.Encoding_PROTO,

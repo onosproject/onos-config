@@ -5,7 +5,6 @@
 package scaling
 
 import (
-	"context"
 	"fmt"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
@@ -34,20 +33,20 @@ const (
 	newDescription             = "description"
 )
 
-func (s *TestSuite) testSetTooBig(ctx context.Context, encoding gnmiapi.Encoding) {
+func (s *TestSuite) testSetTooBig(encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// First do a single set path by setting the name of new root using gNMI client
 	setNamePath := []proto.GNMIPath{
 		{TargetName: s.simulator.Name, Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: setNamePath,
@@ -55,7 +54,7 @@ func (s *TestSuite) testSetTooBig(ctx context.Context, encoding gnmiapi.Encoding
 	setReq.SetOrFail(s.T())
 
 	getConfigReq := &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Encoding: encoding,
 	}
@@ -88,8 +87,8 @@ func (s *TestSuite) testSetTooBig(ctx context.Context, encoding gnmiapi.Encoding
 }
 
 // TestSetTooBig tests create/set/delete of a tree of GNMI paths to a single device, where they exceed the size limit
-func (s *TestSuite) TestSetTooBig(ctx context.Context) {
+func (s *TestSuite) TestSetTooBig() {
 	s.Run("TestSetTooBig PROTO", func() {
-		s.testSetTooBig(ctx, gnmiapi.Encoding_PROTO)
+		s.testSetTooBig(gnmiapi.Encoding_PROTO)
 	})
 }

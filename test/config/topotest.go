@@ -11,12 +11,12 @@ import (
 )
 
 // checkControlRelation queries a single control relation between the config and target, and fails if not found
-func (s *TestSuite) checkControlRelations(ctx context.Context, targetID topoapi.ID, c toposdk.Client) []topoapi.Object {
+func (s *TestSuite) checkControlRelations(targetID topoapi.ID, c toposdk.Client) []topoapi.Object {
 	numberOfConfigNodes := s.umbrella.Get("onos-config.replicaCount").Int()
 	numberOfTargets := 1
 	numberOfControlRelationships := numberOfTargets * numberOfConfigNodes
 
-	relationObjects, err := c.List(ctx, toposdk.WithListFilters(&topoapi.Filters{
+	relationObjects, err := c.List(s.Context(), toposdk.WithListFilters(&topoapi.Filters{
 		KindFilter: &topoapi.Filter{
 			Filter: &topoapi.Filter_Equal_{
 				Equal_: &topoapi.EqualFilter{
@@ -37,7 +37,7 @@ func (s *TestSuite) checkControlRelations(ctx context.Context, targetID topoapi.
 }
 
 // checkTopo makes sure that the topo entries are correct
-func (s *TestSuite) checkTopo(ctx context.Context, targetID topoapi.ID) {
+func (s *TestSuite) checkTopo(targetID topoapi.ID) {
 
 	// Get a topology API client
 	client, err := s.NewTopoClient()
@@ -45,7 +45,7 @@ func (s *TestSuite) checkTopo(ctx context.Context, targetID topoapi.ID) {
 	s.NotNil(client)
 
 	// check number of control relations from onos-config instances to the simulated target
-	relationObjects := s.checkControlRelations(ctx, targetID, client)
+	relationObjects := s.checkControlRelations(targetID, client)
 	for _, relationObject := range relationObjects {
 		controlRelation := relationObject.GetRelation()
 		// Gets onos-config master node associated with the target
@@ -65,11 +65,11 @@ func (s *TestSuite) checkTopo(ctx context.Context, targetID topoapi.ID) {
 }
 
 // TestTopoIntegration checks that the correct topology entities and relations are created
-func (s *TestSuite) TestTopoIntegration(ctx context.Context) {
+func (s *TestSuite) TestTopoIntegration() {
 	// Create simulated targets
 	targetID := "test-topo-integration-target-1"
-	s.SetupSimulator(ctx, targetID, true)
-	s.WaitForTargetAvailable(ctx, topoapi.ID(targetID))
-	defer s.TearDownSimulator(ctx, targetID)
-	s.checkTopo(ctx, topoapi.ID(targetID))
+	s.SetupSimulator(targetID, true)
+	s.WaitForTargetAvailable(topoapi.ID(targetID))
+	defer s.TearDownSimulator(targetID)
+	s.checkTopo(topoapi.ID(targetID))
 }

@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/test"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -31,22 +30,22 @@ var (
 )
 
 // TestCrashedTarget tests that a crashed target receives proper configuration restoration
-func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
+func (s *TestSuite) TestCrashedTarget() {
 	// Wait for the simulator to become available
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator1.Name))
 
 	// Set up crashedTargetPaths to configure
 	targets := []string{s.simulator1.Name}
 	targetPathsForGet := gnmiutils.GetTargetPaths(targets, crashedTargetPaths)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// Set initial crashedTargetValues
 	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, crashedTargetPaths, crashedTargetValues)
 
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Encoding:    gnmiapi.Encoding_PROTO,
 		Extensions:  s.SyncExtension(),
@@ -56,7 +55,7 @@ func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 
 	// Make sure the configuration has been applied to both onos-config
 	var getReq = &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     gnmiClient,
 		Encoding:   gnmiapi.Encoding_PROTO,
 		Extensions: s.SyncExtension(),
@@ -71,42 +70,42 @@ func (s *TestSuite) TestCrashedTarget(ctx context.Context) {
 	getReq.CheckValues(s.T(), crashedTargetValue2)
 
 	// ... and the target
-	_ = s.checkTarget(ctx, s.simulator1.Name, targetPathsForGet, true)
+	_ = s.checkTarget(s.simulator1.Name, targetPathsForGet, true)
 
 	// Crash the target simulator
-	pods, err := s.CoreV1().Pods(s.Namespace()).List(ctx, metav1.ListOptions{
+	pods, err := s.CoreV1().Pods(s.Namespace()).List(s.Context(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("name=%s-device-simulator", s.simulator1.Name),
 	})
 	s.NoError(err)
 	s.Len(pods.Items, 1)
 
 	// Delete the simulator pod
-	err = s.CoreV1().Pods(s.Namespace()).Delete(ctx, pods.Items[0].Name, metav1.DeleteOptions{})
+	err = s.CoreV1().Pods(s.Namespace()).Delete(s.Context(), pods.Items[0].Name, metav1.DeleteOptions{})
 	s.NoError(err)
 
-	s.WaitForTargetUnavailable(ctx, topo.ID(s.simulator1.Name))
+	s.WaitForTargetUnavailable(topo.ID(s.simulator1.Name))
 
 	// Wait for it to become available
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator1.Name))
 
 	// Settle the race between reapplying the changes to the freshly restarted target and the subsequent checks.
 	for i := 0; i < 30; i++ {
-		if ok := s.checkTarget(ctx, s.simulator1.Name, targetPathsForGet, false); ok {
+		if ok := s.checkTarget(s.simulator1.Name, targetPathsForGet, false); ok {
 			break
 		}
 		time.Sleep(2 * time.Second)
 	}
 
 	// Make sure the configuration has been re-applied to the target
-	_ = s.checkTarget(ctx, s.simulator1.Name, targetPathsForGet, true)
+	_ = s.checkTarget(s.simulator1.Name, targetPathsForGet, true)
 }
 
 // Check that the crashedTargetValues are set on the target
-func (s *TestSuite) checkTarget(ctx context.Context, target string, targetPathsForGet []proto.GNMIPath, enforce bool) bool {
-	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, target)
+func (s *TestSuite) checkTarget(target string, targetPathsForGet []proto.GNMIPath, enforce bool) bool {
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(target)
 
 	var targetGetReq = &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     targetGnmiClient,
 		Encoding:   gnmiapi.Encoding_JSON,
 		Extensions: s.SyncExtension(),

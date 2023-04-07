@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -16,7 +15,7 @@ import (
 )
 
 // TestVersionOverride tests using version override extension
-func (s *TestSuite) TestVersionOverride(ctx context.Context) {
+func (s *TestSuite) TestVersionOverride() {
 	const (
 		value1 = "test-motd-banner"
 		path1  = "/system/config/motd-banner"
@@ -28,14 +27,14 @@ func (s *TestSuite) TestVersionOverride(ctx context.Context) {
 	)
 
 	// Change topo entity for the simulator to non-existent type/version
-	err := s.UpdateTargetTypeVersion(ctx, topo.ID(s.simulator1.Name), "testdevice", "1.0.0")
+	err := s.UpdateTargetTypeVersion(topo.ID(s.simulator1.Name), "testdevice", "1.0.0")
 	s.NoError(err)
 
 	// Wait for config to connect to the first simulator
-	s.WaitForTargetAvailable(ctx, topo.ID(s.simulator1.Name))
+	s.WaitForTargetAvailable(topo.ID(s.simulator1.Name))
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	// Set up paths for the set
 	targets := []string{s.simulator1.Name}
@@ -50,7 +49,7 @@ func (s *TestSuite) TestVersionOverride(ctx context.Context) {
 	extensions = append(extensions, ttv)
 
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Encoding:    gnmiapi.Encoding_PROTO,
 		Extensions:  extensions,
@@ -59,10 +58,10 @@ func (s *TestSuite) TestVersionOverride(ctx context.Context) {
 	setReq.SetOrFail(s.T())
 
 	// Make sure the configuration has been applied to the target
-	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(s.simulator1.Name)
 
 	var targetGetReq = &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     targetGnmiClient,
 		Encoding:   gnmiapi.Encoding_JSON,
 		Extensions: s.SyncExtension(),
@@ -72,7 +71,7 @@ func (s *TestSuite) TestVersionOverride(ctx context.Context) {
 
 	// Make sure the configuration has been received by onos-config
 	var getReq = &gnmiutils.GetRequest{
-		Ctx:        ctx,
+		Ctx:        s.Context(),
 		Client:     gnmiClient,
 		Encoding:   gnmiapi.Encoding_PROTO,
 		Extensions: extensions,

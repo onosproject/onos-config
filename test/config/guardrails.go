@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -66,7 +65,7 @@ func (s *TestSuite) testTXPowerViolation(setReq *gnmiutils.SetRequest) error {
 }
 
 // TestGuardRails tests GNMI operations that violate guard rails
-func (s *TestSuite) TestGuardRails(ctx context.Context) {
+func (s *TestSuite) TestGuardRails() {
 	const (
 		testTargetName         = "test1"
 		testDeviceModelName    = "testdevice"
@@ -100,13 +99,13 @@ func (s *TestSuite) TestGuardRails(ctx context.Context) {
 	s.NotNil(topoClient)
 	s.Nil(err)
 
-	err = topoClient.Create(ctx, target)
+	err = topoClient.Create(s.Context(), target)
 	s.NoError(err)
 
 	// make a set request for use in the tests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 	setReq := &gnmiutils.SetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Encoding: gnmi.Encoding_PROTO,
 	}

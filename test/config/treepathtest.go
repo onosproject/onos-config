@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -22,13 +21,13 @@ const (
 	newDescription         = "description"
 )
 
-func (s *TestSuite) testTreePath(ctx context.Context, encoding gnmiapi.Encoding) {
+func (s *TestSuite) testTreePath(encoding gnmiapi.Encoding) {
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	getPath := gnmiutils.GetTargetPath(s.simulator1.Name, newRootEnabledPath)
 
@@ -37,7 +36,7 @@ func (s *TestSuite) testTreePath(ctx context.Context, encoding gnmiapi.Encoding)
 		{TargetName: s.simulator1.Name, Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
 	var setReq = &gnmiutils.SetRequest{
-		Ctx:         ctx,
+		Ctx:         s.Context(),
 		Client:      gnmiClient,
 		Encoding:    gnmiapi.Encoding_PROTO,
 		UpdatePaths: setNamePath,
@@ -53,7 +52,7 @@ func (s *TestSuite) testTreePath(ctx context.Context, encoding gnmiapi.Encoding)
 	setReq.SetOrFail(s.T())
 
 	getConfigReq := &gnmiutils.GetRequest{
-		Ctx:      ctx,
+		Ctx:      s.Context(),
 		Client:   gnmiClient,
 		Encoding: encoding,
 	}
@@ -81,11 +80,11 @@ func (s *TestSuite) testTreePath(ctx context.Context, encoding gnmiapi.Encoding)
 }
 
 // TestTreePath tests create/set/delete of a tree of GNMI paths to a single device
-func (s *TestSuite) TestTreePath(ctx context.Context) {
+func (s *TestSuite) TestTreePath() {
 	s.Run("TestTreePath PROTO", func() {
-		s.testTreePath(ctx, gnmiapi.Encoding_PROTO)
+		s.testTreePath(gnmiapi.Encoding_PROTO)
 	})
 	s.Run("TestTreePath JSON", func() {
-		s.testTreePath(ctx, gnmiapi.Encoding_JSON)
+		s.testTreePath(gnmiapi.Encoding_JSON)
 	})
 }

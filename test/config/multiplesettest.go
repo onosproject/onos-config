@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	"github.com/Pallinder/go-randomdata"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
@@ -20,16 +19,16 @@ func generateTimezoneName() string {
 	return timeZone
 }
 
-func (s *TestSuite) testMultipleSet(ctx context.Context, encoding gnmiapi.Encoding) {
+func (s *TestSuite) testMultipleSet(encoding gnmiapi.Encoding) {
 	generateTimezoneName()
 
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator1.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
-	targetClient := s.NewSimulatorGNMIClientOrFail(ctx, s.simulator1.Name)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
+	targetClient := s.NewSimulatorGNMIClientOrFail(s.simulator1.Name)
 
 	for i := 0; i < 10; i++ {
 
@@ -38,7 +37,7 @@ func (s *TestSuite) testMultipleSet(ctx context.Context, encoding gnmiapi.Encodi
 		// Set a value using gNMI client
 		targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, tzPath, msValue, proto.StringVal)
 		var setReq = &gnmiutils.SetRequest{
-			Ctx:         ctx,
+			Ctx:         s.Context(),
 			Client:      gnmiClient,
 			Extensions:  s.SyncExtension(),
 			Encoding:    gnmiapi.Encoding_PROTO,
@@ -50,7 +49,7 @@ func (s *TestSuite) testMultipleSet(ctx context.Context, encoding gnmiapi.Encodi
 
 		// Check that the value was set correctly, both in onos-config and the target
 		var getConfigReq = &gnmiutils.GetRequest{
-			Ctx:        ctx,
+			Ctx:        s.Context(),
 			Client:     gnmiClient,
 			Paths:      targetPath,
 			Extensions: s.SyncExtension(),
@@ -58,7 +57,7 @@ func (s *TestSuite) testMultipleSet(ctx context.Context, encoding gnmiapi.Encodi
 		}
 		getConfigReq.CheckValues(s.T(), msValue)
 		var getTargetReq = &gnmiutils.GetRequest{
-			Ctx:      ctx,
+			Ctx:      s.Context(),
 			Client:   targetClient,
 			Encoding: gnmiapi.Encoding_JSON,
 			Paths:    targetPath,
@@ -77,11 +76,11 @@ func (s *TestSuite) testMultipleSet(ctx context.Context, encoding gnmiapi.Encodi
 }
 
 // TestMultipleSet tests multiple query/set/delete of a single GNMI path to a single device
-func (s *TestSuite) TestMultipleSet(ctx context.Context) {
+func (s *TestSuite) TestMultipleSet() {
 	s.Run("TestMultipleSet PROTO", func() {
-		s.testMultipleSet(ctx, gnmiapi.Encoding_PROTO)
+		s.testMultipleSet(gnmiapi.Encoding_PROTO)
 	})
 	s.Run("TestMultipleSet JSON", func() {
-		s.testMultipleSet(ctx, gnmiapi.Encoding_JSON)
+		s.testMultipleSet(gnmiapi.Encoding_JSON)
 	})
 }

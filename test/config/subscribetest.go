@@ -5,7 +5,6 @@
 package config
 
 import (
-	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -17,17 +16,17 @@ import (
 var log = logging.GetLogger("northbound", "gnmi")
 
 // TestSubscribe tests subscribe NB API
-func (s *TestSuite) TestSubscribe(ctx context.Context) {
+func (s *TestSuite) TestSubscribe() {
 	generateTimezoneName()
 
 	// Wait for config to connect to the target
-	ready := s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator1.Name))
+	ready := s.WaitForTargetAvailable(topoapi.ID(s.simulator1.Name))
 	s.True(ready)
-	ready = s.WaitForTargetAvailable(ctx, topoapi.ID(s.simulator2.Name))
+	ready = s.WaitForTargetAvailable(topoapi.ID(s.simulator2.Name))
 	s.True(ready)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.NoRetry)
+	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.NoRetry)
 
 	sr := &gnmiapi.SubscribeRequest{
 		Request: &gnmiapi.SubscribeRequest_Subscribe{
@@ -48,7 +47,7 @@ func (s *TestSuite) TestSubscribe(ctx context.Context) {
 	}
 
 	updates := make([]*gnmiapi.SubscribeResponse_Update, 0, 4)
-	s.subscribe(ctx, gnmiClient, sr, &updates)
+	s.subscribe(gnmiClient, sr, &updates)
 	s.waitForResponses(gnmiClient, &updates, 2)
 }
 
@@ -60,7 +59,7 @@ func getPath(target string, pe ...string) *gnmiapi.Path {
 	return &gnmiapi.Path{Target: target, Elem: elem}
 }
 
-func (s *TestSuite) subscribe(ctx context.Context, gnmiClient baseClient.Impl, req *gnmiapi.SubscribeRequest,
+func (s *TestSuite) subscribe(gnmiClient baseClient.Impl, req *gnmiapi.SubscribeRequest,
 	updates *[]*gnmiapi.SubscribeResponse_Update) {
 
 	q, err := baseClient.NewQuery(req)
@@ -76,7 +75,7 @@ func (s *TestSuite) subscribe(ctx context.Context, gnmiClient baseClient.Impl, r
 		return nil
 	}
 
-	err = gnmiClient.Subscribe(ctx, q)
+	err = gnmiClient.Subscribe(s.Context(), q)
 	s.NoError(err)
 }
 

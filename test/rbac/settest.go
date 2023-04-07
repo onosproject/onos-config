@@ -5,7 +5,6 @@
 package rbac
 
 import (
-	"context"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -14,7 +13,7 @@ import (
 )
 
 // TestSetOperations tests set operations to a protected API with various users
-func (s *TestSuite) TestSetOperations(ctx context.Context) {
+func (s *TestSuite) TestSetOperations() {
 	const (
 		tzValue = "Europe/Dublin"
 		tzPath  = "/system/clock/config/timezone-name"
@@ -53,8 +52,8 @@ func (s *TestSuite) TestSetOperations(ctx context.Context) {
 			s.NotNil(token)
 
 			// Make a GNMI client to use for requests
-			ctx := rbac.GetBearerContext(ctx, token)
-			gnmiClient := s.NewOnosConfigGNMIClientOrFail(ctx, test.WithRetry)
+			ctx := rbac.GetBearerContext(s.Context(), token)
+			gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.WithRetry)
 			s.NotNil(gnmiClient)
 
 			// Get path for the test value
