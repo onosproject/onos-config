@@ -537,8 +537,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			return controller.Result{Requeue: controller.NewID(proposalstore.NewID(proposal.TargetID, proposal.Status.PrevIndex))}, nil
 		}
 
-		// If the configuration is not synchronized, wait for it.
-		if config.Status.State != configapi.ConfigurationStatus_SYNCHRONIZED {
+		// If the configuration is synchronizing, wait for it to complete.
+		if config.Status.State == configapi.ConfigurationStatus_SYNCHRONIZING {
 			log.Infof("Waiting for synchronization of Configuration to target '%s'", proposal.TargetID)
 			return controller.Result{}, nil
 		}
@@ -554,35 +554,24 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			return controller.Result{}, nil
 		}
 
-		// Get the target mastership state
-		mastership := topoapi.MastershipState{}
-		_ = target.GetAspect(&mastership)
-		mastershipTerm := configapi.MastershipTerm(mastership.Term)
-
 		// If the configuration is in an old term, wait for synchronization.
-		if config.Status.Mastership.Term < mastershipTerm {
+		if config.Status.Applied.Mastership.Term < config.Status.Mastership.Term {
 			log.Infof("Waiting for synchronization of Configuration to target '%s'", proposal.TargetID)
 			return controller.Result{}, nil
 		}
 
-		// If the mastership term is older than the last applied term, wait for it to be updated.
-		if mastershipTerm < config.Status.Applied.Mastership.Term {
-			log.Infof("Waiting for mastership change for target '%s'", proposal.TargetID)
-			return controller.Result{}, nil
-		}
-
 		// If the master node ID is not set, skip reconciliation.
-		if mastership.NodeId == "" {
+		if config.Status.Mastership.Master == "" {
 			log.Debugf("No master for target '%s'", proposal.TargetID)
 			return controller.Result{}, nil
 		}
 
 		// If we've made it this far, we know there's a master relation.
 		// Get the relation and check whether this node is the source
-		relation, err := r.topo.Get(ctx, topoapi.ID(mastership.NodeId))
+		relation, err := r.topo.Get(ctx, topoapi.ID(config.Status.Mastership.Master))
 		if err != nil {
 			if !errors.IsNotFound(err) {
-				log.Errorf("Failed fetching master Relation '%s' from topo", mastership.NodeId, err)
+				log.Errorf("Failed fetching master Relation '%s' from topo", config.Status.Mastership.Master, err)
 				return controller.Result{}, err
 			}
 			log.Warnf("Master relation not found for target '%s'", proposal.TargetID)
@@ -668,7 +657,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 						Id: "onos-config",
 					},
 					ElectionId: &gnmi_ext.Uint128{
-						Low: uint64(mastershipTerm),
+						Low: uint64(config.Status.Mastership.Term),
 					},
 				},
 			},
@@ -687,7 +676,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 				// The gNMI Set request can be denied if this master has been superseded by a master in a later term.
 				// Rather than reverting to the STALE state now, wait for this node to see the mastership state change
 				// to avoid flapping between states while the system converges.
-				log.Warnf("Configuration '%s' mastership superseded for term %d", config.ID, mastershipTerm)
+				log.Warnf("Configuration '%s' mastership superseded for term %d", config.ID, config.Status.Mastership.Term)
 				return controller.Result{}, nil
 			default:
 				var failureType configapi.Failure_Type
@@ -719,10 +708,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 				}
 
 				// Update the Configuration's applied index to indicate this Proposal was applied even though it failed.
-				log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, mastershipTerm)
+				log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, config.Status.Mastership.Term)
 				config.Status.Applied.Index = proposal.TransactionIndex
-				config.Status.Applied.Mastership.Master = mastership.NodeId
-				config.Status.Applied.Mastership.Term = mastershipTerm
 				if err := r.configurations.UpdateStatus(ctx, config); err != nil {
 					log.Warnf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 					return controller.Result{}, err
@@ -735,7 +722,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 					Type:        failureType,
 					Description: err.Error(),
 				}
-				proposal.Status.Phases.Apply.Term = mastershipTerm
+				proposal.Status.Phases.Apply.Term = config.Status.Mastership.Term
 				proposal.Status.Phases.Apply.End = getCurrentTimestamp()
 				if err := r.updateProposalStatus(ctx, proposal); err != nil {
 					return controller.Result{}, err
@@ -746,10 +733,8 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		log.Debugf("Received SetResponse %+v", setResponse)
 
 		// Update the Configuration's applied index to indicate this Proposal was applied.
-		log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, mastershipTerm)
+		log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, config.Status.Mastership.Term)
 		config.Status.Applied.Index = proposal.TransactionIndex
-		config.Status.Applied.Mastership.Master = mastership.NodeId
-		config.Status.Applied.Mastership.Term = mastershipTerm
 		if config.Status.Applied.Values == nil {
 			config.Status.Applied.Values = make(map[string]*configapi.PathValue)
 		}
@@ -766,7 +751,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		// Update the proposal state to APPLIED.
 		log.Infof("Applied Proposal '%s'", proposal.ID)
 		proposal.Status.Phases.Apply.State = configapi.ProposalApplyPhase_APPLIED
-		proposal.Status.Phases.Apply.Term = mastershipTerm
+		proposal.Status.Phases.Apply.Term = config.Status.Mastership.Term
 		proposal.Status.Phases.Apply.End = getCurrentTimestamp()
 		if err := r.updateProposalStatus(ctx, proposal); err != nil {
 			return controller.Result{}, err

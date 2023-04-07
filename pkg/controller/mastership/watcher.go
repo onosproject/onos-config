@@ -6,6 +6,9 @@ package mastership
 
 import (
 	"context"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-config/pkg/store/configuration"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"sync"
 
 	"github.com/onosproject/onos-config/pkg/store/topo"
@@ -42,29 +45,64 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 
 	go func() {
+		defer close(ch)
 		for event := range eventCh {
 			log.Debugf("Received topo event '%s'", event.Object.ID)
-			if relation, ok := event.Object.Obj.(*topoapi.Object_Relation); ok &&
-				relation.Relation.KindID == topoapi.CONTROLS {
-				srcEntity, err := w.topo.Get(ctx, relation.Relation.SrcEntityID)
+			switch e := event.Object.Obj.(type) {
+			// If the event is a relation change and the source is ONOS_CONFIG kind, enqueue the target
+			// Configuration to be reconciled.
+			case *topoapi.Object_Relation:
+				// Get the source entity
+				srcEntity, err := w.topo.Get(ctx, e.Relation.SrcEntityID)
 				if err != nil {
-					log.Warn(err)
-				} else if srcEntity.GetEntity().KindID == topoapi.ONOS_CONFIG {
-					ch <- controller.NewID(relation.Relation.TgtEntityID)
+					if !errors.IsNotFound(err) {
+						log.Warn(err)
+					}
+					continue
 				}
 
-			}
-			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
-				// If the entity object has configurable aspect then the controller
-				// can make a connection to it
-				err = event.Object.GetAspect(&topoapi.Configurable{})
-				if err == nil {
-					ch <- controller.NewID(event.Object.ID)
+				// Check that the source is ONOS_CONFIG kind
+				if srcEntity.GetEntity().KindID != topoapi.ONOS_CONFIG {
+					continue
 				}
-			}
 
+				// Get the target entity
+				tgtEntity, err := w.topo.Get(ctx, e.Relation.TgtEntityID)
+				if err != nil {
+					if !errors.IsNotFound(err) {
+						log.Warn(err)
+					}
+					continue
+				}
+
+				// Check that the target has the Configurable aspect
+				configurable := &topoapi.Configurable{}
+				if err := tgtEntity.GetAspect(configurable); err != nil {
+					continue
+				}
+
+				// Enqueue the associated Configuration for reconciliation
+				ch <- controller.NewID(configuration.NewID(
+					configapi.TargetID(tgtEntity.ID),
+					configapi.TargetType(configurable.Type),
+					configapi.TargetVersion(configurable.Version)))
+
+			// If the event is an entity change and the entity has a Configurable aspect, enqueue the
+			// associated Configuration for reconciliation.
+			case *topoapi.Object_Entity:
+				// Check that the entity has the Configurable aspect
+				configurable := &topoapi.Configurable{}
+				if err := event.Object.GetAspect(configurable); err != nil {
+					continue
+				}
+
+				// Enqueue the associated Configuration for reconciliation
+				ch <- controller.NewID(configuration.NewID(
+					configapi.TargetID(event.Object.ID),
+					configapi.TargetType(configurable.Type),
+					configapi.TargetVersion(configurable.Version)))
+			}
 		}
-		close(ch)
 	}()
 
 	return nil
@@ -72,6 +110,48 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 
 // Stop stops the topology watcher
 func (w *TopoWatcher) Stop() {
+	w.mu.Lock()
+	if w.cancel != nil {
+		w.cancel()
+		w.cancel = nil
+	}
+	w.mu.Unlock()
+}
+
+// ConfigurationStoreWatcher configuration store watcher
+type ConfigurationStoreWatcher struct {
+	configurations configuration.Store
+	cancel         context.CancelFunc
+	mu             sync.Mutex
+}
+
+// Start starts the watcher
+func (w *ConfigurationStoreWatcher) Start(ch chan<- controller.ID) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.cancel != nil {
+		return nil
+	}
+
+	eventCh := make(chan configapi.ConfigurationEvent, queueSize)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	err := w.configurations.Watch(ctx, eventCh, configuration.WithReplay())
+	if err != nil {
+		cancel()
+		return err
+	}
+	w.cancel = cancel
+	go func() {
+		for event := range eventCh {
+			ch <- controller.NewID(event.Configuration.ID)
+		}
+	}()
+	return nil
+}
+
+// Stop stops the watcher
+func (w *ConfigurationStoreWatcher) Stop() {
 	w.mu.Lock()
 	if w.cancel != nil {
 		w.cancel()

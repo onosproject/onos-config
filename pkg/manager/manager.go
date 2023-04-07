@@ -134,8 +134,8 @@ func (m *Manager) startTargetController(topo topo.Store, conns sb.ConnManager) e
 }
 
 // startMastershipController starts mastership controller
-func (m *Manager) startMastershipController(topo topo.Store) error {
-	mastershipController := mastershipcontroller.NewController(topo)
+func (m *Manager) startMastershipController(topo topo.Store, configurations configuration.Store) error {
+	mastershipController := mastershipcontroller.NewController(topo, configurations)
 	return mastershipController.Start()
 }
 
@@ -222,7 +222,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	err = m.startMastershipController(topoStore)
+	err = m.startMastershipController(topoStore, configurations)
 	if err != nil {
 		return err
 	}

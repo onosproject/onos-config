@@ -85,27 +85,12 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			return controller.Result{}, err
 		}
 		log.Debugf("Target entity '%s' not found", config.TargetID)
-
-		// If the target was deleted after a master was already elected for it,
-		// SOUND THE ALARM! and revert back to the SYNCHRONIZING state.
-		log.Errorf("Mastership state lost for target '%s'. Future configuration changes may not be applicable!")
-		config.Status.State = configapi.ConfigurationStatus_UNKNOWN
-		config.Status.Mastership.Master = ""
-		config.Status.Mastership.Term = 0
-		if err := r.updateConfigurationStatus(ctx, config); err != nil {
-			return controller.Result{}, err
-		}
 		return controller.Result{}, nil
 	}
 
 	// Get the target configurable configuration
 	configurable := topoapi.Configurable{}
 	_ = target.GetAspect(&configurable)
-
-	// Get the target mastership state
-	mastership := topoapi.MastershipState{}
-	_ = target.GetAspect(&mastership)
-	mastershipTerm := configapi.MastershipTerm(mastership.Term)
 
 	// If the target is persistent, mark the configuration PERSISTED.
 	if configurable.Persistent {
@@ -120,25 +105,22 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return controller.Result{}, nil
 	}
 
-	// If the mastership term has changed, update the configuration and mark it SYNCHRONIZING for the next term.
-	if mastershipTerm > config.Status.Mastership.Term {
-		log.Infof("Synchronizing Configuration '%s'", config.ID)
-		config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZING
-		config.Status.Mastership.Master = mastership.NodeId
-		config.Status.Mastership.Term = mastershipTerm
-		if err := r.updateConfigurationStatus(ctx, config); err != nil {
-			return controller.Result{}, err
+	// If the configuration is not SYNCHRONIZING, skip synchronization.
+	if config.Status.State != configapi.ConfigurationStatus_SYNCHRONIZING {
+		// If the configuration term is greater than the applied term, set the state to SYNCHRONIZING
+		if config.Status.Mastership.Term > config.Status.Applied.Mastership.Term {
+			log.Infof("Configuration '%s' mastership term has increased, synchronizing...", config.ID)
+			config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZING
+			if err := r.updateConfigurationStatus(ctx, config); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
 		}
 		return controller.Result{}, nil
 	}
 
-	// If the configuration is not SYNCHRONIZING, skip synchronization.
-	if config.Status.State != configapi.ConfigurationStatus_SYNCHRONIZING {
-		return controller.Result{}, nil
-	}
-
-	// If the master node ID is not set, skip reconciliation.
-	if mastership.NodeId == "" {
+	// If the master ID is not set, skip reconciliation.
+	if config.Status.Mastership.Master == "" {
 		log.Debugf("No master for target '%s'", config.TargetID)
 		return controller.Result{}, nil
 	}
@@ -147,6 +129,8 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	if config.Status.Applied.Index == 0 {
 		log.Infof("Skipping synchronization of Configuration '%s': no applied changes to synchronize", config.ID)
 		config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
+		config.Status.Applied.Mastership.Master = config.Status.Mastership.Master
+		config.Status.Applied.Mastership.Term = config.Status.Mastership.Term
 		if err := r.updateConfigurationStatus(ctx, config); err != nil {
 			return controller.Result{}, err
 		}
@@ -155,10 +139,10 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 
 	// If we've made it this far, we know there's a master relation.
 	// Get the relation and check whether this node is the source
-	relation, err := r.topo.Get(ctx, topoapi.ID(mastership.NodeId))
+	relation, err := r.topo.Get(ctx, topoapi.ID(config.Status.Mastership.Master))
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Errorf("Failed fetching master Relation '%s' from topo", mastership.NodeId, err)
+			log.Errorf("Failed fetching master Relation '%s' from topo", config.Status.Mastership.Master, err)
 			return controller.Result{}, err
 		}
 		log.Warnf("Master relation not found for target '%s'", config.TargetID)
@@ -200,7 +184,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 						Id: "onos-config",
 					},
 					ElectionId: &gnmi_ext.Uint128{
-						Low: uint64(mastershipTerm),
+						Low: uint64(config.Status.Mastership.Term),
 					},
 				},
 			},
@@ -214,7 +198,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			// Rather than reverting to the STALE state now, wait for this node to see the mastership state change
 			// to avoid flapping between states while the system converges.
 			if errors.IsForbidden(err) {
-				log.Warnf("Configuration '%s' mastership superseded for term %d", config.ID, mastershipTerm)
+				log.Warnf("Configuration '%s' mastership superseded for term %d", config.ID, config.Status.Mastership.Term)
 				return controller.Result{}, nil
 			}
 			log.Errorf("Failed sending SetRequest %+v", setRequest, err)
@@ -225,8 +209,8 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 
 	// Update the configuration state and path statuses
 	log.Infof("Configuration '%s' synchronization complete", config.ID)
-	config.Status.Applied.Mastership.Master = mastership.NodeId
-	config.Status.Applied.Mastership.Term = mastershipTerm
+	config.Status.Applied.Mastership.Master = config.Status.Mastership.Master
+	config.Status.Applied.Mastership.Term = config.Status.Mastership.Term
 	config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
 	if err := r.updateConfigurationStatus(ctx, config); err != nil {
 		return controller.Result{}, err
