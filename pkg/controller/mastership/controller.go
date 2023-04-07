@@ -52,27 +52,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	targetID := id.Value.(topoapi.ID)
-	log.Infof("Reconciling mastership election for the gNMI target  %s", targetID)
-	targetEntity, err := r.topo.Get(ctx, targetID)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return controller.Result{}, nil
-		}
-		log.Warnf("Failed to reconcile mastership election for the gNMI target with ID %s: %s", targetEntity.ID, err)
-		return controller.Result{}, err
-	}
-
-	configurable := &topoapi.Configurable{}
-	if err = targetEntity.GetAspect(configurable); err != nil {
-		log.Warnf("Failed to reconcile mastership election for target with ID %s: %s", targetEntity.ID, err)
-		return controller.Result{}, err
-	}
-
-	configID := configuration.NewID(
-		configapi.TargetID(targetEntity.ID),
-		configapi.TargetType(configurable.Type),
-		configapi.TargetVersion(configurable.Version))
+	configID := id.Value.(configapi.ConfigurationID)
 	config, err := r.configurations.Get(ctx, configID)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -90,12 +70,12 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		},
 	})
 	if err != nil {
-		log.Warnf("Updating MastershipState for target '%s' failed: %v", targetEntity.GetID(), err)
+		log.Warnf("Updating MastershipState for Configuration '%s' failed: %v", config.ID, err)
 		return controller.Result{}, err
 	}
 	targetRelations := make(map[topoapi.ID]topoapi.Object)
 	for _, object := range objects {
-		if object.GetRelation().TgtEntityID == targetID {
+		if object.GetRelation().TgtEntityID == topoapi.ID(config.TargetID) {
 			targetRelations[object.ID] = object
 		}
 	}
@@ -105,7 +85,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			if config.Status.Mastership.Master == "" {
 				return controller.Result{}, nil
 			}
-			log.Infof("Master in term %d resigned for the gNMI target '%s'", config.Status.Mastership.Term, targetEntity.GetID())
+			log.Infof("Master in term %d resigned for Configuration '%s'", config.Status.Mastership.Term, config.ID)
 			config.Status.Mastership.Master = ""
 		} else {
 			// Select a random master to assign to the gnmi target
@@ -118,14 +98,14 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			// Increment the mastership term and assign the selected master
 			config.Status.Mastership.Term++
 			config.Status.Mastership.Master = string(relation.ID)
-			log.Infof("Elected new master '%s' in term %d for the gNMI target '%s'", config.Status.Mastership.Master, config.Status.Mastership.Term, targetEntity.GetID())
+			log.Infof("Elected new master '%s' in term %d for Configuration '%s'", config.Status.Mastership.Master, config.Status.Mastership.Term, config.ID)
 		}
 
 		// Update the Configuration status
 		err = r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
 			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-				log.Warnf("Updating mastership for gNMI target '%s' failed: %v", targetEntity.GetID(), err)
+				log.Warnf("Updating mastership for Configuration '%s' failed: %v", config.ID, err)
 				return controller.Result{}, err
 			}
 			return controller.Result{}, nil
