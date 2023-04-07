@@ -6,7 +6,6 @@
 package config
 
 import (
-	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test"
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -17,14 +16,18 @@ const (
 	createRemoveTargetModPath   = "/system/clock/config/timezone-name"
 	createRemoveTargetModValue1 = "Europe/Paris"
 	createRemoveTargetModValue2 = "Europe/London"
+	createRemoveTargetName      = "reincarnated-target"
 )
 
 // TestCreatedRemovedTarget tests set/query of a single GNMI path to a single target that is created, removed, then created again
 func (s *TestSuite) TestCreatedRemovedTarget() {
-	// Wait for config to connect to the target
-	s.True(s.WaitForTargetAvailable(topo.ID(s.simulator1.Name)))
+	// Install and start target simulator
+	s.SetupSimulator(createRemoveTargetName, true)
 
-	targetPath := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
+	// Wait for config to connect to the target
+	s.True(s.WaitForTargetAvailable(createRemoveTargetName))
+
+	targetPath := gnmiutils.GetTargetPathWithValue(createRemoveTargetName, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
 
 	// Set a value using gNMI client - target is up
 	c := s.NewOnosConfigGNMIClientOrFail(test.WithRetry)
@@ -48,7 +51,7 @@ func (s *TestSuite) TestCreatedRemovedTarget() {
 	getReq.CheckValues(s.T(), createRemoveTargetModValue1)
 
 	// interrogate the target to check that the value was set properly
-	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(s.simulator1.Name)
+	targetGnmiClient := s.NewSimulatorGNMIClientOrFail(createRemoveTargetName)
 	var getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      s.Context(),
 		Client:   targetGnmiClient,
@@ -57,27 +60,27 @@ func (s *TestSuite) TestCreatedRemovedTarget() {
 	}
 	getTargetReq.CheckValues(s.T(), createRemoveTargetModValue1)
 
-	//  Shut down the simulator
-	s.TearDownSimulator(s.simulator1.Name)
-	s.True(s.WaitForTargetUnavailable(topo.ID(s.simulator1.Name)))
+	// Shut down the simulator
+	s.TearDownSimulator(createRemoveTargetName)
+	s.True(s.WaitForTargetUnavailable(createRemoveTargetName))
 
 	// Set a value using gNMI client - target is down
-	setPath2 := gnmiutils.GetTargetPathWithValue(s.simulator1.Name, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
+	setPath2 := gnmiutils.GetTargetPathWithValue(createRemoveTargetName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
 
 	setReq.UpdatePaths = setPath2
 	setReq.Extensions = nil
 	setReq.SetOrFail(s.T())
 
 	//  Restart simulated target
-	s.SetupSimulator(s.simulator1.Name, false)
+	s.SetupSimulator(createRemoveTargetName, false)
 
 	// Wait for config to connect to the target
-	s.True(s.WaitForTargetAvailable(topo.ID(s.simulator1.Name)))
+	s.True(s.WaitForTargetAvailable(createRemoveTargetName))
 	// Check that the value was set correctly
 	getReq.CheckValues(s.T(), createRemoveTargetModValue2)
 
 	// interrogate the target to check that the value was set properly
-	targetGnmiClient2 := s.NewSimulatorGNMIClientOrFail(s.simulator1.Name)
+	targetGnmiClient2 := s.NewSimulatorGNMIClientOrFail(createRemoveTargetName)
 	getTargetReq = &gnmiutils.GetRequest{
 		Ctx:      s.Context(),
 		Client:   targetGnmiClient2,
