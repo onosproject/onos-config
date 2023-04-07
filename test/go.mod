@@ -8,7 +8,7 @@ require (
 	github.com/divan/num2words v0.0.0-20170904212200-57dba452f942
 	github.com/dustinkirkland/golang-petname v0.0.0-20191129215211-8e5a1ed0cff0
 	github.com/golang/protobuf v1.5.2
-	github.com/onosproject/helmit v1.1.2
+	github.com/onosproject/helmit v1.1.3
 	github.com/onosproject/onos-api/go v0.10.5
 	github.com/onosproject/onos-config v0.11.5-0.20230131003943-768028c7afb7
 	github.com/onosproject/onos-lib-go v0.9.5
