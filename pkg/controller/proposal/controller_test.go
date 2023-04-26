@@ -11,9 +11,11 @@ import (
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
+	configurationstore "github.com/onosproject/onos-config/pkg/store/configuration"
 	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal"
 	topostore "github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -27,8 +29,23 @@ func TestReconciler(t *testing.T) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		i++
-		var test testCase
+		var test TestCase
 		assert.NoError(t, json.Unmarshal(scanner.Bytes(), &test))
+		if test.Next.Target == nil {
+			test.Next.Target = test.Init.Target
+		}
+		if len(test.Next.Nodes) == 0 {
+			test.Next.Nodes = test.Init.Nodes
+		}
+		if test.Next.Mastership == nil {
+			test.Next.Mastership = test.Init.Mastership
+		}
+		if test.Next.Configuration == nil {
+			test.Next.Configuration = test.Init.Configuration
+		}
+		if len(test.Next.Proposals) == 0 {
+			test.Next.Proposals = test.Init.Proposals
+		}
 		name := fmt.Sprintf("Model-%d", i)
 		t.Run(name, func(t *testing.T) {
 			testReconciler(t, test)
@@ -36,9 +53,13 @@ func TestReconciler(t *testing.T) {
 	}
 }
 
-const testTarget = "test"
+const (
+	testTarget                                = "test"
+	testTargetType    configapi.TargetType    = "test"
+	testTargetVersion configapi.TargetVersion = "1"
+)
 
-func testReconciler(t *testing.T, trace testCase) {
+func testReconciler(t *testing.T, testCase TestCase) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -48,7 +69,9 @@ func testReconciler(t *testing.T, trace testCase) {
 
 	conns.EXPECT().Get(gomock.Any(), gomock.Eq(gnmi.ConnID(testTarget))).
 		DoAndReturn(func(ctx context.Context, id gnmi.ConnID) (gnmi.Conn, bool) {
-			if trace.Init.Nodes[trace.Context.Node].Connected {
+			if testCase.Init.Nodes[testCase.Context.Node].Connected {
+				conn := gnmi.NewMockConn(ctrl)
+				conn.EXPECT().ID().Return(id).AnyTimes()
 				return conn, true
 			}
 			return nil, false
@@ -66,8 +89,8 @@ func testReconciler(t *testing.T, trace testCase) {
 				},
 			}
 			configurable := topoapi.Configurable{
-				Type:    "test",
-				Version: "1",
+				Type:    string(testTargetType),
+				Version: string(testTargetVersion),
 				Address: "localhost:1234",
 			}
 			if err := obj.SetAspect(&configurable); err != nil {
@@ -76,7 +99,7 @@ func testReconciler(t *testing.T, trace testCase) {
 			return obj, nil
 		}).AnyTimes()
 
-	for nodeID, node := range trace.Init.Nodes {
+	for nodeID, node := range testCase.Init.Nodes {
 		topo.EXPECT().Get(gomock.Any(), gomock.Eq(topoapi.ID(nodeID))).
 			DoAndReturn(func(ctx context.Context, id topoapi.ID) (*topoapi.Object, error) {
 				obj := &topoapi.Object{
@@ -88,9 +111,9 @@ func testReconciler(t *testing.T, trace testCase) {
 						},
 					},
 				}
-				if trace.Init.Mastership.Master == nodeID {
+				if testCase.Init.Mastership.Master == nodeID {
 					mastership := topoapi.MastershipState{
-						Term:   uint64(trace.Init.Mastership.Term),
+						Term:   uint64(testCase.Init.Mastership.Term),
 						NodeId: fmt.Sprintf("%s-%s", nodeID, testTarget),
 					}
 					if err := obj.SetAspect(&mastership); err != nil {
@@ -118,15 +141,131 @@ func testReconciler(t *testing.T, trace testCase) {
 	cluster := test.NewClient()
 	defer cluster.Close()
 
+	configurations, err := configurationstore.NewAtomixStore(cluster)
+	assert.NoError(t, err)
+
+	configurationID := configurationstore.NewID(testTarget, testTargetType, testTargetVersion)
+	configuration := &configapi.Configuration{
+		ID:       configurationID,
+		TargetID: testTarget,
+		Values:   make(map[string]*configapi.PathValue),
+		Status: configapi.ConfigurationStatus{
+			Mastership: configapi.MastershipInfo{
+				Master: string(testCase.Init.Mastership.Master),
+				Term:   configapi.MastershipTerm(testCase.Init.Mastership.Term),
+			},
+			Committed: configapi.CommittedConfigurationStatus{
+				Index: configapi.Index(testCase.Init.Configuration.Committed.Index),
+			},
+			Applied: configapi.AppliedConfigurationStatus{
+				Index: configapi.Index(testCase.Init.Configuration.Applied.Index),
+				Mastership: configapi.MastershipInfo{
+					Term: configapi.MastershipTerm(testCase.Init.Configuration.Applied.Term),
+				},
+			},
+		},
+	}
+	switch testCase.Init.Configuration.Status {
+	case ConfigurationStatusInProgress:
+		configuration.Status.State = configapi.ConfigurationStatus_SYNCHRONIZING
+	case ConfigurationStatusComplete:
+		configuration.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
+	}
+	for key, value := range testCase.Init.Configuration.Committed.Values {
+		pathValue := &configapi.PathValue{
+			Path:  key,
+			Index: configapi.Index(value.Index),
+		}
+		if value.Value != nil {
+			pathValue.Value = configapi.TypedValue{
+				Bytes: []byte(*value.Value),
+				Type:  configapi.ValueType_STRING,
+			}
+		} else {
+			pathValue.Deleted = true
+		}
+		configuration.Values[key] = pathValue
+	}
+	for key, value := range testCase.Init.Configuration.Applied.Values {
+		pathValue := &configapi.PathValue{
+			Path:  key,
+			Index: configapi.Index(value.Index),
+		}
+		if value.Value != nil {
+			pathValue.Value = configapi.TypedValue{
+				Bytes: []byte(*value.Value),
+				Type:  configapi.ValueType_STRING,
+			}
+		} else {
+			pathValue.Deleted = true
+		}
+		configuration.Status.Applied.Values[key] = pathValue
+	}
+	assert.NoError(t, configurations.Create(context.TODO(), configuration))
+
 	proposals, err := proposalstore.NewAtomixStore(cluster)
 	assert.NoError(t, err)
 
-	for i, proposalState := range trace.Init.Proposals {
+	for i, proposalState := range testCase.Init.Proposals {
 		index := Index(i + 1)
 		proposalID := proposalstore.NewID(testTarget, configapi.Index(index))
 		proposal := &configapi.Proposal{
-			ID:       proposalID,
-			TargetID: testTarget,
+			ID:               proposalID,
+			TransactionIndex: configapi.Index(index),
+			TargetID:         testTarget,
+			TargetTypeVersion: configapi.TargetTypeVersion{
+				TargetType:    testTargetType,
+				TargetVersion: testTargetVersion,
+			},
+		}
+
+		proposal.Status.RollbackIndex = configapi.Index(proposalState.Rollback.Index)
+		rollbackValues := make(map[string]configapi.PathValue)
+		for key, value := range proposalState.Rollback.Values {
+			pathValue := configapi.PathValue{
+				Path:  key,
+				Index: configapi.Index(proposalState.Rollback.Index),
+			}
+			if value.Value != nil {
+				pathValue.Value = configapi.TypedValue{
+					Bytes: []byte(*value.Value),
+					Type:  configapi.ValueType_STRING,
+				}
+			} else {
+				pathValue.Deleted = true
+			}
+			rollbackValues[key] = pathValue
+		}
+
+		switch proposalState.Type {
+		case ProposalTypeChange:
+			pathValues := make(map[string]*configapi.PathValue)
+			for key, value := range proposalState.Change.Values {
+				pathValue := &configapi.PathValue{
+					Path:  key,
+					Index: configapi.Index(index),
+				}
+				if value.Value != nil {
+					pathValue.Value = configapi.TypedValue{
+						Bytes: []byte(*value.Value),
+						Type:  configapi.ValueType_STRING,
+					}
+				} else {
+					pathValue.Deleted = true
+				}
+				pathValues[key] = pathValue
+			}
+			proposal.Details = &configapi.Proposal_Change{
+				Change: &configapi.ChangeProposal{
+					Values: pathValues,
+				},
+			}
+		case ProposalTypeRollback:
+			proposal.Details = &configapi.Proposal_Rollback{
+				Rollback: &configapi.RollbackProposal{
+					RollbackIndex: configapi.Index(proposalState.Rollback.Index),
+				},
+			}
 		}
 
 		switch proposalState.Phase {
@@ -140,8 +279,25 @@ func testReconciler(t *testing.T, trace testCase) {
 			case ProposalStatusFailed:
 				// TODO
 			}
+
+			// If the next state is failed, mock the plugin registry to fail validation.
+			if testCase.Next.Proposals[i].Status == ProposalStatusFailed {
+				plugin := pluginregistry.NewMockModelPlugin(ctrl)
+				plugin.EXPECT().Validate(gomock.Any(), gomock.Any()).Return(errors.NewInvalid("validation error")).AnyTimes()
+				pluginRegistry.EXPECT().GetPlugin(gomock.Eq(testTargetType), gomock.Eq(testTargetVersion)).Return(plugin, true).AnyTimes()
+			} else {
+				plugin := pluginregistry.NewMockModelPlugin(ctrl)
+				plugin.EXPECT().Validate(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+				pluginRegistry.EXPECT().GetPlugin(gomock.Eq(testTargetType), gomock.Eq(testTargetVersion)).Return(plugin, true).AnyTimes()
+			}
 		case ProposalPhaseApply:
-			assert.NotNil(t, proposal.Status.Phases.Apply)
+			proposal.Status.Phases.Validate = &configapi.ProposalValidatePhase{
+				State: configapi.ProposalValidatePhase_VALIDATED,
+			}
+			proposal.Status.Phases.Commit = &configapi.ProposalCommitPhase{
+				State: configapi.ProposalCommitPhase_COMMITTED,
+			}
+			proposal.Status.Phases.Apply = &configapi.ProposalApplyPhase{}
 			switch proposalState.Status {
 			case ProposalStatusInProgress:
 				proposal.Status.Phases.Apply.State = configapi.ProposalApplyPhase_APPLYING
@@ -157,15 +313,46 @@ func testReconciler(t *testing.T, trace testCase) {
 	reconciler := &Reconciler{
 		conns:          conns,
 		topo:           topo,
+		configurations: configurations,
 		proposals:      proposals,
 		pluginRegistry: pluginRegistry,
 	}
 
-	proposalID := proposalstore.NewID(testTarget, configapi.Index(trace.Context.Index))
+	proposalID := proposalstore.NewID(testTarget, configapi.Index(testCase.Context.Index))
 	_, err = reconciler.Reconcile(controller.NewID(proposalID))
 	assert.NoError(t, err)
 
-	for i, proposalState := range trace.Next.Proposals {
+	configuration, err = configurations.Get(context.TODO(), configurationID)
+	assert.NoError(t, err)
+
+	assert.Equal(t, configapi.Index(testCase.Next.Configuration.Committed.Index), configuration.Index)
+	for key, value := range testCase.Next.Configuration.Committed.Values {
+		assert.Equal(t, configapi.Index(value.Index), configuration.Values[key].Index)
+		if value.Value != nil {
+			assert.Equal(t, string(*value.Value), string(configuration.Values[key].Value.Bytes))
+		} else {
+			assert.True(t, configuration.Values[key].Deleted)
+		}
+	}
+
+	assert.Equal(t, configapi.MastershipTerm(testCase.Next.Configuration.Applied.Term), configuration.Status.Applied.Mastership.Term)
+	for key, value := range testCase.Next.Configuration.Applied.Values {
+		assert.Equal(t, configapi.Index(value.Index), configuration.Status.Applied.Values[key].Index)
+		if value.Value != nil {
+			assert.Equal(t, string(*value.Value), string(configuration.Status.Applied.Values[key].Value.Bytes))
+		} else {
+			assert.True(t, configuration.Status.Applied.Values[key].Deleted)
+		}
+	}
+
+	switch testCase.Next.Configuration.Status {
+	case ConfigurationStatusInProgress:
+		assert.Equal(t, configapi.ConfigurationStatus_SYNCHRONIZING, configuration.Status.State)
+	case ConfigurationStatusComplete:
+		assert.Equal(t, configapi.ConfigurationStatus_SYNCHRONIZED, configuration.Status.State)
+	}
+
+	for i, proposalState := range testCase.Next.Proposals {
 		index := Index(i + 1)
 		proposalID := proposalstore.NewID(testTarget, configapi.Index(index))
 		proposal, err := proposals.Get(context.TODO(), proposalID)
@@ -196,23 +383,23 @@ func testReconciler(t *testing.T, trace testCase) {
 	}
 }
 
-type testCase struct {
-	Context testContext `json:"context"`
-	Init    testState   `json:"init"`
-	Next    testState   `json:"next"`
+type TestCase struct {
+	Context TestContext `json:"context"`
+	Init    TestState   `json:"init"`
+	Next    TestState   `json:"next"`
 }
 
-type testContext struct {
+type TestContext struct {
 	Node  NodeID `json:"node"`
 	Index Index  `json:"index"`
 }
 
-type testState struct {
+type TestState struct {
 	Proposals     []ProposalState      `json:"proposals"`
-	Configuration ConfigurationState   `json:"configuration"`
-	Mastership    MastershipState      `json:"mastership"`
+	Configuration *ConfigurationState  `json:"configuration"`
+	Mastership    *MastershipState     `json:"mastership"`
 	Nodes         map[NodeID]NodeState `json:"nodes"`
-	Target        TargetState          `json:"target"`
+	Target        *TargetState         `json:"target"`
 }
 
 type Index uint64
@@ -295,7 +482,7 @@ func (s *Values) UnmarshalJSON(data []byte) error {
 const nilString = "<nil>"
 
 type ValueState struct {
-	Index int    `json:"index"`
+	Index Index  `json:"index"`
 	Value *Value `json:"value"`
 }
 
