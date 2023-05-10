@@ -28,6 +28,8 @@ import (
 	"strings"
 )
 
+//go:generate mockgen -source ../../../../onos-api/go/onos/config/admin/admin.pb.go -destination test/mock_model_plugin.go -package test ModelPluginServiceClient
+
 var log = logging.GetLogger("northbound", "admin")
 
 // Service is a Service implementation for administration.

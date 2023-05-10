@@ -30,6 +30,21 @@ func TestLoadPluginInfo(t *testing.T) {
 		},
 		nil,
 	)
+	mockSender := testplugin.NewMockModelPluginService_ValidateConfigChunkedClient(mctl)
+	mockSender.EXPECT().Send(gomock.Any()).AnyTimes().Return(
+		nil,
+	)
+	mockSender.EXPECT().CloseAndRecv().AnyTimes().Return(
+		&admin.ValidateConfigResponse{
+			Valid:   false,
+			Message: "just a mocked response",
+		},
+		nil,
+	)
+	pluginClient.EXPECT().ValidateConfigChunked(gomock.Any()).AnyTimes().Return(
+		mockSender,
+		nil,
+	)
 	pluginClient.EXPECT().GetValueSelection(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(
 		&admin.ValueSelectionResponse{
 			Selection: []string{"value1", "value2"},

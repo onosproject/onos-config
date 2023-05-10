@@ -4,7 +4,7 @@
 
 SHELL = bash -e -o pipefail
 
-export CGO_ENABLED=1
+export CGO_ENABLED=0
 export GO111MODULE=on
 
 .PHONY: build
