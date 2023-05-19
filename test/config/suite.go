@@ -20,9 +20,22 @@ type TestSuite struct {
 
 // SetupSuite sets up the onos-config GNMI test suite
 func (s *TestSuite) SetupSuite() {
-	release, err := s.InstallUmbrella().
+	registry := s.Arg("registry").String()
+
+	install := s.InstallUmbrella().
 		Set("import.onos-cli.enabled", false). // not needed - can be enabled by adding '--set onos-umbrella.import.onos-cli.enabled=true' to helmit args for investigations
-		Set("onos-config.gnmiSet.sizeLimit", 0).
+		Set("onos-config.gnmiSet.sizeLimit", 0)
+
+	if registry != "" {
+		install.Set("onos-topo.global.image.registry", registry).
+			Set("onos-config.global.image.registry", registry).
+			Set("onos-umbrella.global.image.registry", registry).
+			Set("topo-discovery.global.image.registry", registry).
+			Set("device-provisioner.global.image.registry", registry).
+			Set("onos-cli.global.image.registry", registry)
+	}
+	
+	release, err := install.
 		Wait().
 		Get(s.Context())
 	s.NoError(err)
