@@ -293,6 +293,9 @@ func (p *ModelPluginInfo) Capabilities(ctx context.Context) *gnmi.CapabilityResp
 // Validate validates the specified JSON configuration against the plugin's schema
 func (p *ModelPluginInfo) Validate(ctx context.Context, jsonData []byte) error {
 	sender, err := p.Client.ValidateConfigChunked(ctx)
+	if err != nil {
+		return err
+	}
 
 	jsonLen := len(jsonData)
 	position := 0
