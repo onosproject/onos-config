@@ -35,7 +35,6 @@ test: mod-lint build linters license
 
 jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
 jenkins-test: mod-lint build linters license
-    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.52.2
 	TEST_PACKAGES=github.com/onosproject/onos-config/... ./build/build-tools/build/jenkins/make-unit
 
 helmit-config: integration-test-namespace # @HELP run helmit gnmi tests locally
