@@ -5,9 +5,11 @@
 package test
 
 import (
+	"fmt"
 	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/onostest"
+	"os"
 	"time"
 )
 
@@ -53,9 +55,15 @@ func (s *Suite) SetupSimulator(name string, createTopoEntity bool) *helm.Release
 
 // setupSimulator creates a device simulator
 func (s *Suite) setupSimulator(name string, createTopoEntity bool) (*helm.Release, error) {
-	release, err := s.Helm().Install(name, "device-simulator").
+	registry := s.Arg("registry").String()
+	install := s.Helm().Install(name, "device-simulator").
 		RepoURL(onostest.OnosChartRepo).
-		Set("image.tag", "latest").
+		Set("image.tag", "latest")
+	if registry != "" {
+		fmt.Fprintf(os.Stderr, "Registry is set to %s", registry)
+		install.Set("install.image.repository", registry+"/onosproject/device-simulator")
+	}
+	release, err := install.
 		Wait().
 		Get(s.Context())
 	if err != nil {
