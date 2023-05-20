@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2023-present Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -40,6 +41,8 @@ func (m modelPluginStatus) String() string {
 const (
 	loaded modelPluginStatus = iota
 	loadingError
+
+	chunkSize = 100000 // 100kB
 )
 
 // ModelPlugin defines the expected behaviour of a model plugin
@@ -289,7 +292,31 @@ func (p *ModelPluginInfo) Capabilities(ctx context.Context) *gnmi.CapabilityResp
 
 // Validate validates the specified JSON configuration against the plugin's schema
 func (p *ModelPluginInfo) Validate(ctx context.Context, jsonData []byte) error {
-	resp, err := p.Client.ValidateConfig(ctx, &api.ValidateConfigRequest{Json: jsonData})
+	sender, err := p.Client.ValidateConfigChunked(ctx)
+	if err != nil {
+		return err
+	}
+
+	jsonLen := len(jsonData)
+	position := 0
+	for position < jsonLen {
+		var chunk []byte
+		if position+chunkSize < jsonLen {
+			chunk = jsonData[position : position+chunkSize]
+			position += chunkSize
+		} else {
+			chunk = jsonData[position:]
+			position = jsonLen
+		}
+		sendErr := sender.Send(&api.ValidateConfigRequestChunk{
+			Json: chunk,
+		})
+		if sendErr != nil {
+			return fmt.Errorf("error sending chunk to model plugin. %v", sendErr)
+		}
+	}
+	resp, err := sender.CloseAndRecv()
+
 	if err != nil {
 		return err
 	}
