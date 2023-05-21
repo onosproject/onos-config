@@ -1,1 +1,2 @@
 pkg/controller/proposal/testdata/ModelTestCases.tar.gz filter=lfs diff=lfs merge=lfs -text
+pkg/controller/transaction/testdata/ModelTestCases.tar.gz filter=lfs diff=lfs merge=lfs -text
