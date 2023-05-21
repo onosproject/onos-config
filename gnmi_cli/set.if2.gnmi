@@ -1,36 +1,6 @@
 update: <
     path: <
-        target: 'devicesim-1'
-        elem: <
-            name: 'interfaces'
-        >
-        elem: <
-            name: 'interface'
-            key:<
-                key:'name'
-                value:'eth1'
-             >
-         >
-        elem: <
-            name: 'config'
-        >
-        elem: <
-            name: 'name'
-        >
-    >
-    val: <
-        string_val: 'eth1'
-    >
->
-extension: <
-    registered_ext: <
-        id: 100,
-        msg:'added_devicesim-1-IF'
-    >
->
-update: <
-    path: <
-        target: 'devicesim-2',
+        target: 'devicesim-1',
         elem: <
             name: 'interfaces'
         >
@@ -42,31 +12,43 @@ update: <
             >
         >
         elem: <
+            name: 'hold-time'
+        >
+        elem: <
             name: 'config'
         >
         elem: <
-            name: 'name'
+            name: 'up'
         >
     >
     val: <
-        string_val: 'eth1'
+        uint_val: 123456
     >
 >
-extension: <
-    registered_ext: <
-        id: 100,
-        msg:'2nd_devicesim'
+update: <
+    path: <
+        target: 'devicesim-1',
+        elem: <
+            name: 'interfaces'
+        >
+        elem: <
+            name: 'interface'
+            key:<
+                key:'name'
+                value:'eth1'
+            >
+        >
+        elem: <
+            name: 'hold-time'
+        >
+        elem: <
+            name: 'config'
+        >
+        elem: <
+            name: 'down'
+        >
     >
->
-extension: <
-    registered_ext: <
-        id: 101,
-        msg:'1.0.0'
-    >
->
-extension: <
-    registered_ext: <
-        id: 102,
-        msg:'Devicesim'
+    val: <
+        uint_val: 54321
     >
 >

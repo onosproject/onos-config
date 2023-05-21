@@ -18,15 +18,3 @@ update: <
         string_val: 'Europe/Paris'
     >
 >
-extension: <
-    registered_ext: <
-        id: 101,
-        msg:'1.0.0'
-    >
->
-extension: <
-    registered_ext: <
-        id: 102,
-        msg:'Devicesim'
-    >
->
