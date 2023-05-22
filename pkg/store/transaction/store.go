@@ -5,8 +5,10 @@
 package transaction
 
 import (
+	"fmt"
 	"github.com/atomix/go-sdk/pkg/primitive"
 	"github.com/atomix/go-sdk/pkg/primitive/indexedmap"
+	_map "github.com/atomix/go-sdk/pkg/primitive/map"
 	"github.com/atomix/go-sdk/pkg/types"
 	"github.com/google/uuid"
 	"io"
@@ -29,8 +31,8 @@ type Store interface {
 	// Get gets a transaction
 	Get(ctx context.Context, id configapi.TransactionID) (*configapi.Transaction, error)
 
-	// GetByIndex gets a transaction by index
-	GetByIndex(ctx context.Context, index configapi.Index) (*configapi.Transaction, error)
+	// GetKey gets a transaction by its key
+	GetKey(ctx context.Context, target configapi.Target, key string) (*configapi.Transaction, error)
 
 	// Create creates a new transaction
 	Create(ctx context.Context, transaction *configapi.Transaction) error
@@ -53,17 +55,18 @@ type Store interface {
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore(client primitive.Client) (Store, error) {
-	transactions, err := indexedmap.NewBuilder[configapi.TransactionID, *configapi.Transaction](client, "transactions").
+	targets, err := _map.NewBuilder[string, *configapi.Target](client, "transaction-targets").
 		Tag("onos-config", "transaction").
-		Codec(types.Proto[*configapi.Transaction](&configapi.Transaction{})).
+		Codec(types.Proto[*configapi.Target](&configapi.Target{})).
 		Get(context.Background())
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
 	store := &transactionStore{
-		transactions: transactions,
-		watchers:     make(map[uuid.UUID]chan<- configapi.TransactionEvent),
-		idWatchers:   make(map[configapi.TransactionID]map[uuid.UUID]chan<- configapi.TransactionEvent),
+		client:     client,
+		targets:    targets,
+		watchers:   make(map[uuid.UUID]chan<- configapi.TransactionEvent),
+		idWatchers: make(map[configapi.TransactionID]map[uuid.UUID]chan<- configapi.TransactionEvent),
 	}
 	if err := store.open(); err != nil {
 		return nil, err
@@ -71,53 +74,161 @@ func NewAtomixStore(client primitive.Client) (Store, error) {
 	return store, nil
 }
 
-type watchOptions struct {
-	transactionID configapi.TransactionID
-	replay        bool
+type WatchOptions struct {
+	TransactionID configapi.TransactionID
+	Replay        bool
 }
 
 // WatchOption is a configuration option for Watch calls
 type WatchOption interface {
-	apply(*watchOptions)
+	apply(*WatchOptions)
 }
 
-// watchReplyOption is an option to replay events on watch
-type watchReplayOption struct {
+func newWatchOption(f func(*WatchOptions)) WatchOption {
+	return funcWatchOption{
+		f: f,
+	}
 }
 
-func (o watchReplayOption) apply(options *watchOptions) {
-	options.replay = true
+type funcWatchOption struct {
+	f func(*WatchOptions)
+}
+
+func (o funcWatchOption) apply(options *WatchOptions) {
+	o.f(options)
 }
 
 // WithReplay returns a WatchOption that replays past changes
 func WithReplay() WatchOption {
-	return watchReplayOption{}
-}
-
-type watchIDOption struct {
-	id configapi.TransactionID
-}
-
-func (o watchIDOption) apply(options *watchOptions) {
-	options.transactionID = o.id
+	return newWatchOption(func(options *WatchOptions) {
+		options.Replay = true
+	})
 }
 
 // WithTransactionID returns a Watch option that watches for transactions based on a  given transaction ID
 func WithTransactionID(id configapi.TransactionID) WatchOption {
-	return watchIDOption{id: id}
+	return newWatchOption(func(options *WatchOptions) {
+		options.TransactionID = id
+	})
 }
 
 type transactionStore struct {
-	transactions indexedmap.IndexedMap[configapi.TransactionID, *configapi.Transaction]
-	watchers     map[uuid.UUID]chan<- configapi.TransactionEvent
-	idWatchers   map[configapi.TransactionID]map[uuid.UUID]chan<- configapi.TransactionEvent
-	mu           sync.RWMutex
+	client     primitive.Client
+	targets    _map.Map[string, *configapi.Target]
+	logs       sync.Map
+	watchers   map[uuid.UUID]chan<- configapi.TransactionEvent
+	idWatchers map[configapi.TransactionID]map[uuid.UUID]chan<- configapi.TransactionEvent
+	mu         sync.RWMutex
 }
 
 func (s *transactionStore) open() error {
-	events, err := s.transactions.Events(context.Background())
+	events, err := s.targets.Watch(context.Background())
 	if err != nil {
 		return err
+	}
+
+	go func() {
+		for {
+			event, err := events.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			_, err = s.newTransactions(context.Background(), *event.Value)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	entries, err := s.targets.List(context.Background())
+	if err != nil {
+		return errors.FromAtomix(err)
+	}
+
+	wg := &sync.WaitGroup{}
+	errCh := make(chan error)
+	for {
+		entry, err := entries.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := s.newTransactions(ctx, *entry.Value)
+			if err != nil {
+				errCh <- err
+				return
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+	return <-errCh
+}
+
+func (s *transactionStore) getTransactions(ctx context.Context, target configapi.Target) (indexedmap.IndexedMap[string, *configapi.Transaction], error) {
+	log, ok := s.logs.Load(target)
+	if ok {
+		return log.(indexedmap.IndexedMap[string, *configapi.Transaction]), nil
+	}
+
+	key := fmt.Sprintf("%s-%s-%s", target.ID, target.Type, target.Version)
+	_, err := s.targets.Put(ctx, key, &target)
+	if err != nil {
+		err = errors.FromAtomix(err)
+		if !errors.IsAlreadyExists(err) {
+			return nil, err
+		}
+	}
+	return s.newTransactions(ctx, target)
+}
+
+func (s *transactionStore) newTransactions(ctx context.Context, target configapi.Target) (indexedmap.IndexedMap[string, *configapi.Transaction], error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	log, ok := s.logs.Load(target)
+	if ok {
+		return log.(indexedmap.IndexedMap[string, *configapi.Transaction]), nil
+	}
+
+	name := fmt.Sprintf("transactions-%s-%s-%s", target.ID, target.Type, target.Version)
+	transactions, err := indexedmap.NewBuilder[string, *configapi.Transaction](s.client, name).
+		Tag("onos-config", "transaction").
+		Codec(types.Proto[*configapi.Transaction](&configapi.Transaction{})).
+		Get(ctx)
+	if err != nil {
+		return nil, errors.FromAtomix(err)
+	}
+
+	if err := s.watch(target, transactions); err != nil {
+		return nil, err
+	}
+
+	s.logs.Store(target, transactions)
+	return transactions, nil
+}
+
+func (s *transactionStore) watch(target configapi.Target, transactions indexedmap.IndexedMap[string, *configapi.Transaction]) error {
+	events, err := transactions.Events(context.Background())
+	if err != nil {
+		return errors.FromAtomix(err)
 	}
 	go func() {
 		for {
@@ -132,25 +243,34 @@ func (s *transactionStore) open() error {
 
 			var transactionEvent configapi.TransactionEvent
 			switch e := event.(type) {
-			case *indexedmap.Inserted[configapi.TransactionID, *configapi.Transaction]:
+			case *indexedmap.Inserted[string, *configapi.Transaction]:
 				transaction := e.Entry.Value
-				transaction.Index = configapi.Index(e.Entry.Index)
+				transaction.ID = configapi.TransactionID{
+					Target: target,
+					Index:  configapi.Index(e.Entry.Index),
+				}
 				transaction.Version = uint64(e.Entry.Version)
 				transactionEvent = configapi.TransactionEvent{
 					Type:        configapi.TransactionEvent_CREATED,
 					Transaction: *transaction,
 				}
-			case *indexedmap.Updated[configapi.TransactionID, *configapi.Transaction]:
+			case *indexedmap.Updated[string, *configapi.Transaction]:
 				transaction := e.Entry.Value
-				transaction.Index = configapi.Index(e.Entry.Index)
+				transaction.ID = configapi.TransactionID{
+					Target: target,
+					Index:  configapi.Index(e.Entry.Index),
+				}
 				transaction.Version = uint64(e.Entry.Version)
 				transactionEvent = configapi.TransactionEvent{
 					Type:        configapi.TransactionEvent_UPDATED,
 					Transaction: *transaction,
 				}
-			case *indexedmap.Removed[configapi.TransactionID, *configapi.Transaction]:
+			case *indexedmap.Removed[string, *configapi.Transaction]:
 				transaction := e.Entry.Value
-				transaction.Index = configapi.Index(e.Entry.Index)
+				transaction.ID = configapi.TransactionID{
+					Target: target,
+					Index:  configapi.Index(e.Entry.Index),
+				}
 				transaction.Version = uint64(e.Entry.Version)
 				transactionEvent = configapi.TransactionEvent{
 					Type:        configapi.TransactionEvent_DELETED,
@@ -180,35 +300,52 @@ func (s *transactionStore) open() error {
 }
 
 // Get gets a transaction
-func (s *transactionStore) Get(ctx context.Context, id configapi.TransactionID) (*configapi.Transaction, error) {
+func (s *transactionStore) Get(ctx context.Context, transactionID configapi.TransactionID) (*configapi.Transaction, error) {
 	// If the transaction is not already in the cache, get it from the underlying primitive.
-	entry, err := s.transactions.Get(ctx, id)
+	transactions, err := s.getTransactions(ctx, transactionID.Target)
+	if err != nil {
+		return nil, err
+	}
+	entry, err := transactions.GetIndex(ctx, indexedmap.Index(transactionID.Index))
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
 	transaction := entry.Value
-	transaction.Index = configapi.Index(entry.Index)
+	transaction.ID.Index = configapi.Index(entry.Index)
 	transaction.Version = uint64(entry.Version)
 	return transaction, nil
 }
 
-// GetByIndex gets a transaction by index
-func (s *transactionStore) GetByIndex(ctx context.Context, index configapi.Index) (*configapi.Transaction, error) {
+// GetKey gets a transaction by its key
+func (s *transactionStore) GetKey(ctx context.Context, target configapi.Target, key string) (*configapi.Transaction, error) {
 	// If the transaction is not already in the cache, get it from the underlying primitive.
-	entry, err := s.transactions.GetIndex(ctx, indexedmap.Index(index))
+	transactions, err := s.getTransactions(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+	entry, err := transactions.Get(ctx, key)
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
 	transaction := entry.Value
-	transaction.Index = configapi.Index(entry.Index)
+	transaction.ID.Index = configapi.Index(entry.Index)
 	transaction.Version = uint64(entry.Version)
 	return transaction, nil
 }
 
 // Create creates a new transaction
 func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Transaction) error {
-	if transaction.ID == "" {
-		transaction.ID = newTransactionID()
+	if transaction.Key == "" {
+		transaction.Key = configapi.NewUUID().String()
+	}
+	if transaction.ID.Target.ID == "" {
+		return errors.NewInvalid("transaction target ID is required")
+	}
+	if transaction.ID.Target.Type == "" {
+		return errors.NewInvalid("transaction target Type is required")
+	}
+	if transaction.ID.Target.Version == "" {
+		return errors.NewInvalid("transaction target version is required")
 	}
 	if transaction.Version != 0 {
 		return errors.NewInvalid("not a new object")
@@ -221,17 +358,33 @@ func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Tr
 	transaction.Updated = time.Now()
 
 	// Append a new entry to the transaction log.
-	entry, err := s.transactions.Append(ctx, transaction.ID, transaction)
+	transactions, err := s.getTransactions(ctx, transaction.ID.Target)
+	if err != nil {
+		return err
+	}
+	entry, err := transactions.Append(ctx, transaction.Key, transaction)
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
-	transaction.Index = configapi.Index(entry.Index)
+	transaction.ID.Index = configapi.Index(entry.Index)
 	transaction.Version = uint64(entry.Version)
 	return nil
 }
 
 // Update updates an existing transaction
 func (s *transactionStore) Update(ctx context.Context, transaction *configapi.Transaction) error {
+	if transaction.Key == "" {
+		return errors.NewInvalid("transaction key is required")
+	}
+	if transaction.ID.Target.ID == "" {
+		return errors.NewInvalid("transaction target ID is required")
+	}
+	if transaction.ID.Target.Type == "" {
+		return errors.NewInvalid("transaction target Type is required")
+	}
+	if transaction.ID.Target.Version == "" {
+		return errors.NewInvalid("transaction target version is required")
+	}
 	if transaction.Revision == 0 {
 		return errors.NewInvalid("transaction must contain a revision on update")
 	}
@@ -242,11 +395,15 @@ func (s *transactionStore) Update(ctx context.Context, transaction *configapi.Tr
 	transaction.Updated = time.Now()
 
 	// Update the entry in the transaction log.
-	entry, err := s.transactions.Update(ctx, transaction.ID, transaction, indexedmap.IfVersion(primitive.Version(transaction.Version)))
+	transactions, err := s.getTransactions(ctx, transaction.ID.Target)
+	if err != nil {
+		return err
+	}
+	entry, err := transactions.Update(ctx, transaction.Key, transaction, indexedmap.IfVersion(primitive.Version(transaction.Version)))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
-	transaction.Index = configapi.Index(entry.Index)
+	transaction.ID.Index = configapi.Index(entry.Index)
 	transaction.Version = uint64(entry.Version)
 	return nil
 }
@@ -262,41 +419,65 @@ func (s *transactionStore) UpdateStatus(ctx context.Context, transaction *config
 	transaction.Updated = time.Now()
 
 	// Update the entry in the transaction log.
-	entry, err := s.transactions.Update(ctx, transaction.ID, transaction, indexedmap.IfVersion(primitive.Version(transaction.Version)))
+	transactions, err := s.getTransactions(ctx, transaction.ID.Target)
+	if err != nil {
+		return err
+	}
+	entry, err := transactions.Update(ctx, transaction.Key, transaction, indexedmap.IfVersion(primitive.Version(transaction.Version)))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
-	transaction.Index = configapi.Index(entry.Index)
+	transaction.ID.Index = configapi.Index(entry.Index)
 	transaction.Version = uint64(entry.Version)
 	return nil
 }
 
 // List lists transactions
 func (s *transactionStore) List(ctx context.Context) ([]*configapi.Transaction, error) {
-	stream, err := s.transactions.List(ctx)
+	targets, err := s.targets.List(context.Background())
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
 
 	var transactions []*configapi.Transaction
 	for {
-		entry, err := stream.Next()
+		entry, err := targets.Next()
 		if err == io.EOF {
-			return transactions, nil
+			break
 		}
 		if err != nil {
-			log.Error(err)
 			return nil, err
 		}
-		transaction := entry.Value
-		transaction.Version = uint64(entry.Version)
-		transaction.Index = configapi.Index(entry.Index)
-		transactions = append(transactions, transaction)
+
+		log, err := s.getTransactions(ctx, *entry.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		stream, err := log.List(ctx)
+		if err != nil {
+			return nil, errors.FromAtomix(err)
+		}
+
+		for {
+			entry, err := stream.Next()
+			if err == io.EOF {
+				return transactions, nil
+			}
+			if err != nil {
+				return nil, err
+			}
+			transaction := entry.Value
+			transaction.Version = uint64(entry.Version)
+			transaction.ID.Index = configapi.Index(entry.Index)
+			transactions = append(transactions, transaction)
+		}
 	}
+	return transactions, nil
 }
 
 func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.TransactionEvent, opts ...WatchOption) error {
-	var options watchOptions
+	var options WatchOptions
 	for _, opt := range opts {
 		opt.apply(&options)
 	}
@@ -304,11 +485,11 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 	id := uuid.New()
 	eventCh := make(chan configapi.TransactionEvent)
 	s.mu.Lock()
-	if options.transactionID != "" {
-		watchers, ok := s.idWatchers[options.transactionID]
+	if options.TransactionID.Index > 0 {
+		watchers, ok := s.idWatchers[options.TransactionID]
 		if !ok {
 			watchers = make(map[uuid.UUID]chan<- configapi.TransactionEvent)
-			s.idWatchers[options.transactionID] = watchers
+			s.idWatchers[options.TransactionID] = watchers
 		}
 		watchers[id] = eventCh
 	} else {
@@ -319,12 +500,12 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 	go func() {
 		defer func() {
 			s.mu.Lock()
-			if options.transactionID != "" {
-				watchers, ok := s.idWatchers[options.transactionID]
+			if options.TransactionID.Index > 0 {
+				watchers, ok := s.idWatchers[options.TransactionID]
 				if ok {
 					delete(watchers, id)
 					if len(watchers) == 0 {
-						delete(s.idWatchers, options.transactionID)
+						delete(s.idWatchers, options.TransactionID)
 					}
 				}
 			} else {
@@ -333,9 +514,17 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 			s.mu.Unlock()
 		}()
 
-		if options.replay {
-			if options.transactionID != "" {
-				entry, err := s.transactions.Get(ctx, options.transactionID)
+		defer close(ch)
+
+		if options.Replay {
+			if options.TransactionID.Index > 0 {
+				transactions, err := s.getTransactions(ctx, options.TransactionID.Target)
+				if err != nil {
+					log.Error(err)
+					return
+				}
+
+				entry, err := transactions.GetIndex(ctx, indexedmap.Index(options.TransactionID.Index))
 				if err != nil {
 					err = errors.FromAtomix(err)
 					if !errors.IsNotFound(err) {
@@ -343,10 +532,9 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 					}
 				} else {
 					transaction := entry.Value
-					transaction.Index = configapi.Index(entry.Index)
+					transaction.ID.Index = configapi.Index(entry.Index)
 					transaction.Version = uint64(entry.Version)
 					if ctx.Err() != nil {
-						close(ch)
 						return
 					}
 					ch <- configapi.TransactionEvent{
@@ -355,14 +543,14 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 					}
 				}
 			} else {
-				entries, err := s.transactions.List(ctx)
+				targets, err := s.targets.List(context.Background())
 				if err != nil {
 					log.Error(err)
-					close(ch)
 					return
 				}
+
 				for {
-					entry, err := entries.Next()
+					entry, err := targets.Next()
 					if err == io.EOF {
 						break
 					}
@@ -370,16 +558,36 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 						log.Error(err)
 						continue
 					}
-					if ctx.Err() != nil {
+
+					transactions, err := s.getTransactions(ctx, *entry.Value)
+					if err != nil {
+						log.Error(err)
 						close(ch)
 						return
 					}
-					transaction := entry.Value
-					transaction.Index = configapi.Index(entry.Index)
-					transaction.Version = uint64(entry.Version)
-					ch <- configapi.TransactionEvent{
-						Type:        configapi.TransactionEvent_REPLAYED,
-						Transaction: *transaction,
+
+					stream, err := transactions.List(ctx)
+					if err != nil {
+						log.Error(err)
+						return
+					}
+
+					for {
+						entry, err := stream.Next()
+						if err == io.EOF {
+							break
+						}
+						if err != nil {
+							log.Error(err)
+							continue
+						}
+						transaction := entry.Value
+						transaction.Version = uint64(entry.Version)
+						transaction.ID.Index = configapi.Index(entry.Index)
+						ch <- configapi.TransactionEvent{
+							Type:        configapi.TransactionEvent_REPLAYED,
+							Transaction: *transaction,
+						}
 					}
 				}
 			}
@@ -404,17 +612,17 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 
 // Close closes the store
 func (s *transactionStore) Close(ctx context.Context) error {
-	err := s.transactions.Close(ctx)
-	if err != nil {
-		return errors.FromAtomix(err)
-	}
+	wg := &sync.WaitGroup{}
+	s.logs.Range(func(key, value any) bool {
+		wg.Add(1)
+		go func() {
+			_ = value.(indexedmap.IndexedMap[string, *configapi.Transaction]).Close(ctx)
+		}()
+		return true
+	})
+	wg.Wait()
+	_ = s.targets.Close(ctx)
 	return nil
-}
-
-// newTransactionID creates a new transaction ID
-func newTransactionID() configapi.TransactionID {
-	newUUID := configapi.NewUUID()
-	return configapi.TransactionID(newUUID.String())
 }
 
 var _ Store = &transactionStore{}

@@ -25,42 +25,36 @@ func TestTransactionStore(t *testing.T) {
 	store2, err := NewAtomixStore(cluster)
 	assert.NoError(t, err)
 
-	target1 := configapi.TargetID("target-1")
-	target2 := configapi.TargetID("target-2")
-
 	eventCh := make(chan configapi.TransactionEvent)
 	err = store2.Watch(context.Background(), eventCh)
 	assert.NoError(t, err)
 
+	target := configapi.Target{
+		ID:      "target-1",
+		Type:    "foo",
+		Version: "1",
+	}
+
 	transaction1 := &configapi.Transaction{
-		ID: "transaction-1",
+		ObjectMeta: configapi.ObjectMeta{
+			Key: "transaction-1",
+		},
+		ID: configapi.TransactionID{
+			Target: target,
+		},
 		Details: &configapi.Transaction_Change{
-			Change: &configapi.ChangeTransaction{
-				Values: map[configapi.TargetID]*configapi.PathValues{
-					target1: {
-						Values: map[string]*configapi.PathValue{
-							"foo": {
-								Value: configapi.TypedValue{
-									Bytes: []byte("Hello world!"),
-									Type:  configapi.ValueType_STRING,
-								},
-							},
-							"bar": {
-								Value: configapi.TypedValue{
-									Bytes: []byte("Hello world again!"),
-									Type:  configapi.ValueType_STRING,
-								},
-							},
+			Change: &configapi.TransactionChange{
+				Values: map[string]*configapi.PathValue{
+					"foo": {
+						Value: configapi.TypedValue{
+							Bytes: []byte("Hello world!"),
+							Type:  configapi.ValueType_STRING,
 						},
 					},
-					target2: {
-						Values: map[string]*configapi.PathValue{
-							"baz": {
-								Value: configapi.TypedValue{
-									Bytes: []byte("Goodbye world!"),
-									Type:  configapi.ValueType_STRING,
-								},
-							},
+					"bar": {
+						Value: configapi.TypedValue{
+							Bytes: []byte("Hello world again!"),
+							Type:  configapi.ValueType_STRING,
 						},
 					},
 				},
@@ -69,16 +63,17 @@ func TestTransactionStore(t *testing.T) {
 	}
 
 	transaction2 := &configapi.Transaction{
-		ID: "transaction-2",
+		ObjectMeta: configapi.ObjectMeta{
+			Key: "transaction-2",
+		},
+		ID: configapi.TransactionID{
+			Target: target,
+		},
 		Details: &configapi.Transaction_Change{
-			Change: &configapi.ChangeTransaction{
-				Values: map[configapi.TargetID]*configapi.PathValues{
-					target1: {
-						Values: map[string]*configapi.PathValue{
-							"foo": {
-								Deleted: true,
-							},
-						},
+			Change: &configapi.TransactionChange{
+				Values: map[string]*configapi.PathValue{
+					"foo": {
+						Deleted: true,
 					},
 				},
 			},
@@ -88,30 +83,30 @@ func TestTransactionStore(t *testing.T) {
 	// Create a new transaction
 	err = store1.Create(context.TODO(), transaction1)
 	assert.NoError(t, err)
-	assert.Equal(t, configapi.TransactionID("transaction-1"), transaction1.ID)
-	assert.Equal(t, configapi.Index(1), transaction1.Index)
+	assert.Equal(t, "transaction-1", transaction1.Key)
+	assert.Equal(t, configapi.Index(1), transaction1.ID.Index)
 	assert.NotEqual(t, configapi.Revision(0), transaction1.Revision)
 
 	// Get the transaction
-	transaction1, err = store2.Get(context.TODO(), "transaction-1")
+	transaction1, err = store2.GetKey(context.TODO(), target, "transaction-1")
 	assert.NoError(t, err)
 	assert.NotNil(t, transaction1)
-	assert.Equal(t, configapi.TransactionID("transaction-1"), transaction1.ID)
-	assert.Equal(t, configapi.Index(1), transaction1.Index)
+	assert.Equal(t, "transaction-1", transaction1.Key)
+	assert.Equal(t, configapi.Index(1), transaction1.ID.Index)
 	assert.NotEqual(t, configapi.Revision(0), transaction1.Revision)
+
+	transactionEvent := nextTransaction(t, eventCh)
+	assert.Equal(t, "transaction-1", transactionEvent.Key)
 
 	// Create another transaction
 	err = store2.Create(context.TODO(), transaction2)
 	assert.NoError(t, err)
-	assert.Equal(t, configapi.TransactionID("transaction-2"), transaction2.ID)
-	assert.Equal(t, configapi.Index(2), transaction2.Index)
+	assert.Equal(t, "transaction-2", transaction2.Key)
+	assert.Equal(t, configapi.Index(2), transaction2.ID.Index)
 	assert.NotEqual(t, configapi.Revision(0), transaction2.Revision)
 
-	// Verify events were received for the transactions
-	transactionEvent := nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.TransactionID("transaction-1"), transactionEvent.ID)
 	transactionEvent = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
+	assert.Equal(t, "transaction-2", transactionEvent.Key)
 
 	// Watch events for a specific transaction
 	transactionCh := make(chan configapi.TransactionEvent)
@@ -125,20 +120,18 @@ func TestTransactionStore(t *testing.T) {
 	assert.NotEqual(t, revision, transaction2.Revision)
 
 	transactionEvent = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
+	assert.Equal(t, "transaction-2", transactionEvent.Key)
 
 	event := nextEvent(t, transactionCh)
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
 
 	// Read and then update the transaction
-	transaction2, err = store2.Get(context.TODO(), "transaction-2")
+	transaction2, err = store2.GetKey(context.TODO(), target, "transaction-2")
 	assert.NoError(t, err)
 	assert.NotNil(t, transaction2)
 	now := time.Now()
-	transaction2.Status.Phases.Initialize = &configapi.TransactionInitializePhase{
-		TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-			Start: &now,
-		},
+	transaction2.Status.Initialize = &configapi.TransactionPhaseStatus{
+		Start: &now,
 	}
 	revision = transaction2.Revision
 	err = store1.Update(context.TODO(), transaction2)
@@ -146,35 +139,31 @@ func TestTransactionStore(t *testing.T) {
 	assert.NotEqual(t, revision, transaction2.Revision)
 
 	transactionEvent = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.TransactionID("transaction-2"), transactionEvent.ID)
+	assert.Equal(t, "transaction-2", transactionEvent.Key)
 
 	event = nextEvent(t, transactionCh)
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
 
 	// Verify that concurrent updates fail
-	transaction11, err := store1.Get(context.TODO(), "transaction-1")
+	transaction11, err := store1.GetKey(context.TODO(), target, "transaction-1")
 	assert.NoError(t, err)
-	transaction12, err := store2.Get(context.TODO(), "transaction-1")
+	transaction12, err := store2.GetKey(context.TODO(), target, "transaction-1")
 	assert.NoError(t, err)
 
-	transaction11.Status.Phases.Initialize = &configapi.TransactionInitializePhase{
-		TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-			Start: &now,
-		},
+	transaction11.Status.Initialize = &configapi.TransactionPhaseStatus{
+		Start: &now,
 	}
 	err = store1.Update(context.TODO(), transaction11)
 	assert.NoError(t, err)
 
-	transaction12.Status.Phases.Initialize = &configapi.TransactionInitializePhase{
-		TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-			Start: &now,
-		},
+	transaction12.Status.Initialize = &configapi.TransactionPhaseStatus{
+		Start: &now,
 	}
 	err = store2.Update(context.TODO(), transaction12)
 	assert.Error(t, err)
 
 	transactionEvent = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.TransactionID("transaction-1"), transactionEvent.ID)
+	assert.Equal(t, "transaction-1", transactionEvent.Key)
 
 	// List the transactions
 	transactions, err := store1.List(context.TODO())
@@ -182,18 +171,19 @@ func TestTransactionStore(t *testing.T) {
 	assert.Equal(t, 2, len(transactions))
 
 	transaction := &configapi.Transaction{
-		ID: "transaction-3",
+		ObjectMeta: configapi.ObjectMeta{
+			Key: "transaction-3",
+		},
+		ID: configapi.TransactionID{
+			Target: target,
+		},
 		Details: &configapi.Transaction_Change{
-			Change: &configapi.ChangeTransaction{
-				Values: map[configapi.TargetID]*configapi.PathValues{
-					target1: {
-						Values: map[string]*configapi.PathValue{
-							"foo": {
-								Value: configapi.TypedValue{
-									Bytes: []byte("Hello world!"),
-									Type:  configapi.ValueType_STRING,
-								},
-							},
+			Change: &configapi.TransactionChange{
+				Values: map[string]*configapi.PathValue{
+					"foo": {
+						Value: configapi.TypedValue{
+							Bytes: []byte("Hello world!"),
+							Type:  configapi.ValueType_STRING,
 						},
 					},
 				},
@@ -205,18 +195,19 @@ func TestTransactionStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	transaction = &configapi.Transaction{
-		ID: "transaction-4",
+		ObjectMeta: configapi.ObjectMeta{
+			Key: "transaction-4",
+		},
+		ID: configapi.TransactionID{
+			Target: target,
+		},
 		Details: &configapi.Transaction_Change{
-			Change: &configapi.ChangeTransaction{
-				Values: map[configapi.TargetID]*configapi.PathValues{
-					target2: {
-						Values: map[string]*configapi.PathValue{
-							"bar": {
-								Value: configapi.TypedValue{
-									Bytes: []byte("Hello world!"),
-									Type:  configapi.ValueType_STRING,
-								},
-							},
+			Change: &configapi.TransactionChange{
+				Values: map[string]*configapi.PathValue{
+					"bar": {
+						Value: configapi.TypedValue{
+							Bytes: []byte("Hello world!"),
+							Type:  configapi.ValueType_STRING,
 						},
 					},
 				},
@@ -232,13 +223,13 @@ func TestTransactionStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	transaction = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.Index(1), transaction.Index)
+	assert.Equal(t, configapi.Index(1), transaction.ID.Index)
 	transaction = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.Index(2), transaction.Index)
+	assert.Equal(t, configapi.Index(2), transaction.ID.Index)
 	transaction = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.Index(3), transaction.Index)
+	assert.Equal(t, configapi.Index(3), transaction.ID.Index)
 	transaction = nextTransaction(t, eventCh)
-	assert.Equal(t, configapi.Index(4), transaction.Index)
+	assert.Equal(t, configapi.Index(4), transaction.ID.Index)
 }
 
 func nextEvent(t *testing.T, ch chan configapi.TransactionEvent) *configapi.TransactionEvent {
