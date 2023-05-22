@@ -23,7 +23,7 @@ const (
 // TestOfflineTarget tests set/query of a single GNMI path to a single target that is initially not connected to onos-config
 func (s *TestSuite) TestOfflineTarget() {
 	// create a target entity in topo
-	s.createOfflineTarget(offlineTargetName, "devicesim", "1.0.0", offlineTargetName+"-device-simulator:11161")
+	s.createOfflineTarget(offlineTargetName, "devicesim", "1.0.x", offlineTargetName+"-device-simulator:11161")
 
 	// Make a GNMI client to use for requests
 	gnmiClient := s.NewOnosConfigGNMIClientOrFail(test.WithRetry)

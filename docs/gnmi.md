@@ -11,9 +11,6 @@ interface is secured through TLS, and is made available on port **5150**.
 
 gNMI extensions supported on the Northbound are described in [gnmi_extensions.md](./gnmi_extensions.md)
 
-The impact of the gNMI changes given below can be visualized by running the
-[Configuration Dashboard](https://docs.onosproject.org/onos-gui/docs/config-gui/).
-
 ## gnmi_cli utility
 A simple way to issue a gNMI requests is to use the `gnmi_cli` utility from
 the [OpenConfig](https://github.com/openconfig/gnmi) project.
@@ -31,7 +28,7 @@ More instructions including all the examples below can be found in
 You can run the following command to get in to the **onos-cli** pod and then run gnmi_cli from there:
 
 ```bash
-kubectl -n micro-onos exec -it $(kubectl -n micro-onos get pods -l type=cli -o name) -- /bin/sh
+kubectl -n micro-onos exec -it deployment/onos-cli -- /bin/bash
 ```
 
 ### Accessing from local machine
@@ -47,11 +44,6 @@ kubectl port-forward -n <onos-namespace> <onos-config-pod-id> 5150:5150
 ```
 
 > For troubleshooting information see [gnmi_user_manual.md](https://github.com/onosproject/gnxi-simulators/blob/master/docs/gnmi/gnmi_user_manual.md)
-
-### Alternate to gNMI SetRequest in onos-cli
-For convenience, another method of calling gNMI SetRequest on `onos-config` is
-provided through the `onos-cli` tool with [onos config load yaml](./cli.md#Loading configuration data in bulk).
-This allows configuration in YAML to be loaded directly in to `onos-config`
 
 ## Namespaces
 __onos-config__ follows the YGOT project in simplification by not using namespaces in paths. This can be achieved
@@ -82,11 +74,15 @@ To make a gNMI Set request, use the `gnmi_cli -set` command as in the example be
 
 > Since the onos-config data store is empty by default, the Set examples are shown
 > before the Get examples (below).
+> 
+> By default `onos-config` does not have any targets - it gets these from `onos-topo`. 
+> See [onos-topo](https://docs.onosproject.org/onos-topo/docs/cli/)
+> for how to create a `devicesim-1` target on the system, prior to the `Set` below.
 
 [gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.timezone.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
-    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>> extension: <registered_ext: <id: 101, msg:'1.0.0'>> extension: <registered_ext: <id: 102, msg:'Devicesim'>>" \
+    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
     -timeout 5s -en PROTO -alsologtostderr -insecure \
     -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
@@ -110,71 +106,22 @@ response: <
   >
   op: UPDATE
 >
-timestamp: 1559122191
+timestamp: 1684667662
 extension: <
   registered_ext: <
-    id: 100
-    msg: "c21a1aa5-76d6-11eb-81af-6f6e6f732d63"
+    id: 110
+    msg: "\n)uuid:5da2396a-10c3-40d6-a841-007beabd1f4f\020\003"
   >
 >
 ```
 
-> The result will include a field as a gNMI SetResponse extension 100
-> giving randomly generated Network Change identifier, which may be subsequently used
-> to rollback the change.
->
-> If a specific name is desired for a Network Change, the set may be given in the
-SetRequest() with the 100 extension at the end of the -proto section like:
-> `, extension: <registered_ext: <id: 100, msg: 'myfirstchange'>>`
-> See [gnmi_extensions.md](./gnmi_extensions.md) for more on gNMI extensions supported.
->
-> If a name is given a 2nd time, it wil produce an error `rpc error: code = Internal desc = write condition failed`
+> The result will include a field as a gNMI SetResponse extension 110
+> giving randomly generated Network Change identifier.
 
-Checking of the contents is done only when a Model Plugin is
-loaded for the device type. 2 checks are done
+### Open Config models e.g. devicesim 1.0.x
 
-1. that a attempt is not being made to change a readonly attribute and
-2. that valid data types and values are being used.
+Adding an "eth2" to each of the device
 
-The config is only forwarded down to the southbound layer only if the config is
-correct and the device is currently in the deviceStore.
-
-### Set on multiple targets in one request.
-`onos-config` gNMI NB supports setting multiple elements on multiple targets at the same time.   
-An example of an attribute on two targets is:
-
-[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.multipleif.gnmi)
-```bash
-gnmi_cli -address onos-config:5150 -set \
-    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 100, msg:'added_devicesim-1-IF'>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 101, msg:'1.0.0'>> extension: <registered_ext: <id: 102, msg:'Devicesim'>>" \
-    -timeout 5s -alsologtostderr -insecure \
-    -client_crt /etc/ssl/certs/client1.crt \
-    -client_key /etc/ssl/certs/client1.key \
-    -ca_crt /etc/ssl/certs/onfca.crt
-```
-An example of setting two attributes on two targets:
-
-[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.multipleif2.gnmi)
-```bash
-gnmi_cli -address onos-config:5150 -set \
-    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'up'>> val: <uint_val: 123456>> update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'down'>> val: <uint_val: 54321>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'up'>> val: <uint_val: 765432>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'down'>> val: <uint_val: 234567>> extension: <registered_ext: <id: 100, msg:'add_hold_times'>>" \
-    -timeout 5s -alsologtostderr -insecure \
-    -client_crt /etc/ssl/certs/client1.crt \
-    -client_key /etc/ssl/certs/client1.key \
-    -ca_crt /etc/ssl/certs/onfca.crt
-```
-
-Adding an "eth2" to each of the devices
-
-[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.multipleeth2.gnmi)
-```bash
-gnmi_cli -address onos-config:5150 -set \
-    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth2' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth2'>> extension: <registered_ext: <id: 100, msg:'added_devicesim-1-IF2'>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth2' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth2'>> extension: <registered_ext: <id: 100, msg:'2nd_devicesimIF2'>> extension: <registered_ext: <id: 101, msg:'1.0.0'>> extension: <registered_ext: <id: 102, msg:'Devicesim'>>" \
-    -timeout 5s -alsologtostderr -insecure \
-    -client_crt /etc/ssl/certs/client1.crt \
-    -client_key /etc/ssl/certs/client1.key \
-    -ca_crt /etc/ssl/certs/onfca.crt
-```
 > There is a quirk with the OpenConfig models (e.g. for Stratum and Devicesim),
 > where the name of the interface is a [leaf ref](https://github.com/openconfig/public/blob/e3c0374ce6aa9d1230ea31a5f0f9a739ed0db308/release/models/interfaces/openconfig-interfaces.yang#L164)
 > to a name attribute beneath it. This means that an interface cannot be created
@@ -182,60 +129,19 @@ gnmi_cli -address onos-config:5150 -set \
 > error `rpc error: code = InvalidArgument desc = pointed-to value with path ../config/name from field Name value eth2 (string ptr) schema /device/interfaces/interface/name is empty set`
 > will occur.
 
-Adding attributes to existing interface
-
-[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.multipleifenabled.gnmi)
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.eth2.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
-    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name'value:'eth1'>> elem: <name: 'config'> elem: <name: 'enabled'>> val: <bool_val: true>> update: <path: <target: 'devicesim-1',elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth2'>> elem: <name: 'config'> elem: <name: 'enabled'>> val: <bool_val: true>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1'>> elem: <name: 'config'> elem: <name: 'enabled'>> val: <bool_val: true>> update: <path: <target: 'devicesim-2',elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth2'>> elem: <name: 'config'> elem: <name: 'enabled'>> val: <bool_val: true>> extension: <registered_ext: <id: 100,msg:'add_enabled'>>" \
+    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth2' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth2'>>" \
     -timeout 5s -alsologtostderr -insecure \
     -client_crt /etc/ssl/certs/client1.crt \
     -client_key /etc/ssl/certs/client1.key \
     -ca_crt /etc/ssl/certs/onfca.crt
 ```
 
-### Target device not known/creating a new device target
-If the `target` device is not currently known to `onos-config` the system will store the configuration internally and apply
-it to the `target` device when/if it becomes available.
-
-When the `target` becomes available `onos-config` will compute the latest configuration for it based on the set of
-applied changes and push it to the `target` with a standard `set` operation.
-
-In the case where the `target` device is not known, a special feature of onos-config
-has to be invoked to tell the system the type and version to use as a model plugin
-for validation - these are given in extensions [101](./gnmi_extensions.md) (version)
-and [102](./gnmi_extensions.md) (type).
-> This can be used to pre-provision new devices or new versions of devices before
-> they are available in the `onos-topo` topology.  
-
-For example using the gnmi_cli:
-
-[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.targetukn.gnmi)
-```bash
-gnmi_cli -address onos-config:5150 -set \
-    -proto "update: <path: <target: 'new-device', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>, extension: <registered_ext: <id: 100, msg: 'my2ndchange'>>  , extension <registered_ext: <id: 101, msg: '1.0.0'>>, extension: <registered_ext: <id: 102, msg: 'Devicesim'>>" \
-    -timeout 5s -en PROTO -alsologtostderr -insecure \
-    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
-```
-
-> There are restrictions on the use of these extensions in this context:
-> * All targets specified in this `set` command will have to be of the same type
-> and version as given in extension 101 and 102, even if they already exist on
-> the system.
-
-After creating all of these the dashboard will show each Set operation as a row,
-and each device as a column.
-![Dashboard](images/config-dashboard-after-sets.png)
-
-Drilling down specifically in to "devicesim-1", we can see the layers of
-configuration:
-![devicesim-1](images/config-view-devicesim1.png)
-
 ## Northbound gNMI Get Request
 __onos-config__ extends standard gNMI as a method of accessing a complete
 configuration system consisting of *several* devices - each identified by _target_.
-It supports network wide configuration actions (multiple
-updates on multiple devices at once, and rollback of same).
 
 The gNMI Northbound interface is available through https on port 5150.
 
@@ -267,7 +173,7 @@ gnmi_cli -get -address onos-config:5150 \
     -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 
-Here the encoding requested was `PROTO` which will returnt the values in a Lef List.
+Here the encoding requested was `PROTO` which will return the values in a Lef List.
 Alternatively `JSON` could have been used, which will give a JSON payload in a JSON_Val.
 
 ### List complete configuration for a device (target)
@@ -279,8 +185,7 @@ gnmi_cli -get -address onos-config:5150 \
     -timeout 5s -en PROTO -alsologtostderr -insecure \
     -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
-> Here all `elem` components are omitted, which is like requesting '/'. The result
-> will be returned as a JSON value.
+> Here all `elem` components are omitted, which is like requesting '/'.
 
 ### Get a keyed index in a list
 Use a proto value like:

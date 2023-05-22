@@ -15,7 +15,7 @@ import (
 
 const (
 	// SimulatorTargetVersion default version for simulated target
-	SimulatorTargetVersion = "1.0.0"
+	SimulatorTargetVersion = "1.0.x"
 	// SimulatorTargetType type for simulated target
 	SimulatorTargetType = "devicesim"
 

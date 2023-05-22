@@ -44,7 +44,7 @@ func (s *TestSuite) TestVersionOverride() {
 
 	// Formulate extensions with sync and with target version override
 	extensions := s.SyncExtension()
-	ttv, err := utils.TargetVersionOverrideExtension(configapi.TargetID(s.simulator1.Name), "devicesim", "1.0.0")
+	ttv, err := utils.TargetVersionOverrideExtension(configapi.TargetID(s.simulator1.Name), "devicesim", "1.0.x")
 	s.NoError(err)
 	extensions = append(extensions, ttv)
 
