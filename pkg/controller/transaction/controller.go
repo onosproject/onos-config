@@ -183,7 +183,7 @@ func (r *Reconciler) initializeRollback(ctx context.Context, transaction *config
 			return controller.Result{}, err
 		}
 		err = errors.NewNotFound("proposal %s not found", targetProposalID)
-		log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+		log.Warnf("Failed reconciling Transaction %s", transaction.ID, err)
 		failure := &configapi.Failure{
 			Type:        configapi.Failure_NOT_FOUND,
 			Description: err.Error(),
@@ -422,7 +422,11 @@ func (r *Reconciler) commitRollback(ctx context.Context, transaction *configapi.
 			return controller.Result{}, nil
 		}
 	case configapi.TransactionPhaseStatus_IN_PROGRESS:
-		proposal, err := r.proposals.GetKey(ctx, transaction.ID.Target, transaction.Key)
+		proposalID := configapi.ProposalID{
+			Target: transaction.ID.Target,
+			Index:  transaction.GetRollback().Index,
+		}
+		proposal, err := r.proposals.Get(ctx, proposalID)
 		if err != nil {
 			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
 			return controller.Result{}, err
