@@ -6,6 +6,7 @@ package transaction
 
 import (
 	"context"
+	configurationstore "github.com/onosproject/onos-config/pkg/store/configuration"
 	"time"
 
 	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal"
@@ -25,7 +26,7 @@ const (
 )
 
 // NewController returns a transaction controller
-func NewController(transactions transactionstore.Store, proposals proposalstore.Store) *controller.Controller {
+func NewController(transactions transactionstore.Store, proposals proposalstore.Store, configurations configurationstore.Store) *controller.Controller {
 	c := controller.NewController("transaction")
 	c.Watch(&Watcher{
 		transactions: transactions,
@@ -34,16 +35,18 @@ func NewController(transactions transactionstore.Store, proposals proposalstore.
 		proposals: proposals,
 	})
 	c.Reconcile(&Reconciler{
-		transactions: transactions,
-		proposals:    proposals,
+		transactions:   transactions,
+		proposals:      proposals,
+		configurations: configurations,
 	})
 	return c
 }
 
 // Reconciler reconciles transactions
 type Reconciler struct {
-	transactions transactionstore.Store
-	proposals    proposalstore.Store
+	transactions   transactionstore.Store
+	proposals      proposalstore.Store
+	configurations configurationstore.Store
 }
 
 // Reconcile reconciles target transactions
@@ -51,517 +54,408 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	index := id.Value.(configapi.Index)
-	transaction, err := r.transactions.GetByIndex(ctx, index)
+	transactionID := id.Value.(configapi.TransactionID)
+	transaction, err := r.transactions.Get(ctx, transactionID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Warnf("Failed to reconcile Transaction %d", index, err)
+			log.Warnf("Failed to reconcile Transaction %s", transactionID, err)
 			return controller.Result{}, err
 		}
-		log.Debugf("Transaction %d not found", index)
+		log.Debugf("Transaction %s not found", transactionID)
 		return controller.Result{}, nil
 	}
 
-	log.Debugf("Reconciling Transaction %d", transaction.Index)
+	log.Debugf("Reconciling Transaction %s", transactionID)
 	log.Debug(transaction)
 	return r.reconcileTransaction(ctx, transaction)
 }
 
+func isComplete(state configapi.TransactionPhaseStatus_State) bool {
+	return state >= configapi.TransactionPhaseStatus_COMPLETE
+}
+
 func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
-	if transaction.Status.Phases.Apply != nil {
-		return r.reconcileApply(ctx, transaction)
-	} else if transaction.Status.Phases.Abort != nil {
-		return r.reconcileAbort(ctx, transaction)
-	} else if transaction.Status.Phases.Commit != nil {
-		return r.reconcileCommit(ctx, transaction)
-	} else if transaction.Status.Phases.Validate != nil {
-		return r.reconcileValidate(ctx, transaction)
-	} else if transaction.Status.Phases.Initialize != nil {
+	if !isComplete(transaction.Status.Initialize.State) {
 		return r.reconcileInitialize(ctx, transaction)
-	} else {
-		log.Infof("Initializing Transaction %d", transaction.Index)
-		transaction.Status.Phases.Initialize = &configapi.TransactionInitializePhase{
-			TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-				Start: getCurrentTimestamp(),
-			},
-		}
-		if err := r.updateTransactionStatus(ctx, transaction); err != nil {
-			return controller.Result{}, err
-		}
-		return controller.Result{}, nil
 	}
+	if !isComplete(transaction.Status.Commit.State) {
+		return r.reconcileCommit(ctx, transaction)
+	}
+	if !isComplete(transaction.Status.Apply.State) {
+		return r.reconcileApply(ctx, transaction)
+	}
+	return controller.Result{}, nil
 }
 
 func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
-	switch transaction.Status.Phases.Initialize.State {
-	case configapi.TransactionInitializePhase_INITIALIZING:
-		prevTransaction, err := r.transactions.GetByIndex(ctx, transaction.Index-1)
-		if err != nil {
-			if !errors.IsNotFound(err) {
-				log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-				return controller.Result{}, err
-			}
-		} else {
-			if prevTransaction.Status.Phases.Initialize == nil ||
-				prevTransaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_INITIALIZING {
-				log.Infof("Transaction %d waiting for Transaction %d to initialize", transaction.Index, prevTransaction.Index)
-				return controller.Result{}, nil
-			}
-		}
-
-		if transaction.Status.Proposals == nil {
-			var proposals []configapi.ProposalID
-			switch details := transaction.Details.(type) {
-			case *configapi.Transaction_Change:
-				for targetID, change := range details.Change.Values {
-					proposalID := proposalstore.NewID(targetID, transaction.Index)
-					_, err := r.proposals.Get(ctx, proposalID)
-					if err != nil {
-						if !errors.IsNotFound(err) {
-							log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-							return controller.Result{}, err
-						}
-
-						// Extract type/version override for this target, if available
-						targetTypeVersion := configapi.TargetTypeVersion{}
-						if transaction.TargetVersionOverrides != nil {
-							if ttv, ttvAvailable := transaction.TargetVersionOverrides.Overrides[string(targetID)]; ttvAvailable {
-								targetTypeVersion = *ttv
-							}
-						}
-						changeValues := change.Values
-						changeValuesWithIndex := make(map[string]*configapi.PathValue)
-						for targetID, changeValue := range changeValues {
-							changeValue.Index = transaction.Index
-							changeValuesWithIndex[targetID] = changeValue
-						}
-
-						// Create a proposal for this target
-						proposal := &configapi.Proposal{
-							ID:               proposalID,
-							TransactionIndex: transaction.Index,
-							TargetID:         targetID,
-							Details: &configapi.Proposal_Change{
-								Change: &configapi.ChangeProposal{
-									Values: changeValuesWithIndex,
-								},
-							},
-							TargetTypeVersion: targetTypeVersion,
-						}
-						err := r.proposals.Create(ctx, proposal)
-						if err != nil {
-							if !errors.IsAlreadyExists(err) {
-								log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-								return controller.Result{}, err
-							}
-							return controller.Result{}, nil
-						}
-					}
-					proposals = append(proposals, proposalID)
-				}
-			case *configapi.Transaction_Rollback:
-				targetTransaction, err := r.transactions.GetByIndex(ctx, details.Rollback.RollbackIndex)
-				if err != nil {
-					if !errors.IsNotFound(err) {
-						log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-						return controller.Result{}, err
-					}
-					err = errors.NewNotFound("transaction %d not found", details.Rollback.RollbackIndex)
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					failure := &configapi.Failure{
-						Type:        configapi.Failure_NOT_FOUND,
-						Description: err.Error(),
-					}
-					transaction.Status.State = configapi.TransactionStatus_FAILED
-					transaction.Status.Failure = failure
-					transaction.Status.Phases.Abort = &configapi.TransactionAbortPhase{
-						TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-							Start: getCurrentTimestamp(),
-						},
-					}
-					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
-					transaction.Status.Phases.Initialize.Failure = failure
-					transaction.Status.Phases.Initialize.End = getCurrentTimestamp()
-					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
-						return controller.Result{}, err
-					}
-					return controller.Result{}, nil
-				}
-
-				switch targetDetails := targetTransaction.Details.(type) {
-				case *configapi.Transaction_Change:
-					for targetID := range targetDetails.Change.Values {
-						proposalID := proposalstore.NewID(targetID, transaction.Index)
-						_, err = r.proposals.Get(ctx, proposalID)
-						if err != nil {
-							if !errors.IsNotFound(err) {
-								log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-								return controller.Result{}, err
-							}
-
-							targetTypeVersion := targetTransaction.TargetVersionOverrides.Overrides[string(targetID)]
-							proposal := &configapi.Proposal{
-								ID:               proposalID,
-								TransactionIndex: transaction.Index,
-								TargetID:         targetID,
-								Details: &configapi.Proposal_Rollback{
-									Rollback: &configapi.RollbackProposal{
-										RollbackIndex: details.Rollback.RollbackIndex,
-									},
-								},
-								TargetTypeVersion: *targetTypeVersion,
-							}
-							err := r.proposals.Create(ctx, proposal)
-							if err != nil {
-								if !errors.IsAlreadyExists(err) {
-									log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-									return controller.Result{}, err
-								}
-								return controller.Result{}, nil
-							}
-						}
-						proposals = append(proposals, proposalID)
-					}
-				case *configapi.Transaction_Rollback:
-					err = errors.NewNotFound("transaction %d is not a valid change", details.Rollback.RollbackIndex)
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					failure := &configapi.Failure{
-						Type:        configapi.Failure_FORBIDDEN,
-						Description: err.Error(),
-					}
-					transaction.Status.State = configapi.TransactionStatus_FAILED
-					transaction.Status.Failure = failure
-					transaction.Status.Phases.Abort = &configapi.TransactionAbortPhase{
-						TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-							Start: getCurrentTimestamp(),
-						},
-					}
-					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
-					transaction.Status.Phases.Initialize.Failure = failure
-					transaction.Status.Phases.Initialize.End = getCurrentTimestamp()
-					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
-						return controller.Result{}, err
-					}
-					return controller.Result{}, nil
-				}
-			}
-			transaction.Status.Proposals = proposals
-			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
-				return controller.Result{}, err
-			}
-			return controller.Result{}, nil
-		}
-
-		allInitialized := true
-		for _, proposalID := range transaction.Status.Proposals {
-			proposal, err := r.proposals.Get(ctx, proposalID)
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
-			}
-
-			if proposal.Status.Phases.Initialize == nil ||
-				proposal.Status.Phases.Initialize.State == configapi.ProposalInitializePhase_INITIALIZING {
-				allInitialized = false
-			}
-		}
-
-		if allInitialized {
-			log.Infof("Transaction %d initialized", transaction.Index)
-			transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_INITIALIZED
-			transaction.Status.Phases.Initialize.End = getCurrentTimestamp()
-			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
-				return controller.Result{}, err
-			}
-			return controller.Result{}, nil
-		}
-		return controller.Result{}, nil
-	case configapi.TransactionInitializePhase_INITIALIZED:
-		checked := make(map[configapi.Index]bool)
-		for _, proposalID := range transaction.Status.Proposals {
-			proposal, err := r.proposals.Get(ctx, proposalID)
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
-			}
-			if proposal.Status.PrevIndex > 0 {
-				if _, ok := checked[proposal.Status.PrevIndex]; !ok {
-					prevTransaction, err := r.transactions.GetByIndex(ctx, proposal.Status.PrevIndex)
-					if err != nil {
-						if !errors.IsNotFound(err) {
-							log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-							return controller.Result{}, err
-						}
-					} else {
-						// Return if waiting for a previous atomic transaction to be validated.
-						if prevTransaction.Isolation == configapi.TransactionStrategy_SERIALIZABLE &&
-							prevTransaction.Status.State < configapi.TransactionStatus_VALIDATED {
-							log.Infof("Transaction %d waiting for Transaction %d to be validated", transaction.Index, prevTransaction.Index)
-							return controller.Result{}, nil
-						}
-					}
-					checked[proposal.Status.PrevIndex] = true
-				}
-			}
-		}
-
-		log.Infof("Validating Transaction %d", transaction.Index)
-		transaction.Status.Phases.Validate = &configapi.TransactionValidatePhase{
-			TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-				Start: getCurrentTimestamp(),
-			},
-		}
-		if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+	prevTransactionID := configapi.TransactionID{
+		Target: transaction.ID.Target,
+		Index:  transaction.ID.Index - 1,
+	}
+	prevTransaction, err := r.transactions.Get(ctx, prevTransactionID)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
 			return controller.Result{}, err
 		}
-		return controller.Result{
-			Requeue: controller.NewID(transaction.Index + 1),
-		}, nil
+	} else {
+		if !isComplete(prevTransaction.Status.Initialize.State) {
+			log.Infof("Transaction %s waiting for Transaction %s to initialize", transaction.ID, prevTransactionID)
+			return controller.Result{}, nil
+		}
+	}
+
+	switch transaction.Details.(type) {
+	case *configapi.Transaction_Change:
+		return r.initializeChange(ctx, transaction)
+	case *configapi.Transaction_Rollback:
+		return r.initializeRollback(ctx, transaction)
 	default:
 		return controller.Result{}, nil
 	}
 }
 
-func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
-	switch transaction.Status.Phases.Validate.State {
-	case configapi.TransactionValidatePhase_VALIDATING:
-		allValidated := true
-		for _, proposalID := range transaction.Status.Proposals {
-			proposal, err := r.proposals.Get(ctx, proposalID)
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
-			}
-
-			if proposal.Status.Phases.Validate == nil {
-				log.Infof("Validating Transaction %d changes to target '%s'", transaction.Index, proposal.TargetID)
-				proposal.Status.Phases.Validate = &configapi.ProposalValidatePhase{
-					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
-						Start: getCurrentTimestamp(),
-					},
-				}
-				if err := r.updateProposalStatus(ctx, proposal); err != nil {
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
-			}
-
-			switch proposal.Status.Phases.Validate.State {
-			case configapi.ProposalValidatePhase_VALIDATING:
-				allValidated = false
-			case configapi.ProposalValidatePhase_FAILED:
-				log.Infof("Transaction %d failed", transaction.Index)
-				transaction.Status.State = configapi.TransactionStatus_FAILED
-				transaction.Status.Failure = proposal.Status.Phases.Validate.Failure
-				transaction.Status.Phases.Abort = &configapi.TransactionAbortPhase{
-					TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-						Start: getCurrentTimestamp(),
-					},
-				}
-				transaction.Status.Phases.Validate.State = configapi.TransactionValidatePhase_FAILED
-				transaction.Status.Phases.Validate.Failure = proposal.Status.Phases.Validate.Failure
-				transaction.Status.Phases.Validate.End = getCurrentTimestamp()
-				if err := r.updateTransactionStatus(ctx, transaction); err != nil {
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
-			}
+func (r *Reconciler) initializeChange(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+	_, err := r.proposals.GetKey(ctx, transaction.ID.Target, transaction.Key)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			return controller.Result{}, err
 		}
 
-		if allValidated {
-			log.Infof("Transaction %d validated", transaction.Index)
-			transaction.Status.State = configapi.TransactionStatus_VALIDATED
-			transaction.Status.Phases.Validate.State = configapi.TransactionValidatePhase_VALIDATED
-			transaction.Status.Phases.Validate.End = getCurrentTimestamp()
-			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+		// Extract type/version override for this target, if available
+		changeValues := transaction.GetChange().Values
+		changeValuesWithIndex := make(map[string]*configapi.PathValue)
+		for targetID, changeValue := range changeValues {
+			changeValue.Index = transaction.ID.Index
+			changeValuesWithIndex[targetID] = changeValue
+		}
+
+		// Create a proposal for this target
+		proposal := &configapi.Proposal{
+			ObjectMeta: configapi.ObjectMeta{
+				Key: transaction.Key,
+			},
+			ID: configapi.ProposalID{
+				Target: transaction.ID.Target,
+			},
+			Values: changeValuesWithIndex,
+			Status: configapi.ProposalStatus{
+				Change: configapi.ProposalChangeStatus{
+					Transaction: transaction.ID.Index,
+					Commit: configapi.ProposalPhaseStatus{
+						State: configapi.ProposalPhaseStatus_PENDING,
+					},
+					Apply: configapi.ProposalPhaseStatus{
+						State: configapi.ProposalPhaseStatus_PENDING,
+					},
+				},
+			},
+		}
+		err := r.proposals.Create(ctx, proposal)
+		if err != nil {
+			if !errors.IsAlreadyExists(err) {
+				log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
 				return controller.Result{}, err
 			}
 			return controller.Result{}, nil
 		}
-		return controller.Result{}, nil
-	case configapi.TransactionValidatePhase_VALIDATED:
-		checked := make(map[configapi.Index]bool)
-		for _, proposalID := range transaction.Status.Proposals {
-			proposal, err := r.proposals.Get(ctx, proposalID)
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
-			}
-			if proposal.Status.PrevIndex > 0 {
-				if _, ok := checked[proposal.Status.PrevIndex]; !ok {
-					prevTransaction, err := r.transactions.GetByIndex(ctx, proposal.Status.PrevIndex)
-					if err != nil {
-						if !errors.IsNotFound(err) {
-							log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-							return controller.Result{}, err
-						}
-					} else {
-						// Return if waiting for a previous atomic transaction to commit.
-						if prevTransaction.Isolation == configapi.TransactionStrategy_SERIALIZABLE &&
-							prevTransaction.Status.State < configapi.TransactionStatus_COMMITTED {
-							log.Infof("Transaction %d waiting for Transaction %d to be committed", transaction.Index, prevTransaction.Index)
-							return controller.Result{}, nil
-						}
-					}
-					checked[proposal.Status.PrevIndex] = true
-				}
-			}
-		}
+	}
 
-		log.Infof("Committing Transaction %d", transaction.Index)
-		transaction.Status.Phases.Commit = &configapi.TransactionCommitPhase{
-			TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-				Start: getCurrentTimestamp(),
-			},
+	transaction.Status.Initialize.State = configapi.TransactionPhaseStatus_COMPLETE
+	transaction.Status.Initialize.End = getCurrentTimestamp()
+	transaction.Status.State = configapi.TransactionStatus_PENDING
+	if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+		return controller.Result{}, err
+	}
+	return controller.Result{}, nil
+}
+
+func (r *Reconciler) initializeRollback(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+	targetProposalID := configapi.ProposalID{
+		Target: transaction.ID.Target,
+		Index:  transaction.GetRollback().Index,
+	}
+	_, err := r.proposals.Get(ctx, targetProposalID)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			return controller.Result{}, err
 		}
+		err = errors.NewNotFound("proposal %s not found", targetProposalID)
+		log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+		failure := &configapi.Failure{
+			Type:        configapi.Failure_NOT_FOUND,
+			Description: err.Error(),
+		}
+		transaction.Status.Initialize.State = configapi.TransactionPhaseStatus_FAILED
+		transaction.Status.Initialize.Failure = failure
+		transaction.Status.Initialize.End = getCurrentTimestamp()
+		transaction.Status.State = configapi.TransactionStatus_FAILED
+		transaction.Status.Failure = failure
 		if err := r.updateTransactionStatus(ctx, transaction); err != nil {
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
-	default:
+	}
+
+	nextProposalID := configapi.ProposalID{
+		Target: transaction.ID.Target,
+		Index:  transaction.GetRollback().Index + 1,
+	}
+	nextProposal, err := r.proposals.Get(ctx, nextProposalID)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			return controller.Result{}, err
+		}
+	} else if nextProposal.Status.Rollback.Commit.State == configapi.ProposalPhaseStatus_INACTIVE {
+		err = errors.NewForbidden("subsequent proposals must be rolled back before %s can be rolled back", targetProposalID)
+		log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+		failure := &configapi.Failure{
+			Type:        configapi.Failure_FORBIDDEN,
+			Description: err.Error(),
+		}
+		transaction.Status.Initialize.State = configapi.TransactionPhaseStatus_FAILED
+		transaction.Status.Initialize.Failure = failure
+		transaction.Status.Initialize.End = getCurrentTimestamp()
+		transaction.Status.State = configapi.TransactionStatus_FAILED
+		transaction.Status.Failure = failure
+		if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+			return controller.Result{}, err
+		}
 		return controller.Result{}, nil
 	}
+
+	transaction.Status.Initialize.State = configapi.TransactionPhaseStatus_COMPLETE
+	transaction.Status.Initialize.End = getCurrentTimestamp()
+	transaction.Status.State = configapi.TransactionStatus_PENDING
+	if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+		return controller.Result{}, err
+	}
+	return controller.Result{}, nil
 }
 
 func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
-	switch transaction.Status.Phases.Commit.State {
-	case configapi.TransactionCommitPhase_COMMITTING:
-		allCommitted := true
-		for _, proposalID := range transaction.Status.Proposals {
-			proposal, err := r.proposals.Get(ctx, proposalID)
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
+	switch transaction.Status.Commit.State {
+	case configapi.TransactionPhaseStatus_PENDING:
+		prevTransactionID := configapi.TransactionID{
+			Target: transaction.ID.Target,
+			Index:  transaction.ID.Index - 1,
+		}
+		prevTransaction, err := r.transactions.Get(ctx, prevTransactionID)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+				return controller.Result{}, err
 			}
-
-			if proposal.Status.Phases.Commit == nil {
-				log.Infof("Committing Transaction %d changes to target '%s'", transaction.Index, proposal.TargetID)
-				proposal.Status.Phases.Commit = &configapi.ProposalCommitPhase{
-					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
-						Start: getCurrentTimestamp(),
-					},
-				}
-				if err := r.updateProposalStatus(ctx, proposal); err != nil {
-					return controller.Result{}, err
-				}
+		} else {
+			if !isComplete(prevTransaction.Status.Commit.State) {
+				log.Infof("Transaction %s waiting for Transaction %s to be committed", transaction.ID, prevTransactionID)
 				return controller.Result{}, nil
-			}
-
-			switch proposal.Status.Phases.Commit.State {
-			case configapi.ProposalCommitPhase_COMMITTING:
-				allCommitted = false
 			}
 		}
+	}
 
-		if allCommitted {
-			log.Infof("Transaction %d committed", transaction.Index)
-			transaction.Status.State = configapi.TransactionStatus_COMMITTED
-			transaction.Status.Phases.Commit.State = configapi.TransactionCommitPhase_COMMITTED
-			transaction.Status.Phases.Commit.End = getCurrentTimestamp()
+	switch transaction.Details.(type) {
+	case *configapi.Transaction_Change:
+		return r.commitChange(ctx, transaction)
+	case *configapi.Transaction_Rollback:
+		return r.commitRollback(ctx, transaction)
+	}
+	return controller.Result{}, nil
+}
+
+func (r *Reconciler) commitChange(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+	switch transaction.Status.Commit.State {
+	case configapi.TransactionPhaseStatus_PENDING:
+		transaction.Status.Commit.Start = getCurrentTimestamp()
+		transaction.Status.Commit.State = configapi.TransactionPhaseStatus_IN_PROGRESS
+		if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+			return controller.Result{}, err
+		}
+	case configapi.TransactionPhaseStatus_IN_PROGRESS:
+		proposal, err := r.proposals.GetKey(ctx, transaction.ID.Target, transaction.Key)
+		if err != nil {
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			return controller.Result{}, err
+		}
+
+		switch proposal.Status.Change.Commit.State {
+		case configapi.ProposalPhaseStatus_PENDING:
+			configurationID := configapi.ConfigurationID{
+				Target: proposal.ID.Target,
+			}
+			configuration, err := r.configurations.Get(ctx, configurationID)
+
+			var committedIndex configapi.Index
+			var committedValues map[string]*configapi.PathValue
+			if err != nil {
+				if !errors.IsNotFound(err) {
+					log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+					return controller.Result{}, err
+				}
+				committedValues = make(map[string]*configapi.PathValue)
+			} else {
+				committedIndex = configuration.Index
+				committedValues = configuration.Values
+			}
+
+			rollbackValues := make(map[string]*configapi.PathValue)
+			for path := range proposal.Values {
+				if committedValue, ok := committedValues[path]; ok {
+					rollbackValues[path] = committedValue
+				} else {
+					rollbackValues[path] = &configapi.PathValue{
+						Path:    path,
+						Deleted: true,
+					}
+				}
+			}
+
+			proposal.Status.Change.Commit.Start = getCurrentTimestamp()
+			proposal.Status.Change.Commit.State = configapi.ProposalPhaseStatus_IN_PROGRESS
+			proposal.Status.Rollback = configapi.ProposalRollbackStatus{
+				Index:  committedIndex,
+				Values: rollbackValues,
+			}
+			if err := r.updateProposalStatus(ctx, proposal); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		case configapi.ProposalPhaseStatus_COMPLETE:
+			transaction.Status.Commit.State = configapi.TransactionPhaseStatus_COMPLETE
+			transaction.Status.Commit.End = getCurrentTimestamp()
+			transaction.Status.State = configapi.TransactionStatus_PENDING
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		case configapi.ProposalPhaseStatus_FAILED:
+			err = errors.NewInvalid("proposal %s is invalid", proposal.ID)
+			log.Warnf("Failed reconciling Transaction %s", transaction.ID, err)
+			failure := &configapi.Failure{
+				Type:        configapi.Failure_INVALID,
+				Description: err.Error(),
+			}
+			transaction.Status.Commit.State = configapi.TransactionPhaseStatus_FAILED
+			transaction.Status.Commit.Failure = failure
+			transaction.Status.Commit.End = getCurrentTimestamp()
+			transaction.Status.State = configapi.TransactionStatus_FAILED
+			transaction.Status.Failure = failure
 			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
 				return controller.Result{}, err
 			}
 			return controller.Result{}, nil
 		}
-		return controller.Result{}, nil
-	case configapi.TransactionCommitPhase_COMMITTED:
-		checked := make(map[configapi.Index]bool)
-		for _, proposalID := range transaction.Status.Proposals {
-			proposal, err := r.proposals.Get(ctx, proposalID)
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
-			}
-			if proposal.Status.PrevIndex > 0 {
-				if _, ok := checked[proposal.Status.PrevIndex]; !ok {
-					prevTransaction, err := r.transactions.GetByIndex(ctx, proposal.Status.PrevIndex)
-					if err != nil {
-						if !errors.IsNotFound(err) {
-							return controller.Result{}, err
-						}
-					} else {
-						// Return if waiting for a previous atomic transaction to applied.
-						if prevTransaction.Isolation == configapi.TransactionStrategy_SERIALIZABLE &&
-							prevTransaction.Status.State < configapi.TransactionStatus_APPLIED {
-							log.Infof("Transaction %d waiting for Transaction %d to be applied", transaction.Index, prevTransaction.Index)
-							return controller.Result{}, nil
-						}
-					}
-					checked[proposal.Status.PrevIndex] = true
-				}
-			}
-		}
-
-		log.Infof("Applying Transaction %d", transaction.Index)
-		transaction.Status.Phases.Apply = &configapi.TransactionApplyPhase{
-			TransactionPhaseStatus: configapi.TransactionPhaseStatus{
-				Start: getCurrentTimestamp(),
-			},
-		}
-		if err := r.updateTransactionStatus(ctx, transaction); err != nil {
-			return controller.Result{}, err
-		}
-		return controller.Result{}, nil
-	default:
-		return controller.Result{}, nil
 	}
+	return controller.Result{}, nil
 }
 
-func (r *Reconciler) reconcileAbort(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
-	switch transaction.Status.Phases.Abort.State {
-	case configapi.TransactionAbortPhase_ABORTING:
-		allAborted := true
-		for _, proposalID := range transaction.Status.Proposals {
+func (r *Reconciler) commitRollback(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+	switch transaction.Status.Commit.State {
+	case configapi.TransactionPhaseStatus_PENDING:
+		switch transaction.Status.Initialize.State {
+		case configapi.TransactionPhaseStatus_COMPLETE:
+			proposalID := configapi.ProposalID{
+				Target: transaction.ID.Target,
+				Index:  transaction.GetRollback().Index,
+			}
 			proposal, err := r.proposals.Get(ctx, proposalID)
 			if err != nil {
-				if !errors.IsNotFound(err) {
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
+				log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+				return controller.Result{}, err
 			}
 
-			if proposal.Status.Phases.Abort == nil {
-				log.Infof("Aborting Transaction %d changes to target '%s'", transaction.Index, proposal.TargetID)
-				proposal.Status.Phases.Abort = &configapi.ProposalAbortPhase{
-					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
-						Start: getCurrentTimestamp(),
-					},
+			if proposal.Status.Rollback.Commit.State == configapi.ProposalPhaseStatus_INACTIVE {
+				switch proposal.Status.Change.Commit.State {
+				case configapi.ProposalPhaseStatus_PENDING:
+					proposal.Status.Change.Commit.State = configapi.ProposalPhaseStatus_ABORTED
+					proposal.Status.Change.Commit.End = getCurrentTimestamp()
+					if err := r.updateProposalStatus(ctx, proposal); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
+				case configapi.ProposalPhaseStatus_COMPLETE:
+					proposal.Status.Rollback.Transaction = transaction.ID.Index
+					proposal.Status.Rollback.Commit.State = configapi.ProposalPhaseStatus_PENDING
+					proposal.Status.Rollback.Apply.State = configapi.ProposalPhaseStatus_PENDING
+					if err := r.updateProposalStatus(ctx, proposal); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
+				case configapi.ProposalPhaseStatus_ABORTED, configapi.ProposalPhaseStatus_FAILED:
+					transaction.Status.Commit.Start = getCurrentTimestamp()
+					transaction.Status.Commit.State = configapi.TransactionPhaseStatus_COMPLETE
+					transaction.Status.Commit.End = getCurrentTimestamp()
+					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
 				}
-				if err := r.updateProposalStatus(ctx, proposal); err != nil {
-					return controller.Result{}, err
+			} else {
+				switch proposal.Status.Rollback.Commit.State {
+				case configapi.ProposalPhaseStatus_PENDING:
+					transaction.Status.Commit.Start = getCurrentTimestamp()
+					transaction.Status.Commit.State = configapi.TransactionPhaseStatus_IN_PROGRESS
+					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
+				case configapi.ProposalPhaseStatus_ABORTED:
+					transaction.Status.Commit.Start = getCurrentTimestamp()
+					transaction.Status.Commit.State = configapi.TransactionPhaseStatus_ABORTED
+					transaction.Status.Commit.End = getCurrentTimestamp()
+					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
 				}
-				return controller.Result{}, nil
 			}
-
-			switch proposal.Status.Phases.Abort.State {
-			case configapi.ProposalAbortPhase_ABORTING:
-				allAborted = false
+		case configapi.TransactionPhaseStatus_FAILED:
+			transaction.Status.Commit.Start = getCurrentTimestamp()
+			transaction.Status.Commit.End = getCurrentTimestamp()
+			transaction.Status.Commit.State = configapi.TransactionPhaseStatus_ABORTED
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
 			}
+			return controller.Result{}, nil
+		}
+	case configapi.TransactionPhaseStatus_IN_PROGRESS:
+		proposal, err := r.proposals.GetKey(ctx, transaction.ID.Target, transaction.Key)
+		if err != nil {
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			return controller.Result{}, err
 		}
 
-		if allAborted {
-			log.Infof("Transaction %d aborted", transaction.Index)
-			transaction.Status.Phases.Abort.State = configapi.TransactionAbortPhase_ABORTED
-			transaction.Status.Phases.Abort.End = getCurrentTimestamp()
+		switch proposal.Status.Rollback.Commit.State {
+		case configapi.ProposalPhaseStatus_PENDING:
+			proposal.Status.Rollback.Commit.Start = getCurrentTimestamp()
+			proposal.Status.Rollback.Commit.State = configapi.ProposalPhaseStatus_IN_PROGRESS
+			if err := r.updateProposalStatus(ctx, proposal); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		case configapi.ProposalPhaseStatus_COMPLETE:
+			transaction.Status.Commit.State = configapi.TransactionPhaseStatus_COMPLETE
+			transaction.Status.Commit.End = getCurrentTimestamp()
+			transaction.Status.State = configapi.TransactionStatus_PENDING
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		case configapi.ProposalPhaseStatus_FAILED:
+			err = errors.NewInvalid("proposal %s is invalid", proposal.ID)
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			failure := &configapi.Failure{
+				Type:        configapi.Failure_INVALID,
+				Description: err.Error(),
+			}
+			transaction.Status.Commit.State = configapi.TransactionPhaseStatus_FAILED
+			transaction.Status.Commit.Failure = failure
+			transaction.Status.Commit.End = getCurrentTimestamp()
+			transaction.Status.State = configapi.TransactionStatus_FAILED
+			transaction.Status.Failure = failure
 			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
 				return controller.Result{}, err
 			}
@@ -572,63 +466,221 @@ func (r *Reconciler) reconcileAbort(ctx context.Context, transaction *configapi.
 }
 
 func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
-	switch transaction.Status.Phases.Apply.State {
-	case configapi.TransactionApplyPhase_APPLYING:
-		allApplied := true
-		for _, proposalID := range transaction.Status.Proposals {
-			proposal, err := r.proposals.Get(ctx, proposalID)
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					return controller.Result{}, err
-				}
+	switch transaction.Status.Apply.State {
+	case configapi.TransactionPhaseStatus_PENDING:
+		prevTransactionID := configapi.TransactionID{
+			Target: transaction.ID.Target,
+			Index:  transaction.ID.Index - 1,
+		}
+		prevTransaction, err := r.transactions.Get(ctx, prevTransactionID)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+				return controller.Result{}, err
+			}
+		} else {
+			if !isComplete(prevTransaction.Status.Commit.State) {
+				log.Infof("Transaction %s waiting for Transaction %s to be applied", transaction.ID, prevTransactionID)
 				return controller.Result{}, nil
 			}
+		}
+	}
 
-			if proposal.Status.Phases.Apply == nil {
-				log.Infof("Applying Transaction %d changes to target '%s'", transaction.Index, proposal.TargetID)
-				proposal.Status.Phases.Apply = &configapi.ProposalApplyPhase{
-					ProposalPhaseStatus: configapi.ProposalPhaseStatus{
-						Start: getCurrentTimestamp(),
-					},
-				}
-				if err := r.updateProposalStatus(ctx, proposal); err != nil {
-					return controller.Result{}, err
-				}
-				return controller.Result{}, nil
+	switch transaction.Details.(type) {
+	case *configapi.Transaction_Change:
+		return r.applyChange(ctx, transaction)
+	case *configapi.Transaction_Rollback:
+		return r.applyRollback(ctx, transaction)
+	}
+	return controller.Result{}, nil
+}
+
+func (r *Reconciler) applyChange(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+	switch transaction.Status.Apply.State {
+	case configapi.TransactionPhaseStatus_PENDING:
+		prevProposal, err := r.proposals.GetKey(ctx, transaction.ID.Target, transaction.Key)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+				return controller.Result{}, err
 			}
-
-			switch proposal.Status.Phases.Apply.State {
-			case configapi.ProposalApplyPhase_APPLYING:
-				allApplied = false
-			case configapi.ProposalApplyPhase_FAILED:
-				log.Warnf("Transaction %d apply failed", transaction.Index)
-				transaction.Status.State = configapi.TransactionStatus_FAILED
-				transaction.Status.Failure = proposal.Status.Phases.Apply.Failure
-				transaction.Status.Phases.Apply.State = configapi.TransactionApplyPhase_FAILED
-				transaction.Status.Phases.Apply.Failure = proposal.Status.Phases.Apply.Failure
-				transaction.Status.Phases.Apply.End = getCurrentTimestamp()
-				if err := r.updateTransactionStatus(ctx, transaction); err != nil {
-					return controller.Result{}, err
-				}
+		} else {
+			if prevProposal.Status.Change.Apply.State == configapi.ProposalPhaseStatus_FAILED &&
+				prevProposal.Status.Rollback.Apply.State != configapi.ProposalPhaseStatus_COMPLETE {
+				log.Infof("Transaction %s cannot be applied until failed Proposal %s is rolled back", transaction.ID, prevProposal.ID)
 				return controller.Result{}, nil
 			}
 		}
 
-		if allApplied {
-			log.Infof("Transaction %d applied", transaction.Index)
-			transaction.Status.State = configapi.TransactionStatus_APPLIED
-			transaction.Status.Phases.Apply.State = configapi.TransactionApplyPhase_APPLIED
-			transaction.Status.Phases.Apply.End = getCurrentTimestamp()
+		switch transaction.Status.Commit.State {
+		case configapi.TransactionPhaseStatus_COMPLETE:
+			transaction.Status.Apply.Start = getCurrentTimestamp()
+			transaction.Status.Apply.State = configapi.TransactionPhaseStatus_IN_PROGRESS
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
+			}
+		case configapi.TransactionPhaseStatus_FAILED:
+			transaction.Status.Apply.Start = getCurrentTimestamp()
+			transaction.Status.Apply.State = configapi.TransactionPhaseStatus_ABORTED
+			transaction.Status.Apply.End = getCurrentTimestamp()
 			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
 				return controller.Result{}, err
 			}
 			return controller.Result{}, nil
 		}
-		return controller.Result{}, nil
-	default:
-		return controller.Result{}, nil
+	case configapi.TransactionPhaseStatus_IN_PROGRESS:
+		proposal, err := r.proposals.GetKey(ctx, transaction.ID.Target, transaction.Key)
+		if err != nil {
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			return controller.Result{}, err
+		}
+
+		switch proposal.Status.Change.Apply.State {
+		case configapi.ProposalPhaseStatus_PENDING:
+			proposal.Status.Change.Apply.Start = getCurrentTimestamp()
+			proposal.Status.Change.Apply.State = configapi.ProposalPhaseStatus_IN_PROGRESS
+			if err := r.updateProposalStatus(ctx, proposal); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		case configapi.ProposalPhaseStatus_COMPLETE:
+			transaction.Status.Apply.State = configapi.TransactionPhaseStatus_COMPLETE
+			transaction.Status.Apply.End = getCurrentTimestamp()
+			transaction.Status.State = configapi.TransactionStatus_PENDING
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		case configapi.ProposalPhaseStatus_FAILED:
+			err = errors.NewInvalid("proposal %s is invalid", proposal.ID)
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			failure := &configapi.Failure{
+				Type:        configapi.Failure_INVALID,
+				Description: err.Error(),
+			}
+			transaction.Status.Apply.State = configapi.TransactionPhaseStatus_FAILED
+			transaction.Status.Apply.Failure = failure
+			transaction.Status.Apply.End = getCurrentTimestamp()
+			transaction.Status.State = configapi.TransactionStatus_FAILED
+			transaction.Status.Failure = failure
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		}
 	}
+	return controller.Result{}, nil
+}
+
+func (r *Reconciler) applyRollback(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+	switch transaction.Status.Apply.State {
+	case configapi.TransactionPhaseStatus_PENDING:
+		switch transaction.Status.Initialize.State {
+		case configapi.TransactionPhaseStatus_COMPLETE:
+			proposalID := configapi.ProposalID{
+				Target: transaction.ID.Target,
+				Index:  transaction.GetRollback().Index,
+			}
+			proposal, err := r.proposals.Get(ctx, proposalID)
+			if err != nil {
+				log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+				return controller.Result{}, err
+			}
+
+			if proposal.Status.Rollback.Commit.State == configapi.ProposalPhaseStatus_INACTIVE {
+				switch proposal.Status.Change.Apply.State {
+				case configapi.ProposalPhaseStatus_PENDING:
+					proposal.Status.Change.Apply.State = configapi.ProposalPhaseStatus_ABORTED
+					proposal.Status.Change.Apply.End = getCurrentTimestamp()
+					if err := r.updateProposalStatus(ctx, proposal); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
+				case configapi.ProposalPhaseStatus_COMPLETE:
+					proposal.Status.Rollback.Apply.State = configapi.ProposalPhaseStatus_PENDING
+					if err := r.updateProposalStatus(ctx, proposal); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
+				case configapi.ProposalPhaseStatus_ABORTED, configapi.ProposalPhaseStatus_FAILED:
+					transaction.Status.Apply.Start = getCurrentTimestamp()
+					transaction.Status.Apply.State = configapi.TransactionPhaseStatus_COMPLETE
+					transaction.Status.Apply.End = getCurrentTimestamp()
+					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
+				}
+			} else {
+				switch proposal.Status.Rollback.Apply.State {
+				case configapi.ProposalPhaseStatus_PENDING:
+					transaction.Status.Apply.Start = getCurrentTimestamp()
+					transaction.Status.Apply.State = configapi.TransactionPhaseStatus_IN_PROGRESS
+					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
+				case configapi.ProposalPhaseStatus_ABORTED:
+					transaction.Status.Apply.Start = getCurrentTimestamp()
+					transaction.Status.Apply.State = configapi.TransactionPhaseStatus_ABORTED
+					transaction.Status.Apply.End = getCurrentTimestamp()
+					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+						return controller.Result{}, err
+					}
+					return controller.Result{}, nil
+				}
+			}
+		case configapi.TransactionPhaseStatus_FAILED:
+			transaction.Status.Apply.Start = getCurrentTimestamp()
+			transaction.Status.Apply.End = getCurrentTimestamp()
+			transaction.Status.Apply.State = configapi.TransactionPhaseStatus_ABORTED
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		}
+	case configapi.TransactionPhaseStatus_IN_PROGRESS:
+		proposal, err := r.proposals.GetKey(ctx, transaction.ID.Target, transaction.Key)
+		if err != nil {
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			return controller.Result{}, err
+		}
+
+		switch proposal.Status.Rollback.Apply.State {
+		case configapi.ProposalPhaseStatus_PENDING:
+			proposal.Status.Rollback.Apply.Start = getCurrentTimestamp()
+			proposal.Status.Rollback.Apply.State = configapi.ProposalPhaseStatus_IN_PROGRESS
+			if err := r.updateProposalStatus(ctx, proposal); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		case configapi.ProposalPhaseStatus_COMPLETE:
+			transaction.Status.Apply.State = configapi.TransactionPhaseStatus_COMPLETE
+			transaction.Status.Apply.End = getCurrentTimestamp()
+			transaction.Status.State = configapi.TransactionStatus_PENDING
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		case configapi.ProposalPhaseStatus_FAILED:
+			err = errors.NewInvalid("proposal %s is invalid", proposal.ID)
+			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
+			failure := &configapi.Failure{
+				Type:        configapi.Failure_INVALID,
+				Description: err.Error(),
+			}
+			transaction.Status.Apply.State = configapi.TransactionPhaseStatus_FAILED
+			transaction.Status.Apply.Failure = failure
+			transaction.Status.Apply.End = getCurrentTimestamp()
+			transaction.Status.State = configapi.TransactionStatus_FAILED
+			transaction.Status.Failure = failure
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		}
+	}
+	return controller.Result{}, nil
 }
 
 func (r *Reconciler) updateTransactionStatus(ctx context.Context, transaction *configapi.Transaction) error {
@@ -636,10 +688,10 @@ func (r *Reconciler) updateTransactionStatus(ctx context.Context, transaction *c
 	err := r.transactions.UpdateStatus(ctx, transaction)
 	if err != nil {
 		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-			log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
+			log.Errorf("Failed updating Transaction %s status", transaction.ID, err)
 			return err
 		}
-		log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
+		log.Warnf("Write conflict updating Transaction %s status", transaction.ID, err)
 		return nil
 	}
 	return nil

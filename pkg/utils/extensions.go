@@ -11,8 +11,9 @@ import (
 
 // TargetVersionOverrideExtension returns a target type/version override extension
 func TargetVersionOverrideExtension(id configapi.TargetID, targetType configapi.TargetType, targetVersion configapi.TargetVersion) (*gnmi_ext.Extension, error) {
-	ext := configapi.TargetVersionOverrides{
-		Overrides: map[string]*configapi.TargetTypeVersion{string(id): {TargetType: targetType, TargetVersion: targetVersion}},
+	ext := configapi.TargetTypeVersion{
+		TargetType:    targetType,
+		TargetVersion: targetVersion,
 	}
 	b, err := ext.Marshal()
 	if err != nil {

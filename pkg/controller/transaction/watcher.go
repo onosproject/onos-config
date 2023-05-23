@@ -43,7 +43,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			ch <- controller.NewID(event.Transaction.Index)
+			ch <- controller.NewID(event.Transaction.ID)
 		}
 	}()
 	return nil
@@ -85,7 +85,20 @@ func (w *ProposalWatcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			ch <- controller.NewID(event.Proposal.TransactionIndex)
+			if event.Proposal.Status.Change.Transaction > 0 {
+				transactionID := configapi.TransactionID{
+					Target: event.Proposal.ID.Target,
+					Index:  event.Proposal.Status.Change.Transaction,
+				}
+				ch <- controller.NewID(transactionID)
+			}
+			if event.Proposal.Status.Rollback.Transaction > 0 {
+				transactionID := configapi.TransactionID{
+					Target: event.Proposal.ID.Target,
+					Index:  event.Proposal.Status.Rollback.Transaction,
+				}
+				ch <- controller.NewID(transactionID)
+			}
 		}
 	}()
 	return nil
