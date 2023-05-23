@@ -29,7 +29,7 @@ func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S
 	i := 0
 	for {
 		i++
-		testCase, err := reader.Next()
+		testCase, err := reader.Next(i)
 		if err == io.EOF {
 			break
 		}
@@ -37,9 +37,12 @@ func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S
 			break
 		}
 		testName := fmt.Sprintf("%s%d", t.Name(), i)
-		t.Run(testName, func(t *testing.T) {
+		ok := t.Run(testName, func(t *testing.T) {
 			f(t, testCase)
 		})
+		if !ok {
+			break
+		}
 	}
 }
 
@@ -71,12 +74,13 @@ type Reader[S, C any] struct {
 	scanner *bufio.Scanner
 }
 
-func (r *Reader[S, C]) Next() (TestCase[S, C], error) {
+func (r *Reader[S, C]) Next(i int) (TestCase[S, C], error) {
 	var testCase TestCase[S, C]
 	if !r.scanner.Scan() {
 		return testCase, io.EOF
 	}
-	if err := json.Unmarshal(r.scanner.Bytes(), &testCase); err != nil {
+	bytes := r.scanner.Bytes()
+	if err := json.Unmarshal(bytes, &testCase); err != nil {
 		return testCase, err
 	}
 	return testCase, nil
