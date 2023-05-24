@@ -644,7 +644,11 @@ func (r *Reconciler) applyRollback(ctx context.Context, transaction *configapi.T
 			return controller.Result{}, nil
 		}
 	case configapi.TransactionPhaseStatus_IN_PROGRESS:
-		proposal, err := r.proposals.GetKey(ctx, transaction.ID.Target, transaction.Key)
+		proposalID := configapi.ProposalID{
+			Target: transaction.ID.Target,
+			Index:  transaction.GetRollback().Index,
+		}
+		proposal, err := r.proposals.Get(ctx, proposalID)
 		if err != nil {
 			log.Errorf("Failed reconciling Transaction %s", transaction.ID, err)
 			return controller.Result{}, err
