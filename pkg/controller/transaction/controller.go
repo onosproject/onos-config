@@ -337,17 +337,6 @@ func (r *Reconciler) applyChange(ctx context.Context, transaction *configapi.Tra
 	}
 	switch transaction.Status.Change.Apply.State {
 	case configapi.TransactionPhaseStatus_PENDING:
-		// A failure occurred after updating the applied ordinal but before the transaction status could be updated.
-		if configuration.Applied.Ordinal == transaction.Status.Change.Ordinal {
-			transaction.Status.Change.Apply.State = configapi.TransactionPhaseStatus_ABORTED
-			transaction.Status.Change.Apply.Start = now()
-			transaction.Status.Change.Apply.End = now()
-			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
-				return controller.Result{}, false, err
-			}
-			return controller.Result{}, true, nil
-		}
-
 		if configuration.Applied.Ordinal != transaction.Status.Change.Ordinal-1 {
 			return controller.Result{}, false, nil
 		}
@@ -379,8 +368,21 @@ func (r *Reconciler) applyChange(ctx context.Context, transaction *configapi.Tra
 			return controller.Result{}, false, nil
 		}
 
-		if configuration.Applied.Revision != configapi.Revision(transaction.Status.Rollback.Index) {
-			return controller.Result{}, false, nil
+		if configuration.Applied.Revision < configapi.Revision(transaction.Status.Rollback.Index) {
+			transaction.Status.Change.Apply.State = configapi.TransactionPhaseStatus_ABORTED
+			transaction.Status.Change.Apply.Start = now()
+			transaction.Status.Change.Apply.End = now()
+			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+				return controller.Result{}, false, err
+			}
+
+			configuration.Applied.Target = transaction.ID.Index
+			configuration.Applied.Index = transaction.ID.Index
+			configuration.Applied.Ordinal = transaction.Status.Change.Ordinal
+			if err := r.updateConfigurationStatus(ctx, configuration); err != nil {
+				return controller.Result{}, false, err
+			}
+			return controller.Result{}, true, nil
 		}
 
 		configuration.Applied.Target = transaction.ID.Index
@@ -642,10 +644,10 @@ func (r *Reconciler) applyRollback(ctx context.Context, transaction *configapi.T
 					if !errors.IsNotFound(err) {
 						return controller.Result{}, false, err
 					}
-				} else if configuration.Applied.Target == transaction.ID.Index &&
+				} else if configuration.Applied.Target == configuration.Applied.Index &&
 					prevTransaction.Status.Change.Apply.State < configapi.TransactionPhaseStatus_COMPLETE {
 					return controller.Result{}, false, nil
-				} else if configuration.Applied.Target < transaction.ID.Index &&
+				} else if configuration.Applied.Target < configuration.Applied.Index &&
 					prevTransaction.Status.Rollback.Apply.State < configapi.TransactionPhaseStatus_COMPLETE {
 					return controller.Result{}, false, nil
 				}
@@ -837,7 +839,7 @@ func (r *Reconciler) applyRollback(ctx context.Context, transaction *configapi.T
 		log.Infof("Updating applied index for Configuration '%s' to %d in term %d", configuration.ID, transaction.ID.Index, configuration.Applied.Term)
 		configuration.Applied.Index = transaction.ID.Index
 		configuration.Applied.Ordinal = transaction.Status.Rollback.Ordinal
-		configuration.Applied.Revision = configapi.Revision(transaction.ID.Index)
+		configuration.Applied.Revision = configapi.Revision(transaction.Status.Rollback.Index)
 		if configuration.Applied.Values == nil {
 			configuration.Applied.Values = make(map[string]configapi.PathValue)
 		}

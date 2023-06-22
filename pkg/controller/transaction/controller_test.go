@@ -454,20 +454,22 @@ func newTransaction(transactionID configapi.TransactionID, state model.Transacti
 			Ordinal: configapi.Ordinal(state.Rollback.Ordinal),
 			Commit:  newTransactionPhaseStatus(state.Rollback.Commit),
 			Apply:   newTransactionPhaseStatus(state.Rollback.Apply),
-			Index:   configapi.Index(state.Rollback.Index),
 		}
-		rollbackValues := make(map[string]configapi.PathValue)
-		for path, value := range state.Rollback.Values {
-			rollbackValues[path] = configapi.PathValue{
-				Path: path,
-				Value: configapi.TypedValue{
-					Type:  configapi.ValueType_STRING,
-					Bytes: []byte(value),
-				},
-			}
-		}
-		transaction.Status.Rollback.Values = rollbackValues
 	}
+
+	rollbackIndex := configapi.Index(state.Rollback.Index)
+	rollbackValues := make(map[string]configapi.PathValue)
+	for path, value := range state.Rollback.Values {
+		rollbackValues[path] = configapi.PathValue{
+			Path: path,
+			Value: configapi.TypedValue{
+				Type:  configapi.ValueType_STRING,
+				Bytes: []byte(value),
+			},
+		}
+	}
+	transaction.Status.Rollback.Index = rollbackIndex
+	transaction.Status.Rollback.Values = rollbackValues
 	return transaction
 }
 
