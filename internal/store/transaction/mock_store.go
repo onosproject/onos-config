@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	v2 "github.com/onosproject/onos-api/go/onos/config/v2"
+	v3 "github.com/onosproject/onos-api/go/onos/config/v3"
 	transaction "github.com/onosproject/onos-config/pkg/store/transaction"
 )
 
@@ -51,7 +51,7 @@ func (mr *MockStoreMockRecorder) Close(arg0 interface{}) *gomock.Call {
 }
 
 // Create mocks base method.
-func (m *MockStore) Create(arg0 context.Context, arg1 *v2.Transaction) error {
+func (m *MockStore) Create(arg0 context.Context, arg1 *v3.Transaction) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -65,10 +65,10 @@ func (mr *MockStoreMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockStore) Get(arg0 context.Context, arg1 v2.TransactionID) (*v2.Transaction, error) {
+func (m *MockStore) Get(arg0 context.Context, arg1 v3.TransactionID) (*v3.Transaction, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1)
-	ret0, _ := ret[0].(*v2.Transaction)
+	ret0, _ := ret[0].(*v3.Transaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -80,10 +80,10 @@ func (mr *MockStoreMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // GetKey mocks base method.
-func (m *MockStore) GetKey(arg0 context.Context, arg1 v2.Target, arg2 string) (*v2.Transaction, error) {
+func (m *MockStore) GetKey(arg0 context.Context, arg1 v3.Target, arg2 string) (*v3.Transaction, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetKey", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*v2.Transaction)
+	ret0, _ := ret[0].(*v3.Transaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -95,10 +95,10 @@ func (mr *MockStoreMockRecorder) GetKey(arg0, arg1, arg2 interface{}) *gomock.Ca
 }
 
 // List mocks base method.
-func (m *MockStore) List(arg0 context.Context) ([]*v2.Transaction, error) {
+func (m *MockStore) List(arg0 context.Context) ([]v3.Transaction, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", arg0)
-	ret0, _ := ret[0].([]*v2.Transaction)
+	ret0, _ := ret[0].([]v3.Transaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -110,7 +110,7 @@ func (mr *MockStoreMockRecorder) List(arg0 interface{}) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockStore) Update(arg0 context.Context, arg1 *v2.Transaction) error {
+func (m *MockStore) Update(arg0 context.Context, arg1 *v3.Transaction) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -124,7 +124,7 @@ func (mr *MockStoreMockRecorder) Update(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // UpdateStatus mocks base method.
-func (m *MockStore) UpdateStatus(arg0 context.Context, arg1 *v2.Transaction) error {
+func (m *MockStore) UpdateStatus(arg0 context.Context, arg1 *v3.Transaction) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateStatus", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -138,7 +138,7 @@ func (mr *MockStoreMockRecorder) UpdateStatus(arg0, arg1 interface{}) *gomock.Ca
 }
 
 // Watch mocks base method.
-func (m *MockStore) Watch(arg0 context.Context, arg1 chan<- v2.TransactionEvent, arg2 ...transaction.WatchOption) error {
+func (m *MockStore) Watch(arg0 context.Context, arg1 chan<- v3.TransactionEvent, arg2 ...transaction.WatchOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {

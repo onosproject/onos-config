@@ -12,38 +12,70 @@ type TestCase[S, C any] struct {
 
 type Index uint64
 
+type Ordinal uint64
+
 type Revision uint64
 
 type Term uint64
 
 type NodeID string
 
+type ConnID int
+
+type Conns map[NodeID]Conn
+
 type Conn struct {
-	ID        int  `json:"id"`
-	Connected bool `json:"connected"`
+	ID        ConnID `json:"id"`
+	Connected bool   `json:"connected"`
 }
 
 type Target struct {
-	ID      int         `json:"id"`
-	Values  ValueStates `json:"values"`
-	Running bool        `json:"running"`
+	ID      int    `json:"id"`
+	Values  Values `json:"values"`
+	Running bool   `json:"running"`
 }
 
-type TransactionType string
+type EventType string
 
 const (
-	TransactionTypeChange   TransactionType = "Change"
-	TransactionTypeRollback TransactionType = "Rollback"
+	CommitEvent EventType = "Commit"
+	ApplyEvent  EventType = "Apply"
 )
 
-type TransactionStatus string
+type TransactionEvent struct {
+	Index  Index              `json:"index"`
+	Phase  TransactionPhaseID `json:"phase"`
+	Event  EventType          `json:"event"`
+	Status TransactionState   `json:"status"`
+}
+
+type TransactionPhaseID string
 
 const (
-	TransactionStatusPending    TransactionStatus = "Pending"
-	TransactionStatusInProgress TransactionStatus = "InProgress"
-	TransactionStatusComplete   TransactionStatus = "Complete"
-	TransactionStatusAborted    TransactionStatus = "Aborted"
-	TransactionStatusFailed     TransactionStatus = "Failed"
+	TransactionPhaseChange   TransactionPhaseID = "Change"
+	TransactionPhaseRollback TransactionPhaseID = "Rollback"
+)
+
+type TransactionState string
+
+func (s *TransactionState) UnmarshalJSON(data []byte) error {
+	var value string
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	if value != nilString {
+		*s = TransactionState(value)
+	}
+	return nil
+}
+
+const (
+	TransactionPending    TransactionState = "Pending"
+	TransactionInProgress TransactionState = "InProgress"
+	TransactionComplete   TransactionState = "Complete"
+	TransactionAborted    TransactionState = "Aborted"
+	TransactionCanceled   TransactionState = "Canceled"
+	TransactionFailed     TransactionState = "Failed"
 )
 
 type Transactions map[Index]Transaction
@@ -71,13 +103,18 @@ func (t *Transactions) UnmarshalJSON(data []byte) error {
 }
 
 type Transaction struct {
-	Index    Index             `json:"index"`
-	Proposal Index             `json:"proposal"`
-	Type     TransactionType   `json:"type"`
-	Values   Values            `json:"values"`
-	Init     TransactionStatus `json:"init"`
-	Commit   TransactionStatus `json:"commit"`
-	Apply    TransactionStatus `json:"apply"`
+	Index    Index              `json:"index"`
+	Phase    TransactionPhaseID `json:"phase"`
+	Change   TransactionPhase   `json:"change"`
+	Rollback TransactionPhase   `json:"rollback"`
+}
+
+type TransactionPhase struct {
+	Index   Index             `json:"index"`
+	Ordinal Ordinal           `json:"ordinal"`
+	Values  Values            `json:"values"`
+	Commit  *TransactionState `json:"commit"`
+	Apply   *TransactionState `json:"apply"`
 }
 
 type Values map[string]string
@@ -98,113 +135,7 @@ func (s *Values) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type ProposalPhase string
-
-func (p *ProposalPhase) UnmarshalJSON(data []byte) error {
-	var value string
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	if value != nilString {
-		*p = ProposalPhase(value)
-	}
-	return nil
-}
-
-const (
-	ProposalPhaseChange   ProposalPhase = "Change"
-	ProposalPhaseRollback ProposalPhase = "Rollback"
-)
-
-type ProposalStatus string
-
-func (s *ProposalStatus) UnmarshalJSON(data []byte) error {
-	var value string
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	if value != nilString {
-		*s = ProposalStatus(value)
-	}
-	return nil
-}
-
-const (
-	ProposalStatusPending    ProposalStatus = "Pending"
-	ProposalStatusInProgress ProposalStatus = "InProgress"
-	ProposalStatusComplete   ProposalStatus = "Complete"
-	ProposalStatusAborted    ProposalStatus = "Aborted"
-	ProposalStatusFailed     ProposalStatus = "Failed"
-)
-
-type Proposals map[Index]Proposal
-
-func (p *Proposals) UnmarshalJSON(data []byte) error {
-	var list []Proposal
-	if err := json.Unmarshal(data, &list); err == nil {
-		proposals := make(Proposals)
-		for _, proposal := range list {
-			proposals[proposal.Index] = proposal
-		}
-		*p = proposals
-		return nil
-	}
-	obj := make(map[Index]Proposal)
-	if err := json.Unmarshal(data, &obj); err != nil {
-		return err
-	}
-	proposals := make(Proposals)
-	for _, proposal := range obj {
-		proposals[proposal.Index] = proposal
-	}
-	*p = proposals
-	return nil
-}
-
-type Proposal struct {
-	Phase    ProposalPhase `json:"phase"`
-	Index    Index         `json:"index"`
-	Change   Change        `json:"change"`
-	Rollback Rollback      `json:"rollback"`
-}
-
-type Change struct {
-	Commit ProposalStatus `json:"commit"`
-	Apply  ProposalStatus `json:"apply"`
-	Values ValueStates    `json:"values"`
-}
-
-type Rollback struct {
-	Commit   ProposalStatus `json:"commit"`
-	Apply    ProposalStatus `json:"apply"`
-	Revision Index          `json:"revision"`
-	Values   ValueStates    `json:"values"`
-}
-
-type ValueStates map[string]ValueState
-
-func (s *ValueStates) UnmarshalJSON(data []byte) error {
-	var list []any
-	if err := json.Unmarshal(data, &list); err != nil {
-		values := make(map[string]ValueState)
-		if err := json.Unmarshal(data, &values); err != nil {
-			return err
-		}
-		state := make(ValueStates)
-		for key, value := range values {
-			state[key] = value
-		}
-		*s = state
-	}
-	return nil
-}
-
 const nilString = "<nil>"
-
-type ValueState struct {
-	Index Index `json:"index"`
-	Value Value `json:"value"`
-}
 
 type Value string
 
@@ -220,30 +151,35 @@ func (s *Value) UnmarshalJSON(data []byte) error {
 }
 
 type Configuration struct {
-	Status    ConfigurationStatus    `json:"state"`
+	State     ConfigurationState     `json:"state"`
 	Term      Term                   `json:"term"`
 	Committed ConfigurationCommitted `json:"committed"`
 	Applied   ConfigurationApplied   `json:"applied"`
 }
 
 type ConfigurationCommitted struct {
-	Index    Index       `json:"index"`
-	Revision Revision    `json:"revision"`
-	Term     Term        `json:"term"`
-	Values   ValueStates `json:"values"`
+	Index    Index    `json:"index"`
+	Change   Index    `json:"change"`
+	Ordinal  Ordinal  `json:"ordinal"`
+	Revision Revision `json:"revision"`
+	Target   Index    `json:"target"`
+	Term     Term     `json:"term"`
+	Values   Values   `json:"values"`
 }
 
 type ConfigurationApplied struct {
-	Index    Index       `json:"index"`
-	Revision Revision    `json:"revision"`
-	Values   ValueStates `json:"values"`
+	Index    Index    `json:"index"`
+	Ordinal  Ordinal  `json:"ordinal"`
+	Revision Revision `json:"revision"`
+	Target   Index    `json:"target"`
+	Values   Values   `json:"values"`
 }
 
-type ConfigurationStatus string
+type ConfigurationState string
 
 const (
-	ConfigurationStatusInProgress ConfigurationStatus = "InProgress"
-	ConfigurationStatusComplete   ConfigurationStatus = "Complete"
+	ConfigurationPending  ConfigurationState = "Pending"
+	ConfigurationComplete ConfigurationState = "Complete"
 )
 
 type Mastership struct {

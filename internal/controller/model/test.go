@@ -7,10 +7,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bits-and-blooms/bloom/v3"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"testing"
+)
+
+const (
+	defaultCountEstimate = 5000000
+	defaultFPRate        = .05
 )
 
 func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S, C])) {
@@ -21,7 +27,7 @@ func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S
 		return
 	}
 
-	reader, err := NewReader[S, C](file)
+	reader, err := NewReader[S, C](file, defaultCountEstimate)
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -29,7 +35,7 @@ func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S
 	i := 0
 	for {
 		i++
-		testCase, err := reader.Next(i)
+		testCase, err := reader.Next()
 		if err == io.EOF {
 			break
 		}
@@ -46,7 +52,7 @@ func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S
 	}
 }
 
-func NewReader[S, C any](file io.Reader) (*Reader[S, C], error) {
+func NewReader[S, C any](file io.Reader, countEstimate uint) (*Reader[S, C], error) {
 	gzfile, err := gzip.NewReader(file)
 	if err != nil {
 		return nil, err
@@ -64,6 +70,7 @@ func NewReader[S, C any](file io.Reader) (*Reader[S, C], error) {
 		scanner := bufio.NewScanner(tarfile)
 		return &Reader[S, C]{
 			scanner: scanner,
+			filter:  bloom.NewWithEstimates(countEstimate, defaultFPRate),
 		}, nil
 	default:
 		return nil, errors.New("malformed test case file")
@@ -72,9 +79,10 @@ func NewReader[S, C any](file io.Reader) (*Reader[S, C], error) {
 
 type Reader[S, C any] struct {
 	scanner *bufio.Scanner
+	filter  *bloom.BloomFilter
 }
 
-func (r *Reader[S, C]) Next(i int) (TestCase[S, C], error) {
+func (r *Reader[S, C]) Next() (TestCase[S, C], error) {
 	var testCase TestCase[S, C]
 	if !r.scanner.Scan() {
 		return testCase, io.EOF
