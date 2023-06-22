@@ -33,7 +33,6 @@ func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S
 	}
 
 	i := 0
-	//start := 106735
 	for {
 		i++
 		testCase, err := reader.Next()
@@ -43,9 +42,6 @@ func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S
 		if !assert.NoError(t, err) {
 			break
 		}
-		//if i < start {
-		//	continue
-		//}
 		testName := fmt.Sprintf("%s%d", t.Name(), i)
 		ok := t.Run(testName, func(t *testing.T) {
 			f(t, testCase)
