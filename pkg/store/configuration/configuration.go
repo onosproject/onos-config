@@ -11,12 +11,12 @@ import (
 	_map "github.com/atomix/go-sdk/pkg/primitive/map"
 	"github.com/atomix/go-sdk/pkg/types"
 	"github.com/google/uuid"
-	"github.com/onosproject/onos-config/pkg/utils/tree"
+	"github.com/onosproject/onos-config/pkg/controller/utils"
 	"io"
 	"sync"
 	"time"
 
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v3"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
@@ -225,12 +225,12 @@ func (s *configurationStore) Create(ctx context.Context, configuration *configap
 		return errors.NewInvalid("cannot create configuration with version")
 	}
 
-	if configuration.Values != nil {
+	if configuration.Committed.Values != nil {
 		committed, err := s.getCommitted(ctx, configuration.ID)
 		if err != nil {
 			return err
 		}
-		if err := s.store(ctx, committed, configuration.Values); err != nil {
+		if err := s.store(ctx, committed, configuration.Committed.Values); err != nil {
 			return err
 		}
 	}
@@ -239,7 +239,7 @@ func (s *configurationStore) Create(ctx context.Context, configuration *configap
 	configuration.Revision = 1
 	configuration.Created = time.Now()
 	configuration.Updated = time.Now()
-	configuration.Values = nil
+	configuration.Committed.Values = nil
 
 	// Create the entry in the underlying map primitive.
 	entry, err := s.configurations.Insert(ctx, configuration.Key, configuration)
@@ -267,19 +267,19 @@ func (s *configurationStore) Update(ctx context.Context, configuration *configap
 		return errors.NewInvalid("configuration must contain a version on update")
 	}
 
-	if configuration.Values != nil {
+	if configuration.Committed.Values != nil {
 		committed, err := s.getCommitted(ctx, configuration.ID)
 		if err != nil {
 			return err
 		}
-		if err := s.store(ctx, committed, configuration.Values); err != nil {
+		if err := s.store(ctx, committed, configuration.Committed.Values); err != nil {
 			return err
 		}
 	}
 
 	configuration.Revision++
 	configuration.Updated = time.Now()
-	configuration.Values = nil
+	configuration.Committed.Values = nil
 
 	// Update the entry in the underlying map primitive using the configuration version
 	// as an optimistic lock.
@@ -308,18 +308,18 @@ func (s *configurationStore) UpdateStatus(ctx context.Context, configuration *co
 		return errors.NewInvalid("configuration must contain a version on update")
 	}
 
-	if configuration.Status.Applied.Values != nil {
+	if configuration.Applied.Values != nil {
 		applied, err := s.getApplied(ctx, configuration.ID)
 		if err != nil {
 			return err
 		}
-		if err := s.store(ctx, applied, configuration.Status.Applied.Values); err != nil {
+		if err := s.store(ctx, applied, configuration.Applied.Values); err != nil {
 			return err
 		}
 	}
 
 	configuration.Updated = time.Now()
-	configuration.Status.Applied.Values = nil
+	configuration.Applied.Values = nil
 
 	// Update the entry in the underlying map primitive using the configuration version
 	// as an optimistic lock.
@@ -487,10 +487,10 @@ func (s *configurationStore) populate(ctx context.Context, configuration *config
 		if err != nil {
 			return err
 		}
-		if configuration.Values == nil {
-			configuration.Values = make(map[string]*configapi.PathValue)
+		if configuration.Committed.Values == nil {
+			configuration.Committed.Values = make(map[string]configapi.PathValue)
 		}
-		configuration.Values[entry.Key] = entry.Value
+		configuration.Committed.Values[entry.Key] = *entry.Value
 	}
 
 	applied, err := s.getApplied(ctx, configuration.ID)
@@ -509,10 +509,10 @@ func (s *configurationStore) populate(ctx context.Context, configuration *config
 		if err != nil {
 			return err
 		}
-		if configuration.Status.Applied.Values == nil {
-			configuration.Status.Applied.Values = make(map[string]*configapi.PathValue)
+		if configuration.Applied.Values == nil {
+			configuration.Applied.Values = make(map[string]configapi.PathValue)
 		}
-		configuration.Status.Applied.Values[entry.Key] = entry.Value
+		configuration.Applied.Values[entry.Key] = *entry.Value
 	}
 	return nil
 }
@@ -525,8 +525,8 @@ func (s *configurationStore) getApplied(ctx context.Context, id configapi.Config
 	return s.getTarget(ctx, s.applied, id)
 }
 
-func (s *configurationStore) store(ctx context.Context, store _map.Map[string, *configapi.PathValue], values map[string]*configapi.PathValue) error {
-	prunedValues := tree.PrunePathMap(values, true)
+func (s *configurationStore) store(ctx context.Context, store _map.Map[string, *configapi.PathValue], values map[string]configapi.PathValue) error {
+	prunedValues := utils.PrunePathMap(values, true)
 	transaction := store.Transaction(ctx)
 	for _, pv := range values {
 		entry, err := store.Get(ctx, pv.Path)
@@ -536,12 +536,12 @@ func (s *configurationStore) store(ctx context.Context, store _map.Map[string, *
 				return err
 			}
 			if _, ok := prunedValues[pv.Path]; ok {
-				transaction.Insert(pv.Path, pv)
+				transaction.Insert(pv.Path, &pv)
 			}
 		} else if _, ok := prunedValues[pv.Path]; !ok {
 			transaction.Remove(pv.Path, _map.IfVersion(entry.Version))
 		} else if pv.Index != entry.Value.Index {
-			transaction.Update(pv.Path, pv, _map.IfVersion(entry.Version))
+			transaction.Update(pv.Path, &pv, _map.IfVersion(entry.Version))
 		}
 	}
 	if _, err := transaction.Commit(); err != nil {

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v3"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -42,21 +42,17 @@ func TestTransactionStore(t *testing.T) {
 		ID: configapi.TransactionID{
 			Target: target,
 		},
-		Details: &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Values: map[string]*configapi.PathValue{
-					"foo": {
-						Value: configapi.TypedValue{
-							Bytes: []byte("Hello world!"),
-							Type:  configapi.ValueType_STRING,
-						},
-					},
-					"bar": {
-						Value: configapi.TypedValue{
-							Bytes: []byte("Hello world again!"),
-							Type:  configapi.ValueType_STRING,
-						},
-					},
+		Values: map[string]configapi.PathValue{
+			"foo": {
+				Value: configapi.TypedValue{
+					Bytes: []byte("Hello world!"),
+					Type:  configapi.ValueType_STRING,
+				},
+			},
+			"bar": {
+				Value: configapi.TypedValue{
+					Bytes: []byte("Hello world again!"),
+					Type:  configapi.ValueType_STRING,
 				},
 			},
 		},
@@ -69,13 +65,9 @@ func TestTransactionStore(t *testing.T) {
 		ID: configapi.TransactionID{
 			Target: target,
 		},
-		Details: &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Values: map[string]*configapi.PathValue{
-					"foo": {
-						Deleted: true,
-					},
-				},
+		Values: map[string]configapi.PathValue{
+			"foo": {
+				Deleted: true,
 			},
 		},
 	}
@@ -130,7 +122,7 @@ func TestTransactionStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, transaction2)
 	now := time.Now()
-	transaction2.Status.Initialize = &configapi.TransactionPhaseStatus{
+	transaction2.Status.Change = configapi.TransactionPhaseStatus{
 		Start: &now,
 	}
 	revision = transaction2.Revision
@@ -150,13 +142,13 @@ func TestTransactionStore(t *testing.T) {
 	transaction12, err := store2.GetKey(context.TODO(), target, "transaction-1")
 	assert.NoError(t, err)
 
-	transaction11.Status.Initialize = &configapi.TransactionPhaseStatus{
+	transaction11.Status.Change = configapi.TransactionPhaseStatus{
 		Start: &now,
 	}
 	err = store1.Update(context.TODO(), transaction11)
 	assert.NoError(t, err)
 
-	transaction12.Status.Initialize = &configapi.TransactionPhaseStatus{
+	transaction12.Status.Change = configapi.TransactionPhaseStatus{
 		Start: &now,
 	}
 	err = store2.Update(context.TODO(), transaction12)
@@ -177,15 +169,11 @@ func TestTransactionStore(t *testing.T) {
 		ID: configapi.TransactionID{
 			Target: target,
 		},
-		Details: &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Values: map[string]*configapi.PathValue{
-					"foo": {
-						Value: configapi.TypedValue{
-							Bytes: []byte("Hello world!"),
-							Type:  configapi.ValueType_STRING,
-						},
-					},
+		Values: map[string]configapi.PathValue{
+			"foo": {
+				Value: configapi.TypedValue{
+					Bytes: []byte("Hello world!"),
+					Type:  configapi.ValueType_STRING,
 				},
 			},
 		},
@@ -201,15 +189,11 @@ func TestTransactionStore(t *testing.T) {
 		ID: configapi.TransactionID{
 			Target: target,
 		},
-		Details: &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Values: map[string]*configapi.PathValue{
-					"bar": {
-						Value: configapi.TypedValue{
-							Bytes: []byte("Hello world!"),
-							Type:  configapi.ValueType_STRING,
-						},
-					},
+		Values: map[string]configapi.PathValue{
+			"bar": {
+				Value: configapi.TypedValue{
+					Bytes: []byte("Hello world!"),
+					Type:  configapi.ValueType_STRING,
 				},
 			},
 		},

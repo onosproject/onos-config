@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v3"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,8 +39,8 @@ func TestConfigurationStore(t *testing.T) {
 	err = store2.Watch(context.Background(), ch)
 	assert.NoError(t, err)
 
-	target1ConfigValues := make(map[string]*configapi.PathValue)
-	target1ConfigValues["/foo"] = &configapi.PathValue{
+	target1ConfigValues := make(map[string]configapi.PathValue)
+	target1ConfigValues["/foo"] = configapi.PathValue{
 		Path: "/foo",
 		Value: configapi.TypedValue{
 			Bytes: []byte("Hello world!"),
@@ -55,8 +55,8 @@ func TestConfigurationStore(t *testing.T) {
 		Values: target1ConfigValues,
 	}
 
-	target2ConfigValues := make(map[string]*configapi.PathValue)
-	target2ConfigValues["/foo"] = &configapi.PathValue{
+	target2ConfigValues := make(map[string]configapi.PathValue)
+	target2ConfigValues["/foo"] = configapi.PathValue{
 		Path: "bar",
 		Value: configapi.TypedValue{
 			Bytes: []byte("Hello world again!"),

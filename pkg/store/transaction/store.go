@@ -19,7 +19,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v3"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
@@ -40,11 +40,11 @@ type Store interface {
 	// Update updates an existing transaction
 	Update(ctx context.Context, transaction *configapi.Transaction) error
 
-	// UpdateStatus updates the status of an existing transaction
+	// UpdateStatus updates an existing transaction status
 	UpdateStatus(ctx context.Context, transaction *configapi.Transaction) error
 
 	// List lists transactions
-	List(ctx context.Context) ([]*configapi.Transaction, error)
+	List(ctx context.Context) ([]configapi.Transaction, error)
 
 	// Watch watches the transaction store  for changes
 	Watch(ctx context.Context, ch chan<- configapi.TransactionEvent, opts ...WatchOption) error
@@ -433,13 +433,13 @@ func (s *transactionStore) UpdateStatus(ctx context.Context, transaction *config
 }
 
 // List lists transactions
-func (s *transactionStore) List(ctx context.Context) ([]*configapi.Transaction, error) {
+func (s *transactionStore) List(ctx context.Context) ([]configapi.Transaction, error) {
 	targets, err := s.targets.List(context.Background())
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
 
-	var transactions []*configapi.Transaction
+	var transactions []configapi.Transaction
 	for {
 		entry, err := targets.Next()
 		if err == io.EOF {
@@ -470,7 +470,7 @@ func (s *transactionStore) List(ctx context.Context) ([]*configapi.Transaction, 
 			transaction := entry.Value
 			transaction.Version = uint64(entry.Version)
 			transaction.ID.Index = configapi.Index(entry.Index)
-			transactions = append(transactions, transaction)
+			transactions = append(transactions, *transaction)
 		}
 	}
 	return transactions, nil

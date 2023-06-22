@@ -6,11 +6,11 @@ package transaction
 
 import (
 	"context"
-	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal"
+	configurationstore "github.com/onosproject/onos-config/pkg/store/configuration"
 	transactionstore "github.com/onosproject/onos-config/pkg/store/transaction"
 	"sync"
 
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v3"
 
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 )
@@ -59,25 +59,25 @@ func (w *Watcher) Stop() {
 	w.mu.Unlock()
 }
 
-// ProposalWatcher proposal store watcher
-type ProposalWatcher struct {
-	proposals proposalstore.Store
-	cancel    context.CancelFunc
-	mu        sync.Mutex
+// ConfigurationWatcher configuration store watcher
+type ConfigurationWatcher struct {
+	configurations configurationstore.Store
+	cancel         context.CancelFunc
+	mu             sync.Mutex
 }
 
 // Start starts the watcher
-func (w *ProposalWatcher) Start(ch chan<- controller.ID) error {
+func (w *ConfigurationWatcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.cancel != nil {
 		return nil
 	}
 
-	eventCh := make(chan configapi.ProposalEvent, queueSize)
+	eventCh := make(chan configapi.ConfigurationEvent, queueSize)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	err := w.proposals.Watch(ctx, eventCh, proposalstore.WithReplay())
+	err := w.configurations.Watch(ctx, eventCh, configurationstore.WithReplay())
 	if err != nil {
 		cancel()
 		return err
@@ -85,27 +85,21 @@ func (w *ProposalWatcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			if event.Proposal.Status.Change.Transaction > 0 {
-				transactionID := configapi.TransactionID{
-					Target: event.Proposal.ID.Target,
-					Index:  event.Proposal.Status.Change.Transaction,
-				}
-				ch <- controller.NewID(transactionID)
-			}
-			if event.Proposal.Status.Rollback.Transaction > 0 {
-				transactionID := configapi.TransactionID{
-					Target: event.Proposal.ID.Target,
-					Index:  event.Proposal.Status.Rollback.Transaction,
-				}
-				ch <- controller.NewID(transactionID)
-			}
+			ch <- controller.NewID(configapi.TransactionID{
+				Target: event.Configuration.ID.Target,
+				Index:  event.Configuration.Committed.Target,
+			})
+			ch <- controller.NewID(configapi.TransactionID{
+				Target: event.Configuration.ID.Target,
+				Index:  event.Configuration.Applied.Target,
+			})
 		}
 	}()
 	return nil
 }
 
 // Stop stops the watcher
-func (w *ProposalWatcher) Stop() {
+func (w *ConfigurationWatcher) Stop() {
 	w.mu.Lock()
 	if w.cancel != nil {
 		w.cancel()

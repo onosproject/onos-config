@@ -6,7 +6,7 @@ package mastership
 
 import (
 	"context"
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v3"
 	"github.com/onosproject/onos-config/pkg/controller/utils"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"math/rand"
@@ -75,7 +75,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	}
 	targetRelations := make(map[topoapi.ID]topoapi.Object)
 	for _, object := range objects {
-		if object.GetRelation().TgtEntityID == topoapi.ID(config.TargetID) {
+		if object.GetRelation().TgtEntityID == topoapi.ID(config.ID.Target.ID) {
 			targetRelations[object.ID] = object
 		}
 	}
@@ -97,7 +97,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 			// Increment the mastership term and assign the selected master
 			config.Status.Mastership.Term++
-			config.Status.Mastership.Master = string(relation.ID)
+			config.Status.Mastership.Master = configapi.NodeID(relation.ID)
 			log.Infof("Elected new master '%s' in term %d for Configuration '%s'", config.Status.Mastership.Master, config.Status.Mastership.Term, config.ID)
 		}
 

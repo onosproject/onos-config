@@ -15,7 +15,7 @@ import (
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v3"
 	utilsv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
 
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
@@ -78,13 +78,13 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configapi.Configuration) (controller.Result, error) {
 	// Get the target entity from topo
-	target, err := r.topo.Get(ctx, topoapi.ID(config.TargetID))
+	target, err := r.topo.Get(ctx, topoapi.ID(config.ID.Target.ID))
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Errorf("Failed fetching target Entity '%s' from topo", config.TargetID, err)
+			log.Errorf("Failed fetching target Entity '%s' from topo", config.ID.Target.ID, err)
 			return controller.Result{}, err
 		}
-		log.Debugf("Target entity '%s' not found", config.TargetID)
+		log.Debugf("Target entity '%s' not found", config.ID.Target.ID)
 		return controller.Result{}, nil
 	}
 
@@ -108,7 +108,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	// If the configuration is not SYNCHRONIZING, skip synchronization.
 	if config.Status.State != configapi.ConfigurationStatus_SYNCHRONIZING {
 		// If the configuration term is greater than the applied term, set the state to SYNCHRONIZING
-		if config.Status.Mastership.Term > config.Status.Applied.Mastership.Term {
+		if config.Status.Mastership.Term > config.Applied.Term {
 			log.Infof("Configuration '%s' mastership term has increased, synchronizing...", config.ID)
 			config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZING
 			if err := r.updateConfigurationStatus(ctx, config); err != nil {
@@ -121,16 +121,15 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 
 	// If the master ID is not set, skip reconciliation.
 	if config.Status.Mastership.Master == "" {
-		log.Debugf("No master for target '%s'", config.TargetID)
+		log.Debugf("No master for target '%s'", config.ID.Target.ID)
 		return controller.Result{}, nil
 	}
 
 	// If the applied index is 0, skip applying changes.
-	if config.Status.Applied.Index == 0 {
+	if config.Applied.Index == 0 {
 		log.Infof("Skipping synchronization of Configuration '%s': no applied changes to synchronize", config.ID)
 		config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
-		config.Status.Applied.Mastership.Master = config.Status.Mastership.Master
-		config.Status.Applied.Mastership.Term = config.Status.Mastership.Term
+		config.Applied.Term = config.Status.Mastership.Term
 		if err := r.updateConfigurationStatus(ctx, config); err != nil {
 			return controller.Result{}, err
 		}
@@ -145,32 +144,32 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			log.Errorf("Failed fetching master Relation '%s' from topo", config.Status.Mastership.Master, err)
 			return controller.Result{}, err
 		}
-		log.Warnf("Master relation not found for target '%s'", config.TargetID)
+		log.Warnf("Master relation not found for target '%s'", config.ID.Target.ID)
 		return controller.Result{}, nil
 	}
 	if relation.GetRelation().SrcEntityID != controllerutils.GetOnosConfigID() {
-		log.Debugf("Not the master for target '%s'", config.TargetID)
+		log.Debugf("Not the master for target '%s'", config.ID.Target.ID)
 		return controller.Result{}, nil
 	}
 
 	// Get the master connection
 	conn, ok := r.conns.Get(ctx, gnmi.ConnID(relation.ID))
 	if !ok {
-		log.Warnf("Connection not found for target '%s'", config.TargetID)
+		log.Warnf("Connection not found for target '%s'", config.ID.Target.ID)
 		return controller.Result{}, nil
 	}
 
-	indexedPathValues := make(map[configapi.Index][]*configapi.PathValue)
-	if config.Status.Applied.Values != nil {
-		for _, appliedValue := range config.Status.Applied.Values {
+	indexedPathValues := make(map[configapi.Index][]configapi.PathValue)
+	if config.Applied.Values != nil {
+		for _, appliedValue := range config.Applied.Values {
 			indexedPathValues[appliedValue.Index] = append(indexedPathValues[appliedValue.Index], appliedValue)
 		}
 	}
-	log.Infof("Updating %d paths on target '%s'", len(indexedPathValues), config.TargetID)
+	log.Infof("Updating %d paths on target '%s'", len(indexedPathValues), config.ID.Target.ID)
 	for transactionIndex, pathValues := range indexedPathValues {
 		// Create a gNMI set request
 		log.Debugw("Creating Set request for changes in transaction", "TransactionIndex", transactionIndex)
-		setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues, config.TargetID)
+		setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues, config.ID.Target.ID)
 		if err != nil {
 			log.Errorf("Failed constructing SetRequest for Configuration '%s'", config.ID, err)
 			return controller.Result{}, nil
@@ -209,8 +208,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 
 	// Update the configuration state and path statuses
 	log.Infof("Configuration '%s' synchronization complete", config.ID)
-	config.Status.Applied.Mastership.Master = config.Status.Mastership.Master
-	config.Status.Applied.Mastership.Term = config.Status.Mastership.Term
+	config.Applied.Term = config.Status.Mastership.Term
 	config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
 	if err := r.updateConfigurationStatus(ctx, config); err != nil {
 		return controller.Result{}, err

@@ -2,21 +2,28 @@ package transaction
 
 import (
 	"context"
+	"fmt"
+	configv2 "github.com/onosproject/onos-api/go/onos/config/v2"
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/internal/controller/model"
+	pluginregistryinternal "github.com/onosproject/onos-config/internal/pluginregistry"
+	gnmiinternal "github.com/onosproject/onos-config/internal/southbound/gnmi"
 	configurationstoreinternal "github.com/onosproject/onos-config/internal/store/configuration"
-	proposalstoreinternal "github.com/onosproject/onos-config/internal/store/proposal"
+	topostoreinternal "github.com/onosproject/onos-config/internal/store/topo"
 	transactionstoreinternal "github.com/onosproject/onos-config/internal/store/transaction"
+	gnmisb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
+	gnmi "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v3"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	testTarget                                = "test"
+	testTargetID                              = "test"
 	testTargetType    configapi.TargetType    = "test"
 	testTargetVersion configapi.TargetVersion = "1"
 )
@@ -31,9 +38,12 @@ type TestContext struct {
 }
 
 type TestState struct {
-	Transactions  model.Transactions   `json:"transactions"`
-	Proposals     model.Proposals      `json:"proposals"`
-	Configuration *model.Configuration `json:"configuration"`
+	Transactions  model.Transactions      `json:"transactions"`
+	Configuration *model.Configuration    `json:"configuration"`
+	Mastership    model.Mastership        `json:"mastership"`
+	Conns         model.Conns             `json:"conns"`
+	Target        *model.Target           `json:"target"`
+	Event         *model.TransactionEvent `json:"event"`
 }
 
 func testReconciler(t *testing.T, testCase model.TestCase[TestState, TestContext]) {
@@ -41,31 +51,26 @@ func testReconciler(t *testing.T, testCase model.TestCase[TestState, TestContext
 	defer ctrl.Finish()
 
 	target := configapi.Target{
-		ID:      testTarget,
+		ID:      testTargetID,
 		Type:    testTargetType,
 		Version: testTargetVersion,
 	}
 
-	transactionStore := transactionstoreinternal.NewMockStore(ctrl)
-	transactions := make(map[configapi.TransactionID]*configapi.Transaction)
-	proposalTransactions := make(map[model.Index]*configapi.Transaction)
+	transactions := transactionstoreinternal.NewMockStore(ctrl)
+	transactionStates := make(map[configapi.TransactionID]*configapi.Transaction)
 	for _, transactionState := range testCase.State.Transactions {
 		transactionID := configapi.TransactionID{
 			Target: target,
 			Index:  configapi.Index(transactionState.Index),
 		}
 		transaction := newTransaction(transactionID, transactionState)
-		transactions[transactionID] = transaction
-		switch transactionState.Type {
-		case model.TransactionTypeChange:
-			proposalTransactions[transactionState.Proposal] = transaction
-		}
+		transactionStates[transactionID] = transaction
 	}
 
-	transactionStore.EXPECT().
+	transactions.EXPECT().
 		Get(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, transactionID configapi.TransactionID) (*configapi.Transaction, error) {
-			transaction, ok := transactions[transactionID]
+			transaction, ok := transactionStates[transactionID]
 			if !ok {
 				return nil, errors.NewNotFound("transaction not found")
 			}
@@ -73,91 +78,333 @@ func testReconciler(t *testing.T, testCase model.TestCase[TestState, TestContext
 		}).
 		AnyTimes()
 
-	for _, state := range testCase.Transitions.Transactions {
-		transactionState := state
-		transactionStore.EXPECT().
-			UpdateStatus(gomock.Any(), gomock.Any()).
-			DoAndReturn(func(ctx context.Context, transaction *configapi.Transaction) error {
-				testTransaction(t, transaction, transactionState)
-				return nil
-			})
-	}
-
-	proposalStore := proposalstoreinternal.NewMockStore(ctrl)
-	proposals := make(map[configapi.ProposalID]*configapi.Proposal)
-	proposalKeys := make(map[string]*configapi.Proposal)
-	for _, proposalState := range testCase.State.Proposals {
-		transaction, ok := proposalTransactions[proposalState.Index]
-		if !assert.True(t, ok) {
-			return
-		}
-		proposalID := configapi.ProposalID{
-			Target: target,
-			Index:  configapi.Index(proposalState.Index),
-		}
-		proposal := newProposal(proposalID, transaction.Key, proposalState)
-		proposals[proposalID] = proposal
-		proposalKeys[transaction.Key] = proposal
-	}
-
-	proposalStore.EXPECT().
-		Get(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, proposalID configapi.ProposalID) (*configapi.Proposal, error) {
-			proposal, ok := proposals[proposalID]
-			if !ok {
-				return nil, errors.NewNotFound("proposal not found")
-			}
-			return proposal, nil
-		}).
-		AnyTimes()
-
-	proposalStore.EXPECT().
-		GetKey(gomock.Any(), gomock.Eq(target), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, target configapi.Target, key string) (*configapi.Proposal, error) {
-			proposal, ok := proposalKeys[key]
-			if !ok {
-				return nil, errors.NewNotFound("proposal not found")
-			}
-			return proposal, nil
-		}).
-		AnyTimes()
-
-	for _, state := range testCase.Transitions.Proposals {
-		proposalState := state
-		proposalID := configapi.ProposalID{
-			Target: target,
-			Index:  configapi.Index(proposalState.Index),
-		}
-		if _, ok := proposals[proposalID]; !ok {
-			proposalStore.EXPECT().Create(gomock.Any(), gomock.Any()).
-				DoAndReturn(func(ctx context.Context, proposal *configapi.Proposal) error {
-					proposal.ID.Index = configapi.Index(proposalState.Index)
-					testProposal(t, proposal, proposalState)
-					return nil
-				})
-		} else {
-			proposalStore.EXPECT().UpdateStatus(gomock.Any(), gomock.Any()).
-				DoAndReturn(func(ctx context.Context, proposal *configapi.Proposal) error {
-					testProposal(t, proposal, proposalState)
-					return nil
-				})
-		}
-	}
-
-	configurationStore := configurationstoreinternal.NewMockStore(ctrl)
+	configurations := configurationstoreinternal.NewMockStore(ctrl)
 	configurationID := configapi.ConfigurationID{
 		Target: target,
 	}
-	configuration := newConfiguration(configurationID, *testCase.State.Configuration)
-	configurationStore.EXPECT().
+	configuration := newConfiguration(configurationID, *testCase.State.Configuration, testCase.State.Mastership)
+	configurations.EXPECT().
 		Get(gomock.Any(), gomock.Eq(configurationID)).
 		Return(configuration, nil).
 		AnyTimes()
 
+	topo := topostoreinternal.NewMockStore(ctrl)
+	topo.EXPECT().Get(gomock.Any(), gomock.Eq(topoapi.ID(testTargetID))).
+		DoAndReturn(func(ctx context.Context, id topoapi.ID) (*topoapi.Object, error) {
+			obj := &topoapi.Object{
+				ID:   testTargetID,
+				Type: topoapi.Object_ENTITY,
+				Obj: &topoapi.Object_Entity{
+					Entity: &topoapi.Entity{
+						KindID: "target",
+					},
+				},
+			}
+			configurable := topoapi.Configurable{
+				Type:    string(testTargetType),
+				Version: string(testTargetVersion),
+				Address: "localhost:1234",
+			}
+			if err := obj.SetAspect(&configurable); err != nil {
+				return nil, err
+			}
+			return obj, nil
+		}).AnyTimes()
+
+	conns := gnmiinternal.NewMockConnManager(ctrl)
+	for nodeID := range testCase.State.Conns {
+		topo.EXPECT().Get(gomock.Any(), gomock.Eq(gomock.Eq(topoapi.ID(nodeID)))).
+			DoAndReturn(func(ctx context.Context, id topoapi.ID) (*topoapi.Object, error) {
+				obj := &topoapi.Object{
+					ID:   topoapi.ID(nodeID),
+					Type: topoapi.Object_ENTITY,
+					Obj: &topoapi.Object_Entity{
+						Entity: &topoapi.Entity{
+							KindID: topoapi.ONOS_CONFIG,
+						},
+					},
+				}
+				if testCase.State.Mastership.Master == nodeID {
+					mastership := topoapi.MastershipState{
+						Term:   uint64(testCase.State.Mastership.Term),
+						NodeId: fmt.Sprintf("%s-%s", nodeID, testTargetID),
+					}
+					if err := obj.SetAspect(&mastership); err != nil {
+						return nil, err
+					}
+				}
+				return obj, nil
+			}).AnyTimes()
+	}
+
+	plugins := pluginregistryinternal.NewMockPluginRegistry(ctrl)
+
+	if testCase.Transitions.Event != nil {
+		switch testCase.Transitions.Event.Event {
+		case model.CommitEvent:
+			switch testCase.Transitions.Event.Phase {
+			case model.TransactionPhaseChange:
+				switch testCase.Transitions.Event.Status {
+				case model.TransactionInProgress:
+					configurations.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, configuration *configapi.Configuration) error {
+							testConfiguration(t, configuration, *testCase.Transitions.Configuration)
+							return nil
+						})
+
+					transactionState, ok := testCase.Transitions.Transactions[testCase.Context.Index]
+					if ok {
+						transactions.EXPECT().
+							UpdateStatus(gomock.Any(), gomock.Any()).
+							DoAndReturn(func(ctx context.Context, transaction *configapi.Transaction) error {
+								testTransaction(t, transaction, transactionState)
+								return nil
+							})
+					} else {
+						transactions.EXPECT().
+							UpdateStatus(gomock.Any(), gomock.Any()).Return(errors.NewConflict("test conflict"))
+					}
+				case model.TransactionComplete:
+					plugin := pluginregistryinternal.NewMockModelPlugin(ctrl)
+					plugin.EXPECT().
+						Validate(gomock.Any(), gomock.Any()).
+						Return(nil).
+						AnyTimes()
+					plugins.EXPECT().
+						GetPlugin(gomock.Eq(configv2.TargetType(testTargetType)), gomock.Eq(configv2.TargetVersion(testTargetVersion))).
+						Return(plugin, true).
+						AnyTimes()
+
+					configurations.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, configuration *configapi.Configuration) error {
+							testConfiguration(t, configuration, *testCase.Transitions.Configuration)
+							return nil
+						})
+
+					transactionState, ok := testCase.Transitions.Transactions[testCase.Context.Index]
+					if ok {
+						transactions.EXPECT().
+							UpdateStatus(gomock.Any(), gomock.Any()).
+							DoAndReturn(func(ctx context.Context, transaction *configapi.Transaction) error {
+								testTransaction(t, transaction, transactionState)
+								return nil
+							})
+					} else {
+						transactions.EXPECT().
+							UpdateStatus(gomock.Any(), gomock.Any()).Return(errors.NewConflict("test conflict"))
+					}
+				case model.TransactionFailed:
+					plugin := pluginregistryinternal.NewMockModelPlugin(ctrl)
+					plugin.EXPECT().
+						Validate(gomock.Any(), gomock.Any()).
+						Return(errors.NewInvalid("validation error")).
+						AnyTimes()
+					plugins.EXPECT().
+						GetPlugin(gomock.Eq(configv2.TargetType(testTargetType)), gomock.Eq(configv2.TargetVersion(testTargetVersion))).
+						Return(plugin, true).
+						AnyTimes()
+
+					transactionState, ok := testCase.Transitions.Transactions[testCase.Context.Index]
+					assert.True(t, ok)
+					transactions.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, transaction *configapi.Transaction) error {
+							testTransaction(t, transaction, transactionState)
+							return nil
+						})
+
+					if testCase.Transitions.Configuration != nil {
+						configurations.EXPECT().
+							UpdateStatus(gomock.Any(), gomock.Any()).
+							DoAndReturn(func(ctx context.Context, configuration *configapi.Configuration) error {
+								testConfiguration(t, configuration, *testCase.Transitions.Configuration)
+								return nil
+							})
+					} else {
+						configurations.EXPECT().
+							UpdateStatus(gomock.Any(), gomock.Any()).
+							Return(errors.NewConflict("test conflict"))
+					}
+				}
+			case model.TransactionPhaseRollback:
+				configurations.EXPECT().
+					UpdateStatus(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, configuration *configapi.Configuration) error {
+						testConfiguration(t, configuration, *testCase.Transitions.Configuration)
+						return nil
+					})
+
+				transactionState, ok := testCase.Transitions.Transactions[testCase.Context.Index]
+				if ok {
+					transactions.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, transaction *configapi.Transaction) error {
+							testTransaction(t, transaction, transactionState)
+							return nil
+						})
+				} else {
+					transactions.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).Return(errors.NewConflict("test conflict"))
+				}
+			}
+		case model.ApplyEvent:
+			switch testCase.Transitions.Event.Status {
+			case model.TransactionComplete:
+				topo.EXPECT().
+					Get(gomock.Any(), gomock.Eq(topoapi.ID(fmt.Sprintf("%s-%s", testCase.Context.NodeID, testTargetID)))).
+					DoAndReturn(func(ctx context.Context, id topoapi.ID) (*topoapi.Object, error) {
+						return &topoapi.Object{
+							ID:   topoapi.ID(fmt.Sprintf("%s-%s", testCase.Context.NodeID, testTargetID)),
+							Type: topoapi.Object_RELATION,
+							Obj: &topoapi.Object_Relation{
+								Relation: &topoapi.Relation{
+									KindID:      topoapi.CONTROLS,
+									SrcEntityID: topoapi.ID(testCase.Context.NodeID),
+									TgtEntityID: testTargetID,
+								},
+							},
+						}, nil
+					})
+
+				conns.EXPECT().
+					Get(gomock.Any(), gomock.Eq(gnmisb.ConnID(fmt.Sprintf("%s-%s", testCase.Context.NodeID, testTargetID)))).
+					DoAndReturn(func(ctx context.Context, id gnmisb.ConnID) (gnmisb.Conn, bool) {
+						conn := gnmiinternal.NewMockConn(ctrl)
+						conn.EXPECT().ID().Return(id).AnyTimes()
+						conn.EXPECT().
+							Set(gomock.Any(), gomock.Any()).
+							Return(&gnmi.SetResponse{}, nil)
+						return conn, true
+					})
+
+				if testCase.Transitions.Configuration != nil {
+					configurations.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, configuration *configapi.Configuration) error {
+							testConfiguration(t, configuration, *testCase.Transitions.Configuration)
+							return nil
+						})
+				}
+
+				transactionState, ok := testCase.Transitions.Transactions[testCase.Context.Index]
+				if ok {
+					transactions.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, transaction *configapi.Transaction) error {
+							testTransaction(t, transaction, transactionState)
+							return nil
+						})
+				} else {
+					transactions.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).Return(errors.NewConflict("test conflict"))
+				}
+			case model.TransactionFailed:
+				topo.EXPECT().
+					Get(gomock.Any(), gomock.Eq(topoapi.ID(fmt.Sprintf("%s-%s", testCase.Context.NodeID, testTargetID)))).
+					DoAndReturn(func(ctx context.Context, id topoapi.ID) (*topoapi.Object, error) {
+						return &topoapi.Object{
+							ID:   topoapi.ID(fmt.Sprintf("%s-%s", testCase.Context.NodeID, testTargetID)),
+							Type: topoapi.Object_RELATION,
+							Obj: &topoapi.Object_Relation{
+								Relation: &topoapi.Relation{
+									KindID:      topoapi.CONTROLS,
+									SrcEntityID: topoapi.ID(testCase.Context.NodeID),
+									TgtEntityID: testTargetID,
+								},
+							},
+						}, nil
+					}).AnyTimes()
+
+				conns.EXPECT().
+					Get(gomock.Any(), gomock.Eq(gnmisb.ConnID(fmt.Sprintf("%s-%s", testCase.Context.NodeID, testTargetID)))).
+					DoAndReturn(func(ctx context.Context, id gnmisb.ConnID) (gnmisb.Conn, bool) {
+						conn := gnmiinternal.NewMockConn(ctrl)
+						conn.EXPECT().ID().Return(id).AnyTimes()
+						conn.EXPECT().
+							Set(gomock.Any(), gomock.Any()).
+							Return(nil, errors.Status(errors.NewInternal("internal error")).Err())
+						return conn, true
+					}).AnyTimes()
+
+				transactionState, ok := testCase.Transitions.Transactions[testCase.Context.Index]
+				assert.True(t, ok)
+				transactions.EXPECT().
+					UpdateStatus(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, transaction *configapi.Transaction) error {
+						testTransaction(t, transaction, transactionState)
+						return nil
+					})
+
+				if testCase.Transitions.Configuration != nil {
+					configurations.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, configuration *configapi.Configuration) error {
+							testConfiguration(t, configuration, *testCase.Transitions.Configuration)
+							return nil
+						})
+				} else {
+					configurations.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						Return(errors.NewConflict("test conflict"))
+				}
+			default:
+				if testCase.Transitions.Configuration != nil {
+					configurations.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, configuration *configapi.Configuration) error {
+							testConfiguration(t, configuration, *testCase.Transitions.Configuration)
+							return nil
+						})
+				} else {
+					configurations.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						Return(errors.NewConflict("test conflict"))
+				}
+
+				transactionState, ok := testCase.Transitions.Transactions[testCase.Context.Index]
+				if ok {
+					transactions.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, transaction *configapi.Transaction) error {
+							testTransaction(t, transaction, transactionState)
+							return nil
+						})
+				} else {
+					transactions.EXPECT().
+						UpdateStatus(gomock.Any(), gomock.Any()).Return(errors.NewConflict("test conflict"))
+				}
+			}
+		}
+	} else {
+		if testCase.Transitions.Configuration != nil {
+			configurations.EXPECT().
+				UpdateStatus(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(ctx context.Context, configuration *configapi.Configuration) error {
+					testConfiguration(t, configuration, *testCase.Transitions.Configuration)
+					return nil
+				})
+		}
+
+		for _, state := range testCase.Transitions.Transactions {
+			transactionState := state
+			transactions.EXPECT().
+				UpdateStatus(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(ctx context.Context, transaction *configapi.Transaction) error {
+					testTransaction(t, transaction, transactionState)
+					return nil
+				})
+		}
+	}
+
 	reconciler := &Reconciler{
-		transactions:   transactionStore,
-		proposals:      proposalStore,
-		configurations: configurationStore,
+		nodeID:         configapi.NodeID(testCase.Context.NodeID),
+		transactions:   transactions,
+		configurations: configurations,
+		conns:          conns,
+		topo:           topo,
+		plugins:        plugins,
 	}
 
 	transactionID := configapi.TransactionID{
@@ -176,11 +423,42 @@ func newTransaction(transactionID configapi.TransactionID, state model.Transacti
 		ID: transactionID,
 	}
 
-	switch state.Type {
-	case model.TransactionTypeChange:
-		values := make(map[string]*configapi.PathValue)
-		for path, value := range state.Values {
-			values[path] = &configapi.PathValue{
+	values := make(map[string]configapi.PathValue)
+	for path, value := range state.Change.Values {
+		values[path] = configapi.PathValue{
+			Path: path,
+			Value: configapi.TypedValue{
+				Type:  configapi.ValueType_STRING,
+				Bytes: []byte(value),
+			},
+		}
+	}
+	transaction.Values = values
+
+	switch state.Phase {
+	case model.TransactionPhaseChange:
+		transaction.Status.Phase = configapi.TransactionStatus_CHANGE
+		transaction.Status.Change = configapi.TransactionChangeStatus{
+			Ordinal: configapi.Ordinal(state.Change.Ordinal),
+			Commit:  newTransactionPhaseStatus(state.Change.Commit),
+			Apply:   newTransactionPhaseStatus(state.Change.Apply),
+		}
+	case model.TransactionPhaseRollback:
+		transaction.Status.Phase = configapi.TransactionStatus_ROLLBACK
+		transaction.Status.Change = configapi.TransactionChangeStatus{
+			Ordinal: configapi.Ordinal(state.Change.Ordinal),
+			Commit:  newTransactionPhaseStatus(state.Change.Commit),
+			Apply:   newTransactionPhaseStatus(state.Change.Apply),
+		}
+		transaction.Status.Rollback = configapi.TransactionRollbackStatus{
+			Ordinal: configapi.Ordinal(state.Rollback.Ordinal),
+			Commit:  newTransactionPhaseStatus(state.Rollback.Commit),
+			Apply:   newTransactionPhaseStatus(state.Rollback.Apply),
+			Index:   configapi.Index(state.Rollback.Index),
+		}
+		rollbackValues := make(map[string]configapi.PathValue)
+		for path, value := range state.Rollback.Values {
+			rollbackValues[path] = configapi.PathValue{
 				Path: path,
 				Value: configapi.TypedValue{
 					Type:  configapi.ValueType_STRING,
@@ -188,97 +466,148 @@ func newTransaction(transactionID configapi.TransactionID, state model.Transacti
 				},
 			}
 		}
-		transaction.Details = &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Values: values,
-			},
-		}
-	case model.TransactionTypeRollback:
-		transaction.Details = &configapi.Transaction_Rollback{
-			Rollback: &configapi.TransactionRollback{
-				Index: configapi.Index(state.Proposal),
-			},
-		}
+		transaction.Status.Rollback.Values = rollbackValues
 	}
-
-	transaction.Status.Initialize = newTransactionPhaseStatus(state.Init)
-	transaction.Status.Commit = newTransactionPhaseStatus(state.Commit)
-	transaction.Status.Apply = newTransactionPhaseStatus(state.Apply)
 	return transaction
 }
 
-func newTransactionPhaseStatus(state model.TransactionStatus) configapi.TransactionPhaseStatus {
-	var status configapi.TransactionPhaseStatus
-	switch state {
-	case model.TransactionStatusPending:
-		status.State = configapi.TransactionPhaseStatus_PENDING
-	case model.TransactionStatusInProgress:
-		status.State = configapi.TransactionPhaseStatus_IN_PROGRESS
-		status.Start = getCurrentTimestamp()
-	case model.TransactionStatusComplete:
-		status.State = configapi.TransactionPhaseStatus_COMPLETE
-		status.Start = getCurrentTimestamp()
-		status.End = getCurrentTimestamp()
-	case model.TransactionStatusAborted:
-		status.State = configapi.TransactionPhaseStatus_ABORTED
-		status.Start = getCurrentTimestamp()
-		status.End = getCurrentTimestamp()
-	case model.TransactionStatusFailed:
-		status.State = configapi.TransactionPhaseStatus_FAILED
-		status.Start = getCurrentTimestamp()
-		status.End = getCurrentTimestamp()
+func newTransactionPhaseStatus(state *model.TransactionState) *configapi.TransactionPhaseStatus {
+	if state == nil {
+		return nil
 	}
-	return status
+
+	var status configapi.TransactionPhaseStatus
+	switch *state {
+	case model.TransactionPending:
+		status.State = configapi.TransactionPhaseStatus_PENDING
+	case model.TransactionInProgress:
+		status.State = configapi.TransactionPhaseStatus_IN_PROGRESS
+		status.Start = now()
+	case model.TransactionComplete:
+		status.State = configapi.TransactionPhaseStatus_COMPLETE
+		status.Start = now()
+		status.End = now()
+	case model.TransactionAborted:
+		status.State = configapi.TransactionPhaseStatus_ABORTED
+		status.Start = now()
+		status.End = now()
+	case model.TransactionCanceled:
+		status.State = configapi.TransactionPhaseStatus_CANCELED
+		status.Start = now()
+		status.End = now()
+	case model.TransactionFailed:
+		status.State = configapi.TransactionPhaseStatus_FAILED
+		status.Start = now()
+		status.End = now()
+	}
+	return &status
 }
 
 func testTransaction(t *testing.T, transaction *configapi.Transaction, state model.Transaction) {
 	assert.Equal(t, state.Index, model.Index(transaction.ID.Index))
-	testTransactionPhase(t, transaction.Status.Initialize, state.Init)
-	testTransactionPhase(t, transaction.Status.Commit, state.Commit)
-	testTransactionPhase(t, transaction.Status.Apply, state.Apply)
+
+	assert.Equal(t, state.Change.Ordinal, model.Ordinal(transaction.Status.Change.Ordinal))
+	testTransactionState(t, transaction.Status.Change.Commit, state.Change.Commit)
+	testTransactionState(t, transaction.Status.Change.Apply, state.Change.Apply)
+
+	assert.Equal(t, state.Rollback.Ordinal, model.Ordinal(transaction.Status.Rollback.Ordinal))
+	testTransactionState(t, transaction.Status.Rollback.Commit, state.Rollback.Commit)
+	testTransactionState(t, transaction.Status.Rollback.Apply, state.Rollback.Apply)
 }
 
-func testTransactionPhase(t *testing.T, phase configapi.TransactionPhaseStatus, status model.TransactionStatus) {
-	switch status {
-	case model.TransactionStatusPending:
-		assert.Equal(t, configapi.TransactionPhaseStatus_PENDING, phase.State)
-	case model.TransactionStatusInProgress:
-		assert.Equal(t, configapi.TransactionPhaseStatus_IN_PROGRESS, phase.State)
-	case model.TransactionStatusComplete:
-		assert.Equal(t, configapi.TransactionPhaseStatus_COMPLETE, phase.State)
-	case model.TransactionStatusAborted:
-		assert.Equal(t, configapi.TransactionPhaseStatus_ABORTED, phase.State)
-	case model.TransactionStatusFailed:
-		assert.Equal(t, configapi.TransactionPhaseStatus_FAILED, phase.State)
+func testTransactionState(t *testing.T, phase *configapi.TransactionPhaseStatus, state *model.TransactionState) bool {
+	if state == nil {
+		return assert.Nil(t, phase)
 	}
+	switch *state {
+	case model.TransactionPending:
+		return assert.Equal(t, configapi.TransactionPhaseStatus_PENDING, phase.State)
+	case model.TransactionInProgress:
+		return assert.Equal(t, configapi.TransactionPhaseStatus_IN_PROGRESS, phase.State)
+	case model.TransactionComplete:
+		return assert.Equal(t, configapi.TransactionPhaseStatus_COMPLETE, phase.State)
+	case model.TransactionAborted:
+		return assert.Equal(t, configapi.TransactionPhaseStatus_ABORTED, phase.State)
+	case model.TransactionCanceled:
+		return assert.Equal(t, configapi.TransactionPhaseStatus_CANCELED, phase.State)
+	case model.TransactionFailed:
+		return assert.Equal(t, configapi.TransactionPhaseStatus_FAILED, phase.State)
+	}
+	return false
 }
 
-func newConfiguration(configurationID configapi.ConfigurationID, state model.Configuration) *configapi.Configuration {
+func newConfiguration(configurationID configapi.ConfigurationID, state model.Configuration, mastership model.Mastership) *configapi.Configuration {
 	configuration := &configapi.Configuration{
 		ObjectMeta: configapi.ObjectMeta{
 			Key: configapi.NewUUID().String(),
 		},
-		ID:     configurationID,
-		Index:  configapi.Index(state.Committed.Revision),
-		Values: newPathValues(state.Committed.Values),
+		ID: configurationID,
+		Committed: configapi.CommittedConfiguration{
+			Index:    configapi.Index(state.Committed.Index),
+			Ordinal:  configapi.Ordinal(state.Committed.Ordinal),
+			Revision: configapi.Revision(state.Committed.Revision),
+			Target:   configapi.Index(state.Committed.Target),
+			Change:   configapi.Index(state.Committed.Change),
+			Values:   newPathValues(state.Committed.Values),
+		},
+		Applied: configapi.AppliedConfiguration{
+			Index:    configapi.Index(state.Applied.Index),
+			Ordinal:  configapi.Ordinal(state.Applied.Ordinal),
+			Revision: configapi.Revision(state.Applied.Revision),
+			Target:   configapi.Index(state.Applied.Target),
+			Term:     configapi.MastershipTerm(state.Term),
+			Values:   newPathValues(state.Applied.Values),
+		},
 	}
 
-	configuration.Status.Committed.Index = configapi.Index(state.Committed.Index)
-	configuration.Status.Applied.Index = configapi.Index(state.Applied.Index)
-	configuration.Status.Applied.Values = newPathValues(state.Applied.Values)
+	if mastership.Master != "" {
+		configuration.Status.Mastership = &configapi.MastershipStatus{
+			Master: configapi.NodeID(fmt.Sprintf("%s-%s", mastership.Master, testTargetID)),
+			Term:   configapi.MastershipTerm(mastership.Term),
+		}
+	}
+
+	switch state.State {
+	case model.ConfigurationPending:
+		configuration.Status.State = configapi.ConfigurationStatus_SYNCHRONIZING
+	case model.ConfigurationComplete:
+		configuration.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
+	}
 	return configuration
 }
 
-func newPathValues(state model.ValueStates) map[string]*configapi.PathValue {
-	values := make(map[string]*configapi.PathValue)
+func testConfiguration(t *testing.T, configuration *configapi.Configuration, state model.Configuration) {
+	assert.Equal(t, configapi.Index(state.Committed.Index), configuration.Committed.Index)
+	assert.Equal(t, configapi.Ordinal(state.Committed.Ordinal), configuration.Committed.Ordinal)
+	assert.Equal(t, configapi.Revision(state.Committed.Revision), configuration.Committed.Revision)
+	assert.Equal(t, configapi.Index(state.Committed.Target), configuration.Committed.Target)
+	assert.Equal(t, configapi.Index(state.Committed.Change), configuration.Committed.Change)
+
+	for key, value := range state.Committed.Values {
+		assert.Equal(t, value, string(configuration.Committed.Values[key].Value.Bytes))
+		assert.False(t, configuration.Committed.Values[key].Deleted)
+	}
+
+	assert.Equal(t, configapi.Index(state.Applied.Index), configuration.Applied.Index)
+	assert.Equal(t, configapi.Ordinal(state.Applied.Ordinal), configuration.Applied.Ordinal)
+	assert.Equal(t, configapi.Revision(state.Applied.Revision), configuration.Applied.Revision)
+	assert.Equal(t, configapi.Index(state.Applied.Target), configuration.Applied.Target)
+
+	for key, value := range state.Applied.Values {
+		assert.Equal(t, value, string(configuration.Applied.Values[key].Value.Bytes))
+		assert.False(t, configuration.Applied.Values[key].Deleted)
+	}
+}
+
+func newPathValues(state model.Values) map[string]configapi.PathValue {
+	values := make(map[string]configapi.PathValue)
 	for path, value := range state {
-		pathValue := &configapi.PathValue{
-			Path:  path,
-			Index: configapi.Index(value.Index),
+		pathValue := configapi.PathValue{
+			Path: path,
 		}
-		if value.Value != "" {
+		if value != "" {
 			pathValue.Value = configapi.TypedValue{
-				Bytes: []byte(value.Value),
+				Bytes: []byte(value),
 				Type:  configapi.ValueType_STRING,
 			}
 		} else {
@@ -287,97 +616,4 @@ func newPathValues(state model.ValueStates) map[string]*configapi.PathValue {
 		values[path] = pathValue
 	}
 	return values
-}
-
-func newProposal(proposalID configapi.ProposalID, key string, state model.Proposal) *configapi.Proposal {
-	proposal := &configapi.Proposal{
-		ObjectMeta: configapi.ObjectMeta{
-			Key: key,
-		},
-		ID:     proposalID,
-		Values: newPathValues(state.Change.Values),
-	}
-
-	proposal.Status.Change = configapi.ProposalChangeStatus{
-		Commit: newProposalPhase(state.Change.Commit),
-		Apply:  newProposalPhase(state.Change.Apply),
-	}
-
-	proposal.Status.Rollback = configapi.ProposalRollbackStatus{
-		Index:  configapi.Index(state.Rollback.Revision),
-		Values: newPathValues(state.Rollback.Values),
-		Commit: newProposalPhase(state.Rollback.Commit),
-		Apply:  newProposalPhase(state.Rollback.Apply),
-	}
-	return proposal
-}
-
-func newProposalPhase(state model.ProposalStatus) configapi.ProposalPhaseStatus {
-	var status configapi.ProposalPhaseStatus
-	switch state {
-	case model.ProposalStatusPending:
-		status.State = configapi.ProposalPhaseStatus_PENDING
-	case model.ProposalStatusInProgress:
-		status.State = configapi.ProposalPhaseStatus_IN_PROGRESS
-		status.Start = getCurrentTimestamp()
-	case model.ProposalStatusComplete:
-		status.State = configapi.ProposalPhaseStatus_COMPLETE
-		status.Start = getCurrentTimestamp()
-		status.End = getCurrentTimestamp()
-	case model.ProposalStatusAborted:
-		status.State = configapi.ProposalPhaseStatus_ABORTED
-		status.Start = getCurrentTimestamp()
-		status.End = getCurrentTimestamp()
-	case model.ProposalStatusFailed:
-		status.State = configapi.ProposalPhaseStatus_FAILED
-		status.Start = getCurrentTimestamp()
-		status.End = getCurrentTimestamp()
-	}
-	return status
-}
-
-func testProposal(t *testing.T, proposal *configapi.Proposal, state model.Proposal) {
-	assert.Equal(t, state.Index, model.Index(proposal.ID.Index))
-	testProposalChange(t, proposal.Status.Change, state.Change)
-	testProposalRollback(t, proposal.Status.Rollback, state.Rollback)
-}
-
-func testProposalChange(t *testing.T, change configapi.ProposalChangeStatus, state model.Change) {
-	testProposalPhase(t, change.Commit, state.Commit)
-	testProposalPhase(t, change.Apply, state.Apply)
-}
-
-func testProposalRollback(t *testing.T, rollback configapi.ProposalRollbackStatus, state model.Rollback) {
-	assert.Equal(t, configapi.Index(state.Revision), rollback.Index)
-	assert.Equal(t, len(state.Values), len(rollback.Values))
-	for key, value := range state.Values {
-		if assert.NotNil(t, rollback.Values[key]) {
-			assert.Equal(t, configapi.Index(value.Index), rollback.Values[key].Index)
-			if value.Value == "" {
-				assert.True(t, rollback.Values[key].Deleted)
-			} else {
-				assert.False(t, rollback.Values[key].Deleted)
-				assert.Equal(t, string(value.Value), string(rollback.Values[key].Value.Bytes))
-			}
-			assert.Equal(t, configapi.Index(value.Index), rollback.Values[key].Index)
-		}
-	}
-	testProposalPhase(t, rollback.Commit, state.Commit)
-	testProposalPhase(t, rollback.Apply, state.Apply)
-}
-
-func testProposalPhase(t *testing.T, status configapi.ProposalPhaseStatus, state model.ProposalStatus) {
-	t.Helper()
-	switch state {
-	case model.ProposalStatusPending:
-		assert.Equal(t, configapi.ProposalPhaseStatus_PENDING, status.State)
-	case model.ProposalStatusInProgress:
-		assert.Equal(t, configapi.ProposalPhaseStatus_IN_PROGRESS, status.State)
-	case model.ProposalStatusComplete:
-		assert.Equal(t, configapi.ProposalPhaseStatus_COMPLETE, status.State)
-	case model.ProposalStatusAborted:
-		assert.Equal(t, configapi.ProposalPhaseStatus_ABORTED, status.State)
-	case model.ProposalStatusFailed:
-		assert.Equal(t, configapi.ProposalPhaseStatus_FAILED, status.State)
-	}
 }

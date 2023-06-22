@@ -30,8 +30,8 @@ require (
 	github.com/atomix/atomix/protocols/rsm v1.1.0 // indirect
 	github.com/atomix/atomix/runtime v1.1.0 // indirect
 	github.com/atomix/atomix/sidecar v0.4.4 // indirect
-	github.com/bits-and-blooms/bitset v1.3.1 // indirect
-	github.com/bits-and-blooms/bloom/v3 v3.3.1 // indirect
+	github.com/bits-and-blooms/bitset v1.8.0 // indirect
+	github.com/bits-and-blooms/bloom/v3 v3.5.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
