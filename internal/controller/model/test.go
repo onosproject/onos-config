@@ -4,19 +4,15 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bits-and-blooms/bloom/v3"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"testing"
-)
-
-const (
-	defaultCountEstimate = 5000000
-	defaultFPRate        = .05
 )
 
 func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S, C])) {
@@ -27,7 +23,7 @@ func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S
 		return
 	}
 
-	reader, err := NewReader[S, C](file, defaultCountEstimate)
+	reader, err := NewReader[S, C](file)
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -52,7 +48,7 @@ func RunTests[S, C any](t *testing.T, path string, f func(*testing.T, TestCase[S
 	}
 }
 
-func NewReader[S, C any](file io.Reader, countEstimate uint) (*Reader[S, C], error) {
+func NewReader[S, C any](file io.Reader) (*Reader[S, C], error) {
 	gzfile, err := gzip.NewReader(file)
 	if err != nil {
 		return nil, err
@@ -70,7 +66,7 @@ func NewReader[S, C any](file io.Reader, countEstimate uint) (*Reader[S, C], err
 		scanner := bufio.NewScanner(tarfile)
 		return &Reader[S, C]{
 			scanner: scanner,
-			filter:  bloom.NewWithEstimates(countEstimate, defaultFPRate),
+			hashes:  make(map[string]bool),
 		}, nil
 	default:
 		return nil, errors.New("malformed test case file")
@@ -79,17 +75,42 @@ func NewReader[S, C any](file io.Reader, countEstimate uint) (*Reader[S, C], err
 
 type Reader[S, C any] struct {
 	scanner *bufio.Scanner
-	filter  *bloom.BloomFilter
+	hashes  map[string]bool
 }
 
 func (r *Reader[S, C]) Next() (TestCase[S, C], error) {
+	for {
+		testCase, ok, err := r.read()
+		if err != nil {
+			return testCase, err
+		} else if ok {
+			return testCase, nil
+		}
+	}
+}
+
+func (r *Reader[S, C]) unique(bytes []byte) bool {
+	hash := md5.Sum(bytes)
+	key := hex.EncodeToString(hash[:])
+	_, ok := r.hashes[key]
+	if !ok {
+		r.hashes[key] = true
+		return true
+	}
+	return false
+}
+
+func (r *Reader[S, C]) read() (TestCase[S, C], bool, error) {
 	var testCase TestCase[S, C]
 	if !r.scanner.Scan() {
-		return testCase, io.EOF
+		return testCase, false, io.EOF
 	}
 	bytes := r.scanner.Bytes()
-	if err := json.Unmarshal(bytes, &testCase); err != nil {
-		return testCase, err
+	if !r.unique(bytes) {
+		return testCase, false, nil
 	}
-	return testCase, nil
+	if err := json.Unmarshal(bytes, &testCase); err != nil {
+		return testCase, false, err
+	}
+	return testCase, true, nil
 }
