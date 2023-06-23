@@ -1,0 +1,143 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.4.21)  22 JUN 2023 19:56
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**Test.tex
+(./Test.tex
+LaTeX2e <2022-11-01> patch level 1
+L3 programming layer <2023-02-22>
+(/usr/local/texlive/2023/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2022/07/02 v1.4n Standard LaTeX document class
+(/usr/local/texlive/2023/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2022/07/02 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count185
+\c@section=\count186
+\c@subsection=\count187
+\c@subsubsection=\count188
+\c@paragraph=\count189
+\c@subparagraph=\count190
+\c@figure=\count191
+\c@table=\count192
+\abovecaptionskip=\skip48
+\belowcaptionskip=\skip49
+\bibindent=\dimen140
+) (/usr/local/texlive/2023/texmf-dist/tex/latex/base/latexsym.sty
+Package: latexsym 1998/08/17 v2.2e Standard LaTeX package (lasy symbols)
+\symlasy=\mathgroup4
+LaTeX Font Info:    Overwriting symbol font `lasy' in version `bold'
+(Font)                  U/lasy/m/n --> U/lasy/b/n on input line 52.
+) (/usr/local/texlive/2023/texmf-dist/tex/latex/base/ifthen.sty
+Package: ifthen 2022/04/13 v1.1d Standard LaTeX ifthen package (DPC)
+)
+\symlength=\skip50
+\equalswidth=\skip51
+\charwidth=\skip52
+\boxrulewd=\skip53
+\boxlineht=\skip54
+\boxruleht=\skip55
+\boxruledp=\skip56
+(/usr/local/texlive/2023/texmf-dist/tex/latex/graphics/color.sty
+Package: color 2022/01/06 v1.3d Standard LaTeX Color (DPC)
+(/usr/local/texlive/2023/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package color Info: Driver file: pdftex.def on input line 149.
+(/usr/local/texlive/2023/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2022/09/22 v1.2b Graphics/color driver for pdftex
+) (/usr/local/texlive/2023/texmf-dist/tex/latex/graphics/mathcolor.ltx))
+\pcalvspace=\skip57
+\lcomindent=\skip58
+\@xlen=\skip59
+\templena=\skip60
+\templenb=\skip61
+\tempboxa=\box51
+\vshadelen=\skip62
+\boxwidth=\skip63
+\multicommentdepth=\skip64
+\c@pardepth=\count193
+\tempsbox=\box52
+\@cparht=\skip65
+\@cpardp=\skip66
+\xmcomlen=\skip67
+\spacewidth=\skip68
+\alignboxwidth=\skip69
+\alignwidth=\skip70
+\alignbox=\box53
+\symtlaitalics=\mathgroup5
+\c@tlx@ctr=\count194
+(/usr/local/texlive/2023/texmf-dist/tex/latex/tools/verbatim.sty
+Package: verbatim 2022-07-02 v1.5u LaTeX2e package for verbatim enhancements
+\every@verbatim=\toks16
+\verbatim@line=\toks17
+\verbatim@in@stream=\read2
+) (/usr/local/texlive/2023/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+File: l3backend-pdftex.def 2023-01-16 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count195
+\l__pdf_internal_box=\box54
+)
+No file Test.aux.
+\openout1 = `Test.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 941.
+LaTeX Font Info:    ... okay on input line 941.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 941.
+LaTeX Font Info:    ... okay on input line 941.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 941.
+LaTeX Font Info:    ... okay on input line 941.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 941.
+LaTeX Font Info:    ... okay on input line 941.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 941.
+LaTeX Font Info:    ... okay on input line 941.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 941.
+LaTeX Font Info:    ... okay on input line 941.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 941.
+LaTeX Font Info:    ... okay on input line 941.
+(/usr/local/texlive/2023/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count196
+\scratchdimen=\dimen141
+\scratchbox=\box55
+\nofMPsegments=\count197
+\nofMParguments=\count198
+\everyMPshowfont=\toks18
+\MPscratchCnt=\count199
+\MPscratchDim=\dimen142
+\MPnumerator=\count266
+\makeMPintoPDFobject=\count267
+\everyMPtoPDFconversion=\toks19
+)
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 943.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 943.
+LaTeX Font Info:    Trying to load font information for U+lasy on input line 94
+3.
+(/usr/local/texlive/2023/texmf-dist/tex/latex/base/ulasy.fd
+File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
+) [1
+
+{/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] (./Test
+.aux) ) 
+Here is how much of TeX's memory you used:
+ 1366 strings out of 476025
+ 20839 string characters out of 5790017
+ 1857388 words of memory out of 5000000
+ 21862 multiletter control sequences out of 15000+600000
+ 514721 words of font info for 42 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 34i,10n,40p,213b,111s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc
+10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi1
+0.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.
+pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb
+></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb>
+</usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><
+/usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
+Output written on Test.pdf (1 page, 72579 bytes).
+PDF statistics:
+ 43 PDF objects out of 1000 (max. 8388607)
+ 25 compressed objects within 1 object stream
+ 0 named destinations out of 1000 (max. 500000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+

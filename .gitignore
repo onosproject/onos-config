@@ -21,4 +21,7 @@ onit
 *coverage*.xml
 *-output.out
 build/build-tools
-
+*.log
+*.tex
+*.aux
+*.dvi
