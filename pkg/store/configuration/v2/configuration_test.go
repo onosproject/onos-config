@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package configuration
+package v2
 
 import (
 	"context"

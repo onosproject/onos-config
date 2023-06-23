@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package proposal
+package v2
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	controllerutils "github.com/onosproject/onos-config/pkg/controller/utils"
-	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal"
+	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal/v2"
 	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
 	"github.com/onosproject/onos-config/pkg/utils/tree"
 	utilsv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
@@ -26,7 +26,7 @@ import (
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
-	"github.com/onosproject/onos-config/pkg/store/configuration"
+	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"

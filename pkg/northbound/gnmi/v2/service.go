@@ -13,19 +13,19 @@ import (
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
-	"github.com/onosproject/onos-config/pkg/store/proposal"
+	proposal "github.com/onosproject/onos-config/pkg/store/proposal/v2"
 
 	"github.com/golang/protobuf/proto"
 	protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
-	"github.com/onosproject/onos-config/pkg/store/configuration"
+	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
 
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 
 	"github.com/onosproject/onos-config/pkg/store/topo"
-	"github.com/onosproject/onos-config/pkg/store/transaction"
+	transaction "github.com/onosproject/onos-config/pkg/store/transaction/v2"
 
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"

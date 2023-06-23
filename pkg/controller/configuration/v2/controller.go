@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package configuration
+package v2
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	utilsv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
 
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
-	"github.com/onosproject/onos-config/pkg/store/configuration"
+	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
