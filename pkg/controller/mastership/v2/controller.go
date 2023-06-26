@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package mastership
+package v2
 
 import (
 	"context"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/controller/utils"
-	"github.com/onosproject/onos-config/pkg/store/configuration"
+	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
 	"math/rand"
 	"time"
 

@@ -18,7 +18,7 @@ import (
 	"time"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-config/pkg/store/configuration"
+	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
 
 	"github.com/onosproject/onos-config/pkg/utils/tree"
 

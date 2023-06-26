@@ -8,7 +8,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	"github.com/onosproject/onos-config/pkg/store/transaction"
+	transaction "github.com/onosproject/onos-config/pkg/store/transaction/v2"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 )
 

@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package transaction
+package v2
 
 import (
 	"context"
 	"time"
 
-	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal"
-	transactionstore "github.com/onosproject/onos-config/pkg/store/transaction"
+	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal/v2"
+	transactionstore "github.com/onosproject/onos-config/pkg/store/transaction/v2"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
