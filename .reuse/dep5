@@ -3,3 +3,7 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Files: VERSION pkg/northbound/gnmi/test/mock* pkg/northbound/testdata/* pkg/southbound/testdata/* *.so *.gnmi *.png *.gif *.jpg go.mod go.sum test/go.mod test/go.sum benchmark/go.mod benchmark/go.sum
 Copyright: 2021 Open Networking Foundation
 License: Apache-2.0
+
+Files: spec/*.pdf spec/Config.cfg
+Copyright: 2023 Intel Corporation
+License: Apache-2.0
