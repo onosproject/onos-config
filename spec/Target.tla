@@ -1,3 +1,5 @@
+This module specifies the southbound interface of µONOS Config.
+
 ------------------------------- MODULE Target -------------------------------
 
 INSTANCE Naturals
@@ -17,17 +19,6 @@ VARIABLE target
 
 \* A record of connections between nodes and the target
 VARIABLE conns
-
-TypeOK ==
-   /\ target.id \in Nat
-   /\ \A p \in DOMAIN target.values :
-         /\ target.values[p].index \in Nat
-         /\ target.values[p].value \in STRING
-   /\ target.running \in BOOLEAN 
-   /\ \A n \in DOMAIN conns : 
-         /\ n \in Node
-         /\ conns[n].id \in Nat
-         /\ conns[n].connected \in BOOLEAN 
 
 ----
 
@@ -65,4 +56,19 @@ Disconnect(n) ==
    /\ conns' = [conns EXCEPT ![n].connected = FALSE]
    /\ UNCHANGED <<target>>
 
+----
+
+TypeOK ==
+   /\ target.id \in Nat
+   /\ \A p \in DOMAIN target.values :
+         /\ target.values[p].index \in Nat
+         /\ target.values[p].value \in STRING
+   /\ target.running \in BOOLEAN 
+   /\ \A n \in DOMAIN conns : 
+         /\ n \in Node
+         /\ conns[n].id \in Nat
+         /\ conns[n].connected \in BOOLEAN 
+
 =============================================================================
+
+Copyright 2023 Intel Corporation

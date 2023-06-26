@@ -1,3 +1,6 @@
+This module specifies the reconciliation logic for the mastership controller
+in µONOS Config.
+
 ------------------------------- MODULE Mastership -------------------------------
 
 INSTANCE Naturals
@@ -25,21 +28,6 @@ VARIABLES
 \* A record of target masterships
 VARIABLE mastership
 
-TypeOK ==
-   /\ mastership.term \in Nat
-   /\ mastership.master # Nil => mastership.master \in Node
-   /\ mastership.conn \in Nat
-
-LOCAL State == [
-   mastership |-> mastership,
-   conns      |-> conns]
-
-LOCAL Transitions ==
-   IF mastership' # mastership THEN [mastership |-> mastership'] ELSE <<>>
-
-Test == INSTANCE Test WITH 
-   File <- "Mastership.log"
-
 ----
 
 (*
@@ -64,4 +52,23 @@ ReconcileMastership(n) ==
          /\ mastership' = [mastership EXCEPT !.master = Nil]
    /\ UNCHANGED <<conns>>
 
+----
+
+TypeOK ==
+   /\ mastership.term \in Nat
+   /\ mastership.master # Nil => mastership.master \in Node
+   /\ mastership.conn \in Nat
+
+LOCAL State == [
+   mastership |-> mastership,
+   conns      |-> conns]
+
+LOCAL Transitions ==
+   IF mastership' # mastership THEN [mastership |-> mastership'] ELSE <<>>
+
+Test == INSTANCE Test WITH 
+   File <- "Mastership.test.log"
+
 =============================================================================
+
+Copyright 2023 Intel Corporation

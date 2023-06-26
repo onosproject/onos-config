@@ -1,3 +1,6 @@
+This module provides utilities for outputting test cases from a model
+to be used to run tests against an implementation.
+
 ------------------------------- MODULE Test -------------------------------
 
 INSTANCE Naturals
@@ -27,3 +30,5 @@ Log(context) ==
    IN Serialize(ToJsonObject(record) \o "\n", File, FormatOpts).exitValue = 0
 
 =============================================================================
+
+Copyright 2023 Intel Corporation

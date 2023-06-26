@@ -1,3 +1,5 @@
+This module specifies the logic for the configuration controller in µONOS Config.
+
 ------------------------------- MODULE Configuration -------------------------------
 
 INSTANCE Naturals
@@ -33,6 +35,29 @@ VARIABLES
 \* A record of per-target configurations
 VARIABLE configuration
 
+----
+
+(*
+This section models the Configuration reconciler.
+*)
+
+ReconcileConfiguration(n) ==
+   /\ \/ /\ configuration.state = Pending
+         /\ configuration.term = mastership.term
+         /\ mastership.master = n
+         /\ conns[n].id = mastership.conn
+         /\ conns[n].connected
+         /\ target.running
+         /\ target' = [target EXCEPT !.values = configuration.applied.values]
+         /\ configuration' = [configuration EXCEPT !.state = Complete]
+      \/ /\ configuration.term < mastership.term
+         /\ configuration' = [configuration EXCEPT !.state = Pending,
+                                                   !.term  = mastership.term]
+         /\ UNCHANGED <<target>>
+   /\ UNCHANGED <<mastership, conns>>
+
+----
+
 TypeOK ==
    /\ configuration.state \in Status
    /\ configuration.term \in Nat
@@ -60,27 +85,8 @@ LOCAL Transitions ==
    (IF target' # target THEN [target |-> target'] ELSE <<>>)
 
 Test == INSTANCE Test WITH 
-   File <- "Configuration.log"
-
-----
-
-(*
-This section models the Configuration reconciler.
-*)
-
-ReconcileConfiguration(n) ==
-   /\ \/ /\ configuration.state = Pending
-         /\ configuration.term = mastership.term
-         /\ mastership.master = n
-         /\ conns[n].id = mastership.conn
-         /\ conns[n].connected
-         /\ target.running
-         /\ target' = [target EXCEPT !.values = configuration.applied.values]
-         /\ configuration' = [configuration EXCEPT !.state = Complete]
-      \/ /\ configuration.term < mastership.term
-         /\ configuration' = [configuration EXCEPT !.state = Pending,
-                                                   !.term  = mastership.term]
-         /\ UNCHANGED <<target>>
-   /\ UNCHANGED <<mastership, conns>>
+   File <- "Configuration.test.log"
 
 =============================================================================
+
+Copyright 2023 Intel Corporation

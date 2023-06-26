@@ -1,6 +1,3 @@
-------------------------------- MODULE Transaction -------------------------------
-
-(*
 This module specifies the logic for the tranasction controller. This controller
 is responsible for doing the vast majority of the processing in µONOS Config.
 
@@ -26,7 +23,8 @@ important guarantees for processing transactions:
 - If a transaction passes validation but is rejected by the target, the rejected
   transaction and any later changes that are pending must be rolled back
   before any subsequent change can be applied (due to the semantics of guarantee #2)
-*)
+
+------------------------------- MODULE Transaction -------------------------------
 
 INSTANCE Naturals
 
@@ -585,6 +583,8 @@ LOCAL Transitions ==
          (IF Len(history') > Len(history) THEN [event |-> history'[Len(history')]] ELSE Empty)
 
 Test == INSTANCE Test WITH 
-   File <- "Transaction.log"
+   File <- "Transaction.test.log"
 
 =============================================================================
+
+Copyright 2023 Intel Corporation

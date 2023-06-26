@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2023-present Intel Corporation
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # TLA+ Specification for µONOS Config
 
 This directory contains a complete [TLA+](https://lamport.azurewebsites.net/tla/tla.html) specification and

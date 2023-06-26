@@ -1,9 +1,7 @@
-------------------------------- MODULE Config -------------------------------
-
-(*
 This module provides the model values and safety and liveness properties for
 the model of µONOS Config controllers.
-*)
+
+------------------------------- MODULE Config -------------------------------
 
 INSTANCE Naturals
 
@@ -430,3 +428,5 @@ Liveness == Termination
 THEOREM Spec => Liveness
 
 =============================================================================
+
+Copyright 2023 Intel Corporation
