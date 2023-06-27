@@ -11,7 +11,7 @@ import (
 	_map "github.com/atomix/go-sdk/pkg/primitive/map"
 	"github.com/atomix/go-sdk/pkg/types"
 	"github.com/google/uuid"
-	"github.com/onosproject/onos-config/pkg/utils/tree"
+	"github.com/onosproject/onos-config/pkg/utils/v2/tree"
 	"io"
 	"sync"
 	"time"

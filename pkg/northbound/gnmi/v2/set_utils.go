@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/utils"
-	valueutils "github.com/onosproject/onos-config/pkg/utils/values/v2"
+	valueutils "github.com/onosproject/onos-config/pkg/utils/v2/values"
 	"github.com/onosproject/onos-lib-go/pkg/uri"
 	"github.com/openconfig/gnmi/proto/gnmi"
 )

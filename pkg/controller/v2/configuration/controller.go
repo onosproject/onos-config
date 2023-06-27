@@ -16,7 +16,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	utilsv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
+	utilsv2 "github.com/onosproject/onos-config/pkg/utils/v2/values"
 
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/topo"

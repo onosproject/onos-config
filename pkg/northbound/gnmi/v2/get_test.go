@@ -7,9 +7,9 @@ package gnmi
 import (
 	"context"
 	"github.com/atomix/go-sdk/pkg/test"
-	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration/v2"
-	proposalcontroller "github.com/onosproject/onos-config/pkg/controller/proposal/v2"
-	transactioncontroller "github.com/onosproject/onos-config/pkg/controller/transaction/v2"
+	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/v2/configuration"
+	proposalcontroller "github.com/onosproject/onos-config/pkg/controller/v2/proposal"
+	transactioncontroller "github.com/onosproject/onos-config/pkg/controller/v2/transaction"
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	proposal "github.com/onosproject/onos-config/pkg/store/v2/proposal"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
