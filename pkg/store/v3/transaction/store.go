@@ -74,40 +74,40 @@ func NewAtomixStore(client primitive.Client) (Store, error) {
 	return store, nil
 }
 
-type WatchOptions struct {
+type watchOptions struct {
 	TransactionID configapi.TransactionID
 	Replay        bool
 }
 
 // WatchOption is a configuration option for Watch calls
 type WatchOption interface {
-	apply(*WatchOptions)
+	apply(*watchOptions)
 }
 
-func newWatchOption(f func(*WatchOptions)) WatchOption {
+func newWatchOption(f func(*watchOptions)) WatchOption {
 	return funcWatchOption{
 		f: f,
 	}
 }
 
 type funcWatchOption struct {
-	f func(*WatchOptions)
+	f func(*watchOptions)
 }
 
-func (o funcWatchOption) apply(options *WatchOptions) {
+func (o funcWatchOption) apply(options *watchOptions) {
 	o.f(options)
 }
 
 // WithReplay returns a WatchOption that replays past changes
 func WithReplay() WatchOption {
-	return newWatchOption(func(options *WatchOptions) {
+	return newWatchOption(func(options *watchOptions) {
 		options.Replay = true
 	})
 }
 
 // WithTransactionID returns a Watch option that watches for transactions based on a  given transaction ID
 func WithTransactionID(id configapi.TransactionID) WatchOption {
-	return newWatchOption(func(options *WatchOptions) {
+	return newWatchOption(func(options *watchOptions) {
 		options.TransactionID = id
 	})
 }
@@ -477,7 +477,7 @@ func (s *transactionStore) List(ctx context.Context) ([]configapi.Transaction, e
 }
 
 func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.TransactionEvent, opts ...WatchOption) error {
-	var options WatchOptions
+	var options watchOptions
 	for _, opt := range opts {
 		opt.apply(&options)
 	}
