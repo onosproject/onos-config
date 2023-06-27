@@ -11,7 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	testplugin "github.com/onosproject/onos-config/pkg/northbound/admin/test"
+	pluginmock "github.com/onosproject/onos-config/internal/northbound/admin"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -22,7 +22,7 @@ const testEndpoint2 = "testmodel2:5153"
 
 func TestLoadPluginInfo(t *testing.T) {
 	mctl := gomock.NewController(t)
-	pluginClient := testplugin.NewMockModelPluginServiceClient(mctl)
+	pluginClient := pluginmock.NewMockModelPluginServiceClient(mctl)
 	pluginClient.EXPECT().ValidateConfig(gomock.Any(), gomock.Any()).AnyTimes().Return(
 		&admin.ValidateConfigResponse{
 			Valid:   false,
@@ -30,7 +30,7 @@ func TestLoadPluginInfo(t *testing.T) {
 		},
 		nil,
 	)
-	mockSender := testplugin.NewMockModelPluginService_ValidateConfigChunkedClient(mctl)
+	mockSender := pluginmock.NewMockModelPluginService_ValidateConfigChunkedClient(mctl)
 	mockSender.EXPECT().Send(gomock.Any()).AnyTimes().Return(
 		nil,
 	)
@@ -89,7 +89,7 @@ func TestLoadPluginInfo(t *testing.T) {
 
 func TestGetPlugin(t *testing.T) {
 	mctl := gomock.NewController(t)
-	pluginClient := testplugin.NewMockModelPluginServiceClient(mctl)
+	pluginClient := pluginmock.NewMockModelPluginServiceClient(mctl)
 
 	modelType := configapi.TargetType("testmodel")
 	modelVersion1 := configapi.TargetVersion("1.0.0")

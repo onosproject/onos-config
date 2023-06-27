@@ -13,9 +13,9 @@ import (
 	adminapi "github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	gnmitest "github.com/onosproject/onos-config/pkg/northbound/gnmi/test"
+	pluginmock "github.com/onosproject/onos-config/internal/pluginregistry"
+	topomock "github.com/onosproject/onos-config/internal/store/topo"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
-	plugintest "github.com/onosproject/onos-config/pkg/pluginregistry/test"
 	"github.com/onosproject/onos-config/pkg/store/v2/configuration"
 	"github.com/onosproject/onos-config/pkg/store/v2/transaction"
 	"github.com/onosproject/onos-config/pkg/utils/path"
@@ -28,14 +28,14 @@ import (
 type testContext struct {
 	mctl   *gomock.Controller
 	atomix *test.Client
-	topo   *gnmitest.MockStore
+	topo   *topomock.MockStore
 	server *Server
 }
 
 func createServer(t *testing.T) *testContext {
 	mctl := gomock.NewController(t)
-	registryMock := plugintest.NewMockPluginRegistry(mctl)
-	topoMock := gnmitest.NewMockStore(mctl)
+	registryMock := pluginmock.NewMockPluginRegistry(mctl)
+	topoMock := topomock.NewMockStore(mctl)
 
 	atomixTest, cfgStore, txStore := testStores(t)
 
@@ -81,7 +81,7 @@ func topoEntity(id topoapi.ID, targetType string, targetVersion string) *topoapi
 }
 
 func setupTopoAndRegistry(t *testing.T, test *testContext, id string, model string, version string, noPlugin bool) {
-	plugin := plugintest.NewMockModelPlugin(test.mctl)
+	plugin := pluginmock.NewMockModelPlugin(test.mctl)
 	rwPaths := path.ReadWritePathMap{}
 	for _, p := range []string{"/foo", "/bar", "/goo", "/some/nested/path"} {
 		rwPaths[p] = adminapi.ReadWritePath{
@@ -110,7 +110,7 @@ func setupTopoAndRegistry(t *testing.T, test *testContext, id string, model stri
 	plugin.EXPECT().LeafValueSelection(gomock.Any(), "", gomock.Any()).AnyTimes().
 		Return(nil, errors.NewInvalid("navigatedValue path cannot be empty"))
 
-	mockRegistry, ok := test.server.pluginRegistry.(*plugintest.MockPluginRegistry)
+	mockRegistry, ok := test.server.pluginRegistry.(*pluginmock.MockPluginRegistry)
 	assert.True(t, ok)
 	mockRegistry.EXPECT().GetPlugin(configapi.TargetType(model), configapi.TargetVersion(version)).AnyTimes().
 		Return(plugin, !noPlugin)

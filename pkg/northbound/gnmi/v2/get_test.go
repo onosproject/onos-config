@@ -26,8 +26,8 @@ import (
 	"github.com/golang/mock/gomock"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	gnmitest "github.com/onosproject/onos-config/pkg/northbound/gnmi/test"
-	plugintest "github.com/onosproject/onos-config/pkg/pluginregistry/test"
+	pluginmock "github.com/onosproject/onos-config/internal/pluginregistry"
+	topomock "github.com/onosproject/onos-config/internal/store/topo"
 	configuration "github.com/onosproject/onos-config/pkg/store/v2/configuration"
 	transaction "github.com/onosproject/onos-config/pkg/store/v2/transaction"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -39,8 +39,8 @@ import (
 type testContext struct {
 	mctl                    *gomock.Controller
 	atomix                  *test.Client
-	topo                    *gnmitest.MockStore
-	registry                *plugintest.MockPluginRegistry
+	topo                    *topomock.MockStore
+	registry                *pluginmock.MockPluginRegistry
 	conns                   sb.ConnManager
 	configuration           configuration.Store
 	configurationController *controller.Controller
@@ -53,8 +53,8 @@ type testContext struct {
 
 func createServer(t *testing.T) *testContext {
 	mctl := gomock.NewController(t)
-	registryMock := plugintest.NewMockPluginRegistry(mctl)
-	topoMock := gnmitest.NewMockStore(mctl)
+	registryMock := pluginmock.NewMockPluginRegistry(mctl)
+	topoMock := topomock.NewMockStore(mctl)
 	atomixTest, cfgStore, propStore, txStore := testStores(t)
 
 	return &testContext{
@@ -133,7 +133,7 @@ func topoEntity(id topoapi.ID, targetType string, targetVersion string) *topoapi
 }
 
 func setupTopoAndRegistry(test *testContext, id string, model string, version string, noPlugin bool) {
-	plugin := plugintest.NewMockModelPlugin(test.mctl)
+	plugin := pluginmock.NewMockModelPlugin(test.mctl)
 	rwPaths := path.ReadWritePathMap{}
 	for _, p := range []string{"/foo", "/bar", "/goo", "/some/nested/path"} {
 		rwPaths[p] = adminapi.ReadWritePath{
