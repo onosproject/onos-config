@@ -10,7 +10,7 @@ import (
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
-	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
+	"github.com/onosproject/onos-config/pkg/store/v2/configuration"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/store/topo"

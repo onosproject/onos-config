@@ -6,8 +6,8 @@ package v2
 
 import (
 	"context"
-	configurationstore "github.com/onosproject/onos-config/pkg/store/configuration/v2"
-	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal/v2"
+	configurationstore "github.com/onosproject/onos-config/pkg/store/v2/configuration"
+	proposalstore "github.com/onosproject/onos-config/pkg/store/v2/proposal"
 	"sync"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"

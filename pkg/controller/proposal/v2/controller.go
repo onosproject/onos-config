@@ -12,7 +12,7 @@ import (
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	controllerutils "github.com/onosproject/onos-config/pkg/controller/utils"
-	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal/v2"
+	proposalstore "github.com/onosproject/onos-config/pkg/store/v2/proposal"
 	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
 	"github.com/onosproject/onos-config/pkg/utils/tree"
 	utilsv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
@@ -26,8 +26,8 @@ import (
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
-	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
 	"github.com/onosproject/onos-config/pkg/store/topo"
+	"github.com/onosproject/onos-config/pkg/store/v2/configuration"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"

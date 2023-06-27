@@ -8,8 +8,8 @@ import (
 	"context"
 	"time"
 
-	proposalstore "github.com/onosproject/onos-config/pkg/store/proposal/v2"
-	transactionstore "github.com/onosproject/onos-config/pkg/store/transaction/v2"
+	proposalstore "github.com/onosproject/onos-config/pkg/store/v2/proposal"
+	transactionstore "github.com/onosproject/onos-config/pkg/store/v2/transaction"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 

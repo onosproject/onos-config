@@ -19,8 +19,8 @@ import (
 	utilsv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
 
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
-	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
 	"github.com/onosproject/onos-config/pkg/store/topo"
+	configuration "github.com/onosproject/onos-config/pkg/store/v2/configuration"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package v2
+package transaction
 
 import (
 	"github.com/atomix/go-sdk/pkg/primitive"

@@ -8,7 +8,7 @@ import (
 	"context"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/controller/utils"
-	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
+	"github.com/onosproject/onos-config/pkg/store/v2/configuration"
 	"math/rand"
 	"time"
 
