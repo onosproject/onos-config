@@ -79,6 +79,7 @@ const (
 // TransactionStatus indicates the status of a transaction within a phase
 type TransactionStatus string
 
+// UnmarshalJSON  implements the Unmarshaler interface
 func (s *TransactionStatus) UnmarshalJSON(data []byte) error {
 	var value string
 	if err := json.Unmarshal(data, &value); err != nil {
@@ -108,6 +109,7 @@ const (
 // Transactions is a mapping of transaction indexes to transactions
 type Transactions map[Index]Transaction
 
+// UnmarshalJSON  implements the Unmarshaler interface
 func (t *Transactions) UnmarshalJSON(data []byte) error {
 	var list []Transaction
 	if err := json.Unmarshal(data, &list); err == nil {
@@ -154,6 +156,7 @@ type TransactionPhase struct {
 // Values is a change/rollback values map
 type Values map[string]string
 
+// UnmarshalJSON  implements the Unmarshaler interface
 func (s *Values) UnmarshalJSON(data []byte) error {
 	var list []any
 	if err := json.Unmarshal(data, &list); err != nil {
@@ -173,6 +176,7 @@ func (s *Values) UnmarshalJSON(data []byte) error {
 // Value is a change/rollback value
 type Value string
 
+// UnmarshalJSON  implements the Unmarshaler interface
 func (s *Value) UnmarshalJSON(data []byte) error {
 	var value string
 	if err := json.Unmarshal(data, &value); err != nil {
