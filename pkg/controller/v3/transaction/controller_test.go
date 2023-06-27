@@ -57,9 +57,6 @@ type TestState struct {
 }
 
 func testReconciler(t *testing.T, testCase model.TestCase[TestState, TestContext]) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	runner := &testRunner{
 		TestCase: testCase,
 	}
