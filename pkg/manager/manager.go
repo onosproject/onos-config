@@ -7,11 +7,11 @@ package manager
 
 import (
 	"github.com/atomix/go-sdk/pkg/client"
-	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration/v2"
 	"github.com/onosproject/onos-config/pkg/controller/connection"
-	mastershipcontroller "github.com/onosproject/onos-config/pkg/controller/mastership/v2"
-	proposalcontroller "github.com/onosproject/onos-config/pkg/controller/proposal/v2"
 	"github.com/onosproject/onos-config/pkg/controller/target"
+	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/v2/configuration"
+	mastershipcontroller "github.com/onosproject/onos-config/pkg/controller/v2/mastership"
+	proposalcontroller "github.com/onosproject/onos-config/pkg/controller/v2/proposal"
 	"github.com/onosproject/onos-config/pkg/store/v2/proposal"
 
 	"github.com/onosproject/onos-config/pkg/controller/node"
@@ -27,7 +27,7 @@ import (
 
 	"os"
 
-	transactioncontroller "github.com/onosproject/onos-config/pkg/controller/transaction/v2"
+	transactioncontroller "github.com/onosproject/onos-config/pkg/controller/v2/transaction"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
