@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023-present Open Networking Foundation <info@opennetworking.org>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 pkg/controller/v3/configuration/testdata/ModelTestCases.tar.gz filter=lfs diff=lfs merge=lfs -text
 pkg/controller/v3/mastership/testdata/ModelTestCases.tar.gz filter=lfs diff=lfs merge=lfs -text
 pkg/controller/v3/transaction/testdata/ModelTestCases.tar.gz filter=lfs diff=lfs merge=lfs -text
