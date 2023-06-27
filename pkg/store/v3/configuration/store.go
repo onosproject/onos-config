@@ -11,7 +11,7 @@ import (
 	_map "github.com/atomix/go-sdk/pkg/primitive/map"
 	"github.com/atomix/go-sdk/pkg/types"
 	"github.com/google/uuid"
-	"github.com/onosproject/onos-config/pkg/controller/utils"
+	"github.com/onosproject/onos-config/pkg/utils/v3/tree"
 	"io"
 	"sync"
 	"time"
@@ -526,7 +526,7 @@ func (s *configurationStore) getApplied(ctx context.Context, id configapi.Config
 }
 
 func (s *configurationStore) store(ctx context.Context, store _map.Map[string, *configapi.PathValue], values map[string]configapi.PathValue) error {
-	prunedValues := utils.PrunePathMap(values, true)
+	prunedValues := tree.PrunePathMap(values, true)
 	transaction := store.Transaction(ctx)
 	for _, pv := range values {
 		entry, err := store.Get(ctx, pv.Path)
