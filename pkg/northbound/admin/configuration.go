@@ -9,7 +9,7 @@ import (
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	configuration "github.com/onosproject/onos-config/pkg/store/configuration/v2"
+	configuration "github.com/onosproject/onos-config/pkg/store/v2/configuration"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 )
 

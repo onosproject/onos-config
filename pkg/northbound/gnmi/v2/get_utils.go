@@ -12,8 +12,8 @@ import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-config/pkg/utils/tree"
-	valuesv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
+	"github.com/onosproject/onos-config/pkg/utils/v2/tree"
+	valuesv2 "github.com/onosproject/onos-config/pkg/utils/v2/values"
 	"github.com/openconfig/gnmi/proto/gnmi"
 
 	"strings"

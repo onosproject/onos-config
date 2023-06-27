@@ -3,14 +3,14 @@ module github.com/onosproject/onos-config
 go 1.19
 
 require (
-	github.com/atomix/go-sdk v0.13.2
+	github.com/atomix/go-sdk v0.13.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29
-	github.com/onosproject/onos-api/go v0.10.31
+	github.com/onosproject/onos-api/go v0.10.32
 	github.com/onosproject/onos-lib-go v0.10.17
 	github.com/openconfig/gnmi v0.9.1
 	github.com/openconfig/goyang v1.4.0
@@ -28,7 +28,7 @@ require (
 	github.com/Shopify/sarama v1.31.1 // indirect
 	github.com/atomix/atomix/api v1.1.0 // indirect
 	github.com/atomix/atomix/protocols/rsm v1.1.0 // indirect
-	github.com/atomix/atomix/runtime v1.1.0 // indirect
+	github.com/atomix/atomix/runtime v1.1.2 // indirect
 	github.com/atomix/atomix/sidecar v0.4.4 // indirect
 	github.com/bits-and-blooms/bitset v1.3.1 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.3.1 // indirect

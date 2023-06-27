@@ -146,15 +146,11 @@ func setup(t *testing.T, serverCfg *northbound.ServerConfig) *northbound.Server 
 	s := northbound.NewServer(serverCfg)
 	s.AddService(newTestServer())
 	doneCh := make(chan error)
-
 	go func() {
-		err := s.Serve(func(started string) {
+		_ = s.Serve(func(started string) {
 			t.Log("Started NBI on ", started)
 			close(doneCh)
 		})
-		if err != nil {
-			doneCh <- err
-		}
 	}()
 	<-doneCh
 	return s

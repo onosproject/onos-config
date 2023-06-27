@@ -22,9 +22,9 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 
-	transactionstore "github.com/onosproject/onos-config/pkg/store/transaction/v2"
+	transactionstore "github.com/onosproject/onos-config/pkg/store/v2/transaction"
 	"github.com/onosproject/onos-config/pkg/utils"
-	valueutils "github.com/onosproject/onos-config/pkg/utils/values/v2"
+	valueutils "github.com/onosproject/onos-config/pkg/utils/v2/values"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 )
