@@ -28,7 +28,7 @@ require (
 	github.com/Shopify/sarama v1.31.1 // indirect
 	github.com/atomix/atomix/api v1.1.0 // indirect
 	github.com/atomix/atomix/protocols/rsm v1.1.0 // indirect
-	github.com/atomix/atomix/runtime v1.1.0 // indirect
+	github.com/atomix/atomix/runtime v1.1.2 // indirect
 	github.com/atomix/atomix/sidecar v0.4.4 // indirect
 	github.com/bits-and-blooms/bitset v1.3.1 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.3.1 // indirect
