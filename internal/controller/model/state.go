@@ -10,74 +10,102 @@ import (
 
 const nilString = "<nil>"
 
+// Index is the position of a transaction in the transaction log
 type Index uint64
 
+// Ordinal indicates the order in which a transaction is applied or rolled back
 type Ordinal uint64
 
+// Revision is the current version of an object
 type Revision uint64
 
+// Term is a mastership term
 type Term uint64
 
+// NodeID is a unique node identifier
 type NodeID string
 
+// ConnID is a unique connection identifier
 type ConnID int
 
+// Conns is a mapping of node IDs to connections
 type Conns map[NodeID]Conn
 
+// Conn is the state of the connection for a node
 type Conn struct {
 	ID        ConnID `json:"id"`
 	Connected bool   `json:"connected"`
 }
 
+// Target is the state of a target
 type Target struct {
 	ID      int    `json:"id"`
 	Values  Values `json:"values"`
 	Running bool   `json:"running"`
 }
 
+// EventType is a transaction event type constant
 type EventType string
 
 const (
+	// CommitEvent indicates a transaction was committed
 	CommitEvent EventType = "Commit"
-	ApplyEvent  EventType = "Apply"
+	// ApplyEvent indicates a transaction was applied
+	ApplyEvent EventType = "Apply"
 )
 
+// TransactionEvent indicates the latest event within a transaction
 type TransactionEvent struct {
-	Index  Index              `json:"index"`
-	Phase  TransactionPhaseID `json:"phase"`
-	Event  EventType          `json:"event"`
-	Status TransactionState   `json:"status"`
+	// Index is the transaction index
+	Index Index `json:"index"`
+	// Phase is the phase in which the event occurred
+	Phase TransactionPhaseID `json:"phase"`
+	// EventType is the type of event that occurred
+	Event EventType `json:"event"`
+	// Status is the status to which the transaction changed
+	Status TransactionStatus `json:"status"`
 }
 
+// TransactionPhaseID is a transaction phase identifier
 type TransactionPhaseID string
 
 const (
-	TransactionPhaseChange   TransactionPhaseID = "Change"
+	// TransactionPhaseChange indicates a transaction in the Change phase
+	TransactionPhaseChange TransactionPhaseID = "Change"
+	// TransactionPhaseRollback indicates a transaction in the Rollback phase
 	TransactionPhaseRollback TransactionPhaseID = "Rollback"
 )
 
-type TransactionState string
+// TransactionStatus indicates the status of a transaction within a phase
+type TransactionStatus string
 
-func (s *TransactionState) UnmarshalJSON(data []byte) error {
+func (s *TransactionStatus) UnmarshalJSON(data []byte) error {
 	var value string
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
 	if value != nilString {
-		*s = TransactionState(value)
+		*s = TransactionStatus(value)
 	}
 	return nil
 }
 
 const (
-	TransactionPending    TransactionState = "Pending"
-	TransactionInProgress TransactionState = "InProgress"
-	TransactionComplete   TransactionState = "Complete"
-	TransactionAborted    TransactionState = "Aborted"
-	TransactionCanceled   TransactionState = "Canceled"
-	TransactionFailed     TransactionState = "Failed"
+	// TransactionPending indicates a transaction phase is pending
+	TransactionPending TransactionStatus = "Pending"
+	// TransactionInProgress indicates a transaction phase is in progress
+	TransactionInProgress TransactionStatus = "InProgress"
+	// TransactionComplete indicates a transaction phase is complete
+	TransactionComplete TransactionStatus = "Complete"
+	// TransactionAborted indicates a transaction phase has been aborted
+	TransactionAborted TransactionStatus = "Aborted"
+	// TransactionCanceled indicates a transaction phase has been canceled
+	TransactionCanceled TransactionStatus = "Canceled"
+	// TransactionFailed indicates a transaction phase failed
+	TransactionFailed TransactionStatus = "Failed"
 )
 
+// Transactions is a mapping of transaction indexes to transactions
 type Transactions map[Index]Transaction
 
 func (t *Transactions) UnmarshalJSON(data []byte) error {
@@ -102,21 +130,28 @@ func (t *Transactions) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Transaction is the state of a transaction in the transaction log
 type Transaction struct {
-	Index    Index              `json:"index"`
-	Phase    TransactionPhaseID `json:"phase"`
-	Change   TransactionPhase   `json:"change"`
-	Rollback TransactionPhase   `json:"rollback"`
+	// Index is the index of the Transaction within the Transaction log
+	Index Index `json:"index"`
+	// Phase is the identifier of the current phase of the Transaction
+	Phase TransactionPhaseID `json:"phase"`
+	// Change is the status of the Transaction's Change phase
+	Change TransactionPhase `json:"change"`
+	// Rollback is the status of the Transaction's Rollback phase
+	Rollback TransactionPhase `json:"rollback"`
 }
 
+// TransactionPhase is the state of a transaction for one of the two phases
 type TransactionPhase struct {
-	Index   Index             `json:"index"`
-	Ordinal Ordinal           `json:"ordinal"`
-	Values  Values            `json:"values"`
-	Commit  *TransactionState `json:"commit"`
-	Apply   *TransactionState `json:"apply"`
+	Index   Index              `json:"index"`
+	Ordinal Ordinal            `json:"ordinal"`
+	Values  Values             `json:"values"`
+	Commit  *TransactionStatus `json:"commit"`
+	Apply   *TransactionStatus `json:"apply"`
 }
 
+// Values is a change/rollback values map
 type Values map[string]string
 
 func (s *Values) UnmarshalJSON(data []byte) error {
@@ -135,6 +170,7 @@ func (s *Values) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Value is a change/rollback value
 type Value string
 
 func (s *Value) UnmarshalJSON(data []byte) error {
@@ -148,13 +184,15 @@ func (s *Value) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Configuration is the state of a configuration
 type Configuration struct {
-	State     ConfigurationState     `json:"state"`
+	State     ConfigurationStatus    `json:"state"`
 	Term      Term                   `json:"term"`
 	Committed ConfigurationCommitted `json:"committed"`
 	Applied   ConfigurationApplied   `json:"applied"`
 }
 
+// ConfigurationCommitted is the committed state of a configuration
 type ConfigurationCommitted struct {
 	Index    Index    `json:"index"`
 	Change   Index    `json:"change"`
@@ -165,6 +203,7 @@ type ConfigurationCommitted struct {
 	Values   Values   `json:"values"`
 }
 
+// ConfigurationApplied is the applied state of a configuration
 type ConfigurationApplied struct {
 	Index    Index    `json:"index"`
 	Ordinal  Ordinal  `json:"ordinal"`
@@ -173,13 +212,17 @@ type ConfigurationApplied struct {
 	Values   Values   `json:"values"`
 }
 
-type ConfigurationState string
+// ConfigurationStatus is the status of a configuration
+type ConfigurationStatus string
 
 const (
-	ConfigurationPending  ConfigurationState = "Pending"
-	ConfigurationComplete ConfigurationState = "Complete"
+	// ConfigurationPending indicates a configuration is pending synchronization with the target
+	ConfigurationPending ConfigurationStatus = "Pending"
+	// ConfigurationComplete indicates a configuration has completed synchronizing with the target
+	ConfigurationComplete ConfigurationStatus = "Complete"
 )
 
+// Mastership is the state of the mastership election for the model
 type Mastership struct {
 	Term   Term   `json:"term"`
 	Master NodeID `json:"master"`
