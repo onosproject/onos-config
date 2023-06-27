@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29
-	github.com/onosproject/onos-api/go v0.10.31
+	github.com/onosproject/onos-api/go v0.10.32
 	github.com/onosproject/onos-lib-go v0.10.17
 	github.com/openconfig/gnmi v0.9.1
 	github.com/openconfig/goyang v1.4.0
