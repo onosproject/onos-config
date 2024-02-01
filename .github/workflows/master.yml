@@ -18,7 +18,10 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Build
-        run: go build -mod=vendor -o build/_output/onos-config ./cmd/onos-config
+        run: |
+          go mod vendor
+          go build -mod=vendor -o build/_output/onos-config ./cmd/onos-config
+          rm -rf vendor
 
   lint:
     runs-on: ubuntu-latest
