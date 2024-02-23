@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - master
-      - GHA-integration
   pull_request:
 
 jobs:
