@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - master
-      - GHA-integration
   pull_request:
 
 jobs:
@@ -43,7 +42,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Unit tests
-        run: go test -race github.com/onosproject/onos-config/...
+        run: go test -race ./...
 
   docker-build:
     runs-on: ubuntu-latest
@@ -64,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: reuse lint
-        uses: fsfe/reuse-action@v2
+        uses: fsfe/reuse-action@v3
 
   fossa-check:
     runs-on: ubuntu-latest
