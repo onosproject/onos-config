@@ -19,7 +19,6 @@ jobs:
           go-version-file: 'go.mod'
       - name: Build
         run: |
-          ${GITHUB_WORKSPACE}
           go mod vendor
           go build -mod=vendor -o build/_output/onos-config ./cmd/onos-config
           rm -rf vendor
