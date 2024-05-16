@@ -14,7 +14,7 @@ require (
 	github.com/onosproject/onos-lib-go v0.10.17
 	github.com/openconfig/gnmi v0.9.1
 	github.com/openconfig/goyang v1.4.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/net v0.8.0
 	google.golang.org/grpc v1.54.0
