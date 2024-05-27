@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM onosproject/golang-build:v1.3.0 AS build
+FROM onosproject/golang-build:v1.3.1 AS build
 
 ENV GO111MODULE=on
 WORKDIR /build
@@ -18,7 +18,7 @@ COPY ./go.sum /build
 # build the executable
 RUN go build -mod=vendor -o build/_output/onos-config ./cmd/onos-config
 
-FROM alpine:3.13
+FROM alpine:3.19
 RUN apk add libc6-compat
 
 USER nobody
