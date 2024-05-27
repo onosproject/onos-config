@@ -18,7 +18,7 @@ COPY ./go.sum /build
 # build the executable
 RUN go build -mod=vendor -o build/_output/onos-config ./cmd/onos-config
 
-FROM alpine:3.13
+FROM alpine:3.20
 RUN apk add libc6-compat
 
 USER nobody
