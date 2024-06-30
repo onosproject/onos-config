@@ -11,68 +11,65 @@ export GO111MODULE=on
 
 ONOS_CONFIG_VERSION ?= latest
 
-build-tools:=$(shell if [ ! -d "./build/build-tools" ]; then cd build && git clone https://github.com/onosproject/build-tools.git; fi)
-include ./build/build-tools/make/onf-common.mk
+GOLANG_CI_VERSION := v1.52.2
 
-mod-update: # @HELP Download the dependencies to the vendor folder
-	go mod tidy
-	go mod vendor
-
-mod-lint: mod-update # @HELP ensure that the required dependencies are in place
-	# dependencies are vendored, but not committed, go.sum is the only thing we need to check
-	bash -c "diff -u <(echo -n) <(git diff go.sum)"
+all: build docker-build
 
 local-deps: # @HELP imports local deps in the vendor folder
 local-deps: local-helmit local-onos-api local-onos-lib-go local-onos-ric-sdk-go local-onos-test local-onos-topo
 
+mod-deps: # @HELP update local dependency in go.mod and go.sum
+	go mod tidy
+	go mod vendor
+
 build: # @HELP build the Go binaries and run all validations (default)
-build: mod-update local-deps
+build: mod-deps local-deps
 	go build -mod=vendor -o build/_output/onos-config ./cmd/onos-config
 
 test: # @HELP run the unit tests and source code validation producing a golang style report
-test: mod-lint build linters license
+test: build lint license
 	go test -race github.com/onosproject/onos-config/...
 
-jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
-jenkins-test: mod-lint build linters license
-	TEST_PACKAGES=github.com/onosproject/onos-config/... ./build/build-tools/build/jenkins/make-unit
-
-helmit-config: integration-test-namespace # @HELP run helmit gnmi tests locally
-	make helmit-config -C test
-
-helmit-rbac: integration-test-namespace # @HELP run helmit gnmi tests locally
-	make helmit-rbac -C test
-
-integration-tests: helmit-config helmit-rbac # @HELP run helmit integration tests locally
-
-onos-config-docker: mod-update local-deps # @HELP build onos-config base Docker image
+docker-build-onos-config: # @HELP build onos-config base Docker image
+docker-build-onos-config: local-deps
 	docker build --platform linux/amd64 . -f build/onos-config/Dockerfile \
-		-t ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
+		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
-images: # @HELP build all Docker images
-images: onos-config-docker
+docker-build: # @HELP build all Docker images
+docker-build: build docker-build-onos-config
 
-kind: # @HELP build Docker images and add them to the currently configured kind cluster
-kind: images kind-only
+docker-push-onos-config: # @HELP push onos-pci Docker image
+	docker push onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
-kind-only: # @HELP deploy the image without rebuilding first
-kind-only:
-	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image --name ${KIND_CLUSTER_NAME} ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
+docker-push: # @HELP push docker images
+docker-push: docker-push-onos-config
 
-all: build images
+lint: # @HELP examines Go source code and reports coding problems
+	golangci-lint --version | grep $(GOLANG_CI_VERSION) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin $(GOLANG_CI_VERSION)
+	golangci-lint run --timeout 15m
 
-publish: # @HELP publish version on github and dockerhub
-	./build/build-tools/publish-version ${VERSION} onosproject/onos-config
+license: # @HELP run license checks
+	rm -rf venv
+	python3 -m venv venv
+	. ./venv/bin/activate;\
+	python3 -m pip install --upgrade pip;\
+	python3 -m pip install reuse;\
+	reuse lint
 
-jenkins-publish: jenkins-tools # @HELP Jenkins calls this to publish artifacts
-	./build/bin/push-images
-	./build/build-tools/release-merge-commit
-	./build/build-tools/build/docs/push-docs
+check-version: # @HELP check version is duplicated
+	./build/bin/version_check.sh all
 
 clean:: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
-	go clean -testcache github.com/onosproject/onos-config/...
+	go clean github.com/onosproject/onos-config/...
+
+help:
+	@grep -E '^.*: *# *@HELP' $(MAKEFILE_LIST) \
+    | sort \
+    | awk ' \
+        BEGIN {FS = ": *# *@HELP"}; \
+        {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}; \
+    '
 
 local-helmit: # @HELP Copies a local version of the helmit dependency into the vendor directory
 ifdef LOCAL_HELMIT
