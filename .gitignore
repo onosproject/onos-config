@@ -28,3 +28,4 @@ build/build-tools
 *.dvi
 *.out
 spec/states
+venv

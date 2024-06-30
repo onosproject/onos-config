@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
-#
-# SPDX-License-Identifier: Apache-2.0
-
-echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
-make images
-docker push onosproject/onos-config:latest

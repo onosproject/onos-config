@@ -1,0 +1,133 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024 Intel Corporation
+# Copyright 2024 Kyunghee University
+name: Publish image and tag/release code
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  version-check:
+    if: (github.repository_owner == 'onosproject')
+    runs-on: ubuntu-latest
+    outputs:
+      valid_version: ${{ steps.version-check-step.outputs.valid_version }}
+      dev_version: ${{ steps.dev-version-check-step.outputs.dev_version }}
+      target_version: ${{ steps.get-target-version-step.outputs.target_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: check version
+        id: version-check-step
+        run: |
+          make check-version; if [[ $? == 0 ]]; then echo "valid_version=true" >> $GITHUB_OUTPUT; else echo "valid_version=false" >> $GITHUB_OUTPUT; fi
+          cat $GITHUB_OUTPUT
+
+      - name: check dev version
+        id: dev-version-check-step
+        run: |
+          f_dev=$(./build/bin/version_check.sh is_dev)
+          if [[ $f_dev == "true" ]]; then echo "dev_version=true" >> $GITHUB_OUTPUT; else echo "dev_version=false" >> $GITHUB_OUTPUT; fi
+          cat $GITHUB_OUTPUT
+
+      - name: get target version
+        id: get-target-version-step
+        run: | 
+          echo "target_version=$(cat VERSION)" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+
+  tag_versions:
+    runs-on: ubuntu-latest
+    needs: version-check
+    if: (github.repository_owner == 'onosproject') && (needs.version-check.outputs.valid_version == 'true') && (needs.version-check.outputs.dev_version == 'false')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: create release using REST API
+        run: |
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GH_ONOS_PAT }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/releases \
+            -d '{
+              "tag_name": "v${{ needs.version-check.outputs.target_version }}",
+              "target_commitish": "${{ github.event.repository.default_branch }}",
+              "name": "v${{ needs.version-check.outputs.target_version }}",
+              "draft": false,
+              "prerelease": false,
+              "generate_release_notes": true
+              }'
+
+  publish-images:
+    runs-on: ubuntu-latest
+    needs: version-check
+    if: (github.repository_owner == 'onosproject') && (needs.version-check.outputs.valid_version == 'true')
+    env:
+      REGISTRY: docker.io
+      DOCKER_REPOSITORY: onosproject/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - uses: docker/login-action@v3.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Docker image with tag latest
+        env:
+          DOCKER_TAG: latest
+        run: |
+          ONOS_CONFIG_VERSION=${{ env.DOCKER_TAG }} make docker-build
+          ONOS_CONFIG_VERSION=${{ env.DOCKER_TAG }} make docker-push
+      - name: Build and push Docker image with tag
+        if: needs.version-check.outputs.dev_version == 'false'
+        env:
+          DOCKER_TAG: v${{ needs.version-check.outputs.target_version }}
+        run: |
+          ONOS_CONFIG_VERSION=${{ env.DOCKER_TAG }} make docker-build
+          ONOS_CONFIG_VERSION=${{ env.DOCKER_TAG }} make docker-push
+
+  bump-up-version:
+    runs-on: ubuntu-latest
+    needs: version-check
+    if: (github.repository_owner == 'onosproject') && (needs.version-check.outputs.valid_version == 'true') && (needs.version-check.outputs.dev_version == 'false')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: increment version
+        run: |
+          IFS='.' read -r major minor patch <<< ${{ needs.version-check.outputs.target_version }}
+          patch_update=$((patch+1))
+          NEW_VERSION="$major.$minor.$patch_update-dev"
+          echo $NEW_VERSION > VERSION
+          echo "Updated version: $NEW_VERSION"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GH_ONOS_PAT }}
+          commit-message: Update version
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+          signoff: true
+          branch: version-update
+          delete-branch: true
+          title: Update version
+          body: |
+            Update VERSION file
+          add-paths: |
+            VERSION
