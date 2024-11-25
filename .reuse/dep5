@@ -4,6 +4,6 @@ Files: VERSION internal/**/mock* *.so *.gnmi *.png *.gif *.jpg go.mod go.sum tes
 Copyright: 2021 Open Networking Foundation
 License: Apache-2.0
 
-Files: spec/*.pdf spec/Config.cfg
+Files: spec/*.pdf spec/Config.cfg *.tar.gz
 Copyright: 2023 Intel Corporation
 License: Apache-2.0
