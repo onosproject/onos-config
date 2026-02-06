@@ -10,6 +10,10 @@ export GO111MODULE=on
 .PHONY: build
 
 ONOS_CONFIG_VERSION ?= latest
+DOCKER_TAG          ?= ${ONOS_CONFIG_VERSION}
+DOCKER_REPOSITORY   ?= onosproject/
+DOCKER_REGISTRY     ?= ""
+DOCKER_IMAGENAME    := ${DOCKER_REGISTRY}${DOCKER_REPOSITORY}onos-config:${DOCKER_TAG}
 
 GOLANG_CI_VERSION := v1.52.2
 
@@ -33,13 +37,13 @@ test: build lint license
 docker-build-onos-config: # @HELP build onos-config base Docker image
 docker-build-onos-config: local-deps
 	docker build --platform linux/amd64 . -f build/onos-config/Dockerfile \
-		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
+		-t ${DOCKER_IMAGENAME}
 
 docker-build: # @HELP build all Docker images
 docker-build: build docker-build-onos-config
 
 docker-push-onos-config: # @HELP push onos-pci Docker image
-	docker push onosproject/onos-config:${ONOS_CONFIG_VERSION}
+	docker push ${DOCKER_IMAGENAME}
 
 docker-push: # @HELP push docker images
 docker-push: docker-push-onos-config
