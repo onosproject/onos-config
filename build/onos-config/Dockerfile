@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM onosproject/golang-build:v1.3.0 AS build
+FROM onosproject/golang-build:v1.3.1 AS build
 
 ENV GO111MODULE=on
 WORKDIR /build
