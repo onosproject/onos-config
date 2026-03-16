@@ -6,7 +6,7 @@ require (
 	github.com/atomix/go-sdk v0.13.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
-	github.com/golang/protobuf v1.5.3
+	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/onosproject/config-models/models/testdevice-1.0.x v0.5.29
@@ -18,7 +18,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/net v0.8.0
 	google.golang.org/grpc v1.54.0
-	google.golang.org/protobuf v1.28.1
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 
